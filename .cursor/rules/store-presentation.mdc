@@ -1,0 +1,19 @@
+---
+description: Store and presentation — IR operations UI, no domain ownership
+globs: src/lib/store/**/*,src/routes/**/*,src/lib/components/**/*
+alwaysApply: false
+---
+
+# Store & Presentation
+
+- `IRDefinitionStore` exposes GUI-operable operations over `IRDefinition` (presentation/application edge).
+- `src/routes/` and `src/lib/components/` render and bind UI; they do not own transform or external-format rules.
+- Do not put Reader/Writer/schema details into Svelte components — call store or thin app functions instead.
+- Do not redefine SSOT (Single Source Of Truth) in the store; the store holds/references `IRDefinition`, it does not replace it.
+
+```typescript
+// ✅ GOOD — store orchestrates use of domain + ports
+store.loadFromFile(path); // reader → validate → transform → set IR
+
+// ❌ BAD — parse vendor JSON inside a Svelte component
+```

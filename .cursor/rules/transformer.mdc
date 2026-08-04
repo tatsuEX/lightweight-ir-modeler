@@ -1,0 +1,22 @@
+---
+description: IRTransformer — Raw ⇄ IR conversion only
+globs: src/lib/transform/**/*
+alwaysApply: false
+---
+
+# Transformer
+
+- Own **Raw ⇄ IR** conversion only.
+- Import path: Raw → IR. Export path: IR → Raw.
+- Keep format-specific mapping here (or behind small helpers in this package), not in `ir/` or `store/`.
+- Do not read/write files here — that is `io/`.
+- Do not bypass SchemaValidator; callers validate Raw at boundaries around transform.
+
+```typescript
+// ✅ GOOD
+const ir = transformer.toIR(raw);
+const raw = transformer.toRaw(ir);
+
+// ❌ BAD — I/O or GUI concerns inside transformer
+await fetch('/api/...');
+```

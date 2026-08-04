@@ -1,0 +1,22 @@
+---
+description: DefinitionReader / DefinitionWriter — external file I/O only
+globs: src/lib/io/**/*
+alwaysApply: false
+---
+
+# Reader / Writer
+
+- **Reader:** external UI definition file → `RawDefinition`.
+- **Writer:** `RawDefinition` → external UI definition file (create/overwrite).
+- Isolate all external-format parsing/serialization here (and under `io/formats/` when a second format appears — YAGNI until then).
+- Do not depend on `IRDefinition` from Reader/Writer; go through Raw + Transformer.
+- Raw must remain independent of Reader/Writer (no reverse dependency).
+
+```typescript
+// ✅ GOOD
+const raw = await reader.read(path);
+// validate → transform elsewhere
+
+// ❌ BAD
+const ir = await reader.readAsIR(path);
+```

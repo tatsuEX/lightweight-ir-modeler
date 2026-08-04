@@ -1,0 +1,22 @@
+---
+description: Project purpose — IR as SSOT (Single Source Of Truth) for portable UI definitions
+alwaysApply: true
+---
+
+# Project Purpose
+
+- Speed up prototype design and authoring of UI definitions.
+- Treat an abstracted **IR (Intermediate Representation)** as the domain core and **SSOT (Single Source Of Truth)**.
+- Use the IR to convert to/from UI-framework (and other vendor) definition files.
+- Maximize portability; minimize dependence on specific tech stacks or platform vendors.
+
+## Core implication
+
+All durable meaning about a UI definition lives in **IRDefinition**. External formats are adapters around it, not the source of truth.
+
+## Terminology in `.mdc` rules
+
+When writing or editing project rules (`.mdc`), spell out project acronyms on use:
+
+- Write **`SSOT (Single Source Of Truth)`** — do not use bare `SSOT` alone.
+- Prefer the same pattern for other project acronyms when first introduced in a rule file.

@@ -1,0 +1,16 @@
+---
+description: Design principles — YAGNI, KISS, MVP, delayed abstraction
+alwaysApply: true
+---
+
+# Design Principles
+
+- **YAGNI** and **KISS** are prerequisites. Each change ships the smallest useful unit of behavior.
+- Draw module boundaries by **reasons for future change**, not by speculative completeness.
+- Prefer **MVP**: implement a small working slice first.
+- Abstract or share only after the same technical idea appears in **3+ places** (or clear scale demands it). Do not invent frameworks early.
+
+## When implementing
+
+- Prefer a direct solution that works for the current format/flow.
+- Do not add extension points “for later” unless required by an accepted boundary in architecture rules.

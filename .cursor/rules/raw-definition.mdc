@@ -1,0 +1,21 @@
+---
+description: RawDefinition and schema validation at the trust boundary
+globs: src/lib/raw/**/*,src/lib/schema/**/*
+alwaysApply: false
+---
+
+# Raw Definition & Schema
+
+- `RawDefinition` is a **temporary** model for import/export flexibility — not the SSOT (Single Source Of Truth).
+- Raw must not import Reader, Writer, or Svelte/UI code.
+- `SchemaValidator` is the trust boundary with the outside world.
+- **Initial:** validate Raw with JSON Schema/Zod (`RawDefinitionSchema`).
+- **Later:** IR schema validation — do not build it until the transform flow is established.
+
+```typescript
+// ✅ GOOD — validate at boundary before transform/write
+schemaValidator.validateRaw(raw);
+
+// ❌ BAD — skip validation because "we just edited it in memory"
+writer.write(raw);
+```

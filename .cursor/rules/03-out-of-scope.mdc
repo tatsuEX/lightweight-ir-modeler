@@ -1,0 +1,17 @@
+---
+description: Out of scope for initial implementation — do not build these yet
+alwaysApply: true
+---
+
+# Out of Scope (Initial Implementation)
+
+Do **not** implement until explicitly requested after the core import/export flow is working:
+
+- Plugin framework
+- Event bus
+- Domain validation engine
+- Undo/Redo system
+- Version migration system
+- Complex service layer
+
+If a task seems to need one of the above, solve with the smallest local approach that keeps Reader → Raw → validate → IR → GUI (and reverse) working.

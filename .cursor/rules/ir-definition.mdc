@@ -1,0 +1,20 @@
+---
+description: IR domain model rules — SSOT (Single Source Of Truth), Component, elements
+globs: src/lib/ir/**/*
+alwaysApply: false
+---
+
+# IR Definition
+
+- `IRDefinition` is the **SSOT (Single Source Of Truth)**. Treat breaking changes as high-risk; prefer additive, explicit migrations later (migration system itself is out of scope now).
+- Keep this package free of external UI-framework types, file I/O, and Svelte.
+- Concrete UI kinds live under `src/lib/ir/elements/` and **extend** `Component`.
+- `IRDefinition` aggregates elements; it does not know about Reader/Writer/Raw schemas.
+
+```typescript
+// ✅ GOOD — domain-only
+export class Button extends Component { ... }
+
+// ❌ BAD — framework leak into IR
+import type { SomethingFromVendorSdk } from 'vendor-ui';
+```

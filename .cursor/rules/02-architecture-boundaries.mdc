@@ -1,0 +1,59 @@
+---
+description: Architecture boundaries, responsibilities, dependency rules, and dataflow
+alwaysApply: true
+---
+
+# Architecture Boundaries
+
+## Target layout (`src/lib`)
+
+| Path | Role |
+|---|---|
+| `ir/` | Stable domain SSOT (Single Source Of Truth) (`IRDefinition`, `Component`, `ir/elements/`) |
+| `raw/` | Temporary model between external files and IR |
+| `schema/` | Trust boundary (JSON Schema / Zod) |
+| `transform/` | Raw ⇄ IR |
+| `io/` | External file read/write |
+| `store/` | Presentation-facing IR operations |
+| `components/` | Svelte UI widgets (not IR elements) |
+
+`ir/elements/` holds concrete IR UI element types that extend `Component`. Do not confuse with `lib/components/` (Svelte).
+
+## Responsibilities
+
+- **DefinitionReader** — external UI file → `RawDefinition`
+- **DefinitionWriter** — `RawDefinition` → external UI file (create/overwrite)
+- **RawDefinition** — flexible intermediate for transform; not the SSOT (Single Source Of Truth)
+- **SchemaValidator** — validate at system boundaries (initial: Raw via JSON Schema/Zod; IR validation later)
+- **IRTransformer** — Raw ⇄ IR
+- **IRDefinition** — aggregate of UI elements; SSOT (Single Source Of Truth); handle breaking changes with extreme care
+- **Component** — base for concrete types under `ir/elements/`
+- **IRDefinitionStore** — GUI-operable IR operations (presentation layer)
+
+## Dependency rules
+
+- `RawDefinition` must not depend on Reader/Writer.
+- `IRDefinition` must not depend on external UI framework definitions.
+- Format-specific logic stays in Reader / Writer / Transformer.
+- `IRDefinition` is the stable domain model.
+
+## Dataflow
+
+### Import
+
+1. External UI definition file
+2. Reader → `RawDefinition`
+3. SchemaValidator validates Raw via `RawDefinitionSchema`
+4. Transformer → `IRDefinition`
+5. GUI renders IR
+
+### Export
+
+1. GUI edits `IRDefinition`
+2. Transformer → `RawDefinition`
+3. SchemaValidator validates Raw via `RawDefinitionSchema`
+4. Writer → external UI definition files
+
+### Validation scope (initial)
+
+Schema validation at boundaries only. Domain validation and cross-definition validation come after the core transform flow is solid.
