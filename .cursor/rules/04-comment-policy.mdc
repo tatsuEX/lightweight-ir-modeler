@@ -1,0 +1,22 @@
+---
+description: Comment policy — Japanese, JSDoc on methods, warn on pitfalls
+alwaysApply: true
+---
+
+# Comment Policy
+
+- Write **code comments in Japanese** (rule `.mdc` files may stay English to save tokens).
+- Every **method / function** must have a **JSDoc** comment.
+- For non-obvious or easy-to-break behavior, add a short **warning** comment (prefix with `WARN:`).
+
+```typescript
+// ✅ GOOD
+/**
+ * テキストボックス要素を作成する
+ */
+export function createTextbox(info: any): any { /* ... */ }
+
+// WARN: validation は ...rest より先にマージする。...info だとデフォルトが消える。
+
+// ❌ BAD — no JSDoc; English-only comments in source
+```
