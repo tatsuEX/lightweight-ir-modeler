@@ -1,0 +1,24 @@
+---
+description: npm security, config change gate, ESM LTS only
+alwaysApply: true
+---
+
+# npm & Module Ecosystem
+
+## Supply chain
+
+- Treat installs as untrusted execution. Prefer locked, reproducible installs (`package-lock.json` committed; CI uses `npm ci`).
+- Do not add/upgrade deps casually. Prefer known packages; review new install scripts / lockfile diffs.
+- Keep project `.npmrc` hardening (`ignore-scripts`, `min-release-age`, `allow-git=none`). After `ignore-scripts` installs, run needed trusted scripts explicitly (e.g. `npm run prepare`, targeted `npm rebuild`).
+
+## Config files — permission required
+
+- **Never** edit `package.json`, `package-lock.json`, `.npmrc`, `tsconfig*`, Vite/SvelteKit config, or similar without **explicit user approval**.
+- When a change seems needed: stop, list the exact diff, and explain **why / necessity**. Wait for approval before writing.
+
+Exception: only when the user already authorized that specific config change in the same request.
+
+## Modules
+
+- Use **ESM** (`"type": "module"`, `import`/`export`). No CommonJS-first or dual-publish unless required and approved.
+- Stick to **stable / LTS** Node and ecosystem APIs — not experimental module flags or unstable loaders.

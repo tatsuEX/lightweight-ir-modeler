@@ -1,6 +1,7 @@
 import { createContext } from "svelte";
 import { nanoid } from "nanoid";
 
+// 画面定義の状態を管理するコンテキスト
 export const [getUIDefinitionContext, setUIDefinitionContext] = createContext<UIDefinition>();
 
 /**

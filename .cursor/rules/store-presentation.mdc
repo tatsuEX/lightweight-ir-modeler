@@ -6,10 +6,24 @@ alwaysApply: false
 
 # Store & Presentation
 
-- `IRDefinitionStore` exposes GUI-operable operations over `IRDefinition` (presentation/application edge).
+- `IRDefinitionStore` / layout-editor state expose GUI-operable operations over IR (presentation edge).
 - `src/routes/` and `src/lib/components/` render and bind UI; they do not own transform or external-format rules.
 - Do not put Reader/Writer/schema details into Svelte components — call store or thin app functions instead.
 - Do not redefine SSOT (Single Source Of Truth) in the store; the store holds/references `IRDefinition`, it does not replace it.
+
+## Context API
+
+- Share store state **only via Svelte Context** (`set*Context` in an ancestor, `get*Context` in descendants). Do not import a singleton instance or pass the store as props for cross-tree access.
+- Example: `setUIDefinitionContext` in `+layout.svelte`, `getUIDefinitionContext` in pages/components.
+
+```typescript
+// ✅ GOOD — ancestor sets, descendant gets
+setUIDefinitionContext(new UIDefinition());
+const ui = getUIDefinitionContext();
+
+// ❌ BAD — module singleton or prop-drill the store tree-wide
+export const ui = new UIDefinition();
+```
 
 ```typescript
 // ✅ GOOD — store orchestrates use of domain + ports

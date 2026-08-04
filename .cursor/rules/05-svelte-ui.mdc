@@ -1,0 +1,16 @@
+---
+description: Svelte UI stack — Svelte 5 runes, prefer flowbite-svelte
+alwaysApply: true
+---
+
+# Svelte UI Stack
+
+- Target **Svelte 5** with **runes** (`$state`, `$derived`, `$props`, `$effect`, …). Do not introduce Svelte 4 store/`let` reactivity patterns for new code.
+- Prefer **flowbite-svelte** UI components over hand-rolled HTML/CSS for tables, inputs, toggles, buttons, etc. Use raw markup only when Flowbite has no fit or the interaction is trivial text.
+
+```svelte
+// ✅ GOOD
+import { Table, Input, Toggle } from 'flowbite-svelte';
+
+// ❌ BAD — reinvent Flowbite-covered widgets with plain HTML
+```
