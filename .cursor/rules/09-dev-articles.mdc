@@ -49,14 +49,54 @@ categories:
 
 For each work session, append a subsection with:
 
-1. A short heading (what was done)
+1. A work-unit heading (`##`) — **must start with the session time** (see below), then the short title
 2. **背景** — why it came up
 3. **目的** — what success looks like
 4. **作業手順** — what was actually done (steps / outcomes)
+5. **変更ファイル**（任意）— 触ったファイルと要点（表形式可）
+
+### Work-unit heading time (`HH:mm`)
+
+Prefix every work-unit `##` heading with the **local start time** of that session:
+
+```
+## HH:mm <short title>
+```
+
+| Rule | Detail |
+|---|---|
+| Format | `HH:mm` — 24-hour, zero-padded (e.g. `09:05`, `14:30`) |
+| Scope | Work-unit `##` headings only — **not** `### 背景` / `### 目的` / etc. |
+| Time source | When the work started; for user-reported edits, use the time they give or the current local time at append |
+
+Example:
+
+```markdown
+## 14:30 Layout コンポーネント並べ替え（DnD）
+
+### 背景
+...
+```
+
+## Scope — agent and user work
+
+Record **both**:
+
+- Work done by the agent in chat (implementation, investigation, design follow-up).
+- Work the **user implemented or changed themselves**, when they report it in chat (PoC, fixes, refactors, config edits, etc.).
+
+When the user describes their own changes, append a journal section that captures:
+
+- What they built or fixed (not only what the agent diff shows).
+- Bugs hit and root causes, if discussed.
+- Final outcome (e.g. “動作確認済み”).
+
+Do not omit user-only edits because the agent did not apply the patch.
 
 ## When to write
 
 - After meaningful implementation, design follow-up, investigation, testing, or planning work in a session.
+- When the user asks to log their own implementation or reports change points for the day’s work — append even if the agent only assisted with diagnosis.
 - Not required for trivial one-line answers with no durable project change.
 
 ## Notes
