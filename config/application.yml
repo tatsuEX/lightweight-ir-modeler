@@ -1,0 +1,9 @@
+# アプリケーション静的設定（Spring の application.yml 相当）
+# パスは .env の APP_CONFIG_PATH で指定する
+
+app:
+  name: lightweight-ir-modeler
+  # 将来の I/O 既定パスなど、起動時に固定したい値をここに置く
+  # io:
+  #   importDir: ./data/import
+  #   exportDir: ./data/export
