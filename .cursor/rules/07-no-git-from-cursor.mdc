@@ -1,0 +1,11 @@
+---
+description: No Git from Cursor — external VCS only
+alwaysApply: true
+---
+
+# No Git in Cursor
+
+- **Do not** run any `git` / `git.exe` commands (commit, push, pull, add, status, etc.).
+- **Do not** use Cursor Source Control UI for commits — workspace has `git.enabled: false`.
+- Version control is done only with the user's **external VCS tool**.
+- A `beforeShellExecution` hook denies git; if a task seems to need git, stop and tell the user to do it outside Cursor.
