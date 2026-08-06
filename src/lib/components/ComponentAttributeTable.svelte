@@ -10,6 +10,7 @@
 		TableHeadCell,
 		Toggle
 	} from 'flowbite-svelte';
+	import { arrowNavigation } from '$lib/action/arrowNavigation';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 
 	/** 画面定義の状態は Context API 経由でのみ参照する */
@@ -19,7 +20,7 @@
 	const cellClass = 'px-3 py-2';
 </script>
 
-<Table hoverable shadow>
+<Table hoverable shadow data-arrow-nav-root>
 	<TableHead>
 		<TableHeadCell class="{cellClass} w-56">id</TableHeadCell>
 		<TableHeadCell class="{cellClass} w-28">type</TableHeadCell>
@@ -36,41 +37,49 @@
 			</TableBodyRow>
 		{:else}
 			<!-- WARN: key は編集対象の logicalId ではなく内部 id。key を変えると入力中に再マウントされフォーカスが飛ぶ。 -->
-			{#each uiDefinition.components as component (component.id)}
+			{#each uiDefinition.components as component, rowIndex (component.id)}
 				<TableBodyRow>
 					<TableBodyCell class={cellClass}>
-						<Input
-							size="sm"
-							placeholder="logicalId"
-							aria-label="{component.type} の論理ID"
-							bind:value={component.logicalId}
-						/>
+						<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
+							<Input
+								size="sm"
+								placeholder="logicalId"
+								aria-label="{component.type} の論理ID"
+								bind:value={component.logicalId}
+							/>
+						</span>
 					</TableBodyCell>
 					<TableBodyCell class={cellClass}>
 						<Badge color="gray">{component.type}</Badge>
 					</TableBodyCell>
 					<TableBodyCell class={cellClass}>
-						<Input
-							size="sm"
-							placeholder="表示ラベル"
-							aria-label="{component.type} のラベル"
-							bind:value={component.label}
-						/>
+						<span class="contents" use:arrowNavigation={{ field: 'label', row: rowIndex }}>
+							<Input
+								size="sm"
+								placeholder="表示ラベル"
+								aria-label="{component.type} のラベル"
+								bind:value={component.label}
+							/>
+						</span>
 					</TableBodyCell>
 					<TableBodyCell class={cellClass}>
-						<Input
-							size="sm"
-							placeholder="補足説明"
-							aria-label="{component.type} のヒント"
-							bind:value={component.hint}
-						/>
+						<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
+							<Input
+								size="sm"
+								placeholder="補足説明"
+								aria-label="{component.type} のヒント"
+								bind:value={component.hint}
+							/>
+						</span>
 					</TableBodyCell>
 					<TableBodyCell class="{cellClass} text-center">
-						<Toggle
-							class="justify-center"
-							aria-label="{component.type} の必須指定"
-							bind:checked={component.validation.required}
-						/>
+						<span class="contents" use:arrowNavigation={{ field: 'required', row: rowIndex }}>
+							<Toggle
+								class="justify-center"
+								aria-label="{component.type} の必須指定"
+								bind:checked={component.validation.required}
+							/>
+						</span>
 					</TableBodyCell>
 				</TableBodyRow>
 			{/each}
