@@ -1,0 +1,66 @@
+---
+description: Append daily development journals under .articles with YAML frontmatter
+alwaysApply: true
+---
+
+# Development Articles (開発日誌)
+
+Record development work as markdown under the project-root `.articles/` directory (flat — files directly under that folder, not nested).
+
+This is separate from `.design-logs/` (design proposal snapshots). Use `.articles/` for day-to-day implementation / investigation / planning journals.
+
+## File naming (daily)
+
+```
+YYYY-MM-DD.md
+```
+
+Example: `2026-08-07.md`
+
+- One file per calendar day (local time).
+- Append later work on the **same day** to the **end** of that file.
+- Do not create a new file for each task within the same day.
+
+## YAML frontmatter
+
+Every daily file must start with YAML frontmatter. Update fields when appending.
+
+| Key | Meaning |
+|---|---|
+| `created` | 作成日時 (ISO 8601 with offset, set once when the file is created) |
+| `updated` | 更新日時 (ISO 8601 with offset, refresh on every append) |
+| `summary` | 概要 (short summary of that day's work; revise as the day progresses) |
+| `categories` | カテゴリ (list: 実装, 設計, テスト, 調査, 計画, etc.) |
+
+Example:
+
+```markdown
+---
+created: "2026-08-07T00:02:00+09:00"
+updated: "2026-08-07T14:30:00+09:00"
+summary: "開発日誌ルールと .articles 運用を追加"
+categories:
+  - 計画
+  - 実装
+---
+```
+
+## Per-work section
+
+For each work session, append a subsection with:
+
+1. A short heading (what was done)
+2. **背景** — why it came up
+3. **目的** — what success looks like
+4. **作業手順** — what was actually done (steps / outcomes)
+
+## When to write
+
+- After meaningful implementation, design follow-up, investigation, testing, or planning work in a session.
+- Not required for trivial one-line answers with no durable project change.
+
+## Notes
+
+- Append-only for body sections within a day; update frontmatter `updated` / `summary` / `categories` as needed.
+- Prefer Japanese to match chat language unless the user asks otherwise.
+- Do not overwrite or delete earlier days' files unless the user asks.

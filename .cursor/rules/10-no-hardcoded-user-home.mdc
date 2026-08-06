@@ -1,0 +1,42 @@
+---
+description: Do not hardcode user home paths; use USERPROFILE / HOME / os.homedir()
+alwaysApply: true
+---
+
+# No Hardcoded User Home Paths
+
+Do **not** write absolute paths that embed a Windows (or macOS/Linux) user name, e.g. `C:\Users\Someone\...` or `/Users/someone/...`.
+
+## Prefer
+
+| Context | Use |
+|---|---|
+| Node / JS | `process.env.USERPROFILE` (Windows), `process.env.HOME`, or `os.homedir()` |
+| PowerShell | `$env:USERPROFILE` |
+| cmd | `%USERPROFILE%` |
+| Project files | Paths relative to the workspace / repo root |
+
+## Examples
+
+```powershell
+# ✅ GOOD
+Join-Path $env:USERPROFILE '.cursor\plans'
+
+# ❌ BAD
+C:\Users\Someone\.cursor\plans
+```
+
+```javascript
+// ✅ GOOD
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+join(homedir(), '.cursor', 'plans');
+
+// ❌ BAD
+'C:/Users/Someone/.cursor/plans'
+```
+
+## Notes
+
+- Cursor-injected paths in system context (terminals folder, agent-transcripts, skills) may still contain a user home; do **not** copy those absolute strings into project files, design logs, or articles.
+- When a tool requires an absolute path, build it from `homedir()` / `USERPROFILE` + relative segments, or from the workspace root.

@@ -1,0 +1,34 @@
+---
+description: Persist design proposal markdown snapshots under .design-logs
+alwaysApply: true
+---
+
+# Design Logs
+
+When proposing a design (architecture, dataflow, UI structure, module boundaries, or similar), save a markdown snapshot under the project-root `.design-logs/` directory (flat — files directly under that folder, not nested).
+
+## When to write
+
+- After drafting a design proposal in chat (or before asking the user to choose among options).
+- Not required for trivial one-line suggestions or pure implementation follow-ups with no new design.
+
+## File naming
+
+```
+YYYY-MM-DD-HHmm-<short-kebab-topic>.md
+```
+
+Example: `2026-08-06-2357-layout-editor-store.md`
+
+## Snapshot contents
+
+- Title and date
+- Problem / goal
+- Proposed approach (and alternatives if discussed)
+- Key decisions or open questions
+- Keep it self-contained so later sessions can recover the proposal without the chat
+
+## Notes
+
+- Append-only: do not overwrite or delete earlier snapshots unless the user asks.
+- English or Japanese is fine; match the proposal language used in chat.
