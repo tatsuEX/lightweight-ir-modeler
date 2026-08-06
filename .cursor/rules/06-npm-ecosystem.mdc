@@ -11,6 +11,17 @@ alwaysApply: true
 - Do not add/upgrade deps casually. Prefer known packages; review new install scripts / lockfile diffs.
 - Keep project `.npmrc` hardening (`ignore-scripts`, `min-release-age`, `allow-git=none`). After `ignore-scripts` installs, run needed trusted scripts explicitly (e.g. `npm run prepare`, targeted `npm rebuild`).
 
+## Command execution — permission required
+
+Rationale: the user is still building confidence with npm-native workflows and does not want commands running outside their understanding. Current policy is deliberately strict.
+
+- Allowed without asking: **read-only inspection of installed `node_modules`** — directory listing (e.g. `Get-ChildItem`) and reading file contents (source, `.d.ts`, theme/config files) to confirm an installed package's API.
+- **Never** run autonomously: installs / upgrades (`npm install`, `npm add`, `npm ci`, `npm update`) and any binary or script under `node_modules` (including `node_modules/.bin`, `npx`).
+- **Ask every time** before running `package.json` scripts (`npm run dev` / `build` / `check` / `lint` / `format` / `test`). State the exact command and why it is needed, then wait.
+- If verification requires a command, prefer reporting what should be run over running it.
+
+WARN: this gate is expected to loosen later. When a task would benefit from running scripts directly, it is fine to re-ask whether `package.json` scripts may run without confirmation.
+
 ## Config files — permission required
 
 - **Never** edit `package.json`, `package-lock.json`, `.npmrc`, `tsconfig*`, Vite/SvelteKit config, or similar without **explicit user approval**.

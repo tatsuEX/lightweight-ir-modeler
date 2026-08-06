@@ -2,7 +2,11 @@
 	"files.associations": {
 		"*.css": "tailwindcss"
 	},
-	"git.enabled": false,
-	"git.autofetch": false,
-	"git.autoRepositoryDetection": false
+	"cSpell.words": ["SSOT"],
+	"cSpell.languageSettings": [
+		{
+			"languageId": "markdown",
+			"allowCompoundWords": true
+		}
+	]
 }
