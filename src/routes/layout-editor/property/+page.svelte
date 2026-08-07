@@ -1,6 +1,17 @@
 <script lang="ts">
+	import { Button } from 'flowbite-svelte';
 	import ComponentAttributeTable from '$lib/components/ComponentAttributeTable.svelte';
 	import ComponentToolPalette from '$lib/components/ComponentToolPalette.svelte';
+
+	let selectedCount = $state(0);
+	let attributeTable = $state<ComponentAttributeTable | undefined>();
+
+	/**
+	 * 選択中の行を削除する
+	 */
+	function removeSelectedRows(): void {
+		attributeTable?.removeSelected();
+	}
 </script>
 
 <main>
@@ -11,7 +22,12 @@
 				UI コンポーネントの基本属性を編集する画面です。
 			</p>
 		</div>
-		<ComponentToolPalette />
+		<div class="flex shrink-0 items-center gap-2">
+			<Button color="red" disabled={selectedCount === 0} onclick={removeSelectedRows}>
+				選択行を削除
+			</Button>
+			<ComponentToolPalette />
+		</div>
 	</div>
-	<ComponentAttributeTable />
+	<ComponentAttributeTable bind:selectedCount bind:this={attributeTable} />
 </main>
