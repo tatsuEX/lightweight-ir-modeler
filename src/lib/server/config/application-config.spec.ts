@@ -246,8 +246,38 @@ describe('profile overlay', () => {
 		const config = parseApplicationConfigRoot(mergedRoot);
 
 		expect(config.app.name).toBe('lightweight-ir-modeler');
+		expect(config.app.io?.exportDir).toBe('./data/export');
 		expect(config.ir).toBeUndefined();
 		expect(config.preview.theme.default).toBe('tailwind-light');
-		expect(config.preview.transformTarget.options).toHaveLength(3);
+		expect(config.preview.transformTarget.options).toHaveLength(2);
+		expect(config.preview.transformTarget.options.map((option) => option.value)).toEqual([
+			'primefaces',
+			'im-forma'
+		]);
+	});
+});
+
+describe('app.io', () => {
+	it('parses exportDir', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+  io:
+    exportDir: ./data/export
+${minimalPreviewYaml}
+`);
+		expect(config.app.io).toEqual({ exportDir: './data/export' });
+	});
+
+	it('rejects empty exportDir', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+  io:
+    exportDir: "  "
+${minimalPreviewYaml}
+`)
+		).toThrow('app.io.exportDir" must be a non-empty string when set');
 	});
 });

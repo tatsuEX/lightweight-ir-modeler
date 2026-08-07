@@ -3,10 +3,9 @@
 
 app:
   name: lightweight-ir-modeler
-  # 将来の I/O 既定パスなど、起動時に固定したい値をここに置く
-  # io:
-  #   importDir: ./data/import
-  #   exportDir: ./data/export
+  io:
+    # importDir: ./data/import
+    exportDir: ./data/export
 
 ir:
   autoSave:

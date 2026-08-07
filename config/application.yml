@@ -3,10 +3,9 @@
 
 app:
   name: lightweight-ir-modeler
-  # 将来の I/O 既定パスなど、起動時に固定したい値をここに置く
-  # io:
-  #   importDir: ./data/import
-  #   exportDir: ./data/export
+  io:
+    # importDir: ./data/import
+    exportDir: ./data/export
 
 # プレビュー画面: テーマ選択と外部 UI 定義の出力先
 preview:
@@ -26,7 +25,5 @@ preview:
     options:
       - name: PrimeFaces
         value: primefaces
-      - name: Bootstrap
-        value: bootstrap
-      - name: Flowbite
-        value: flowbite
+      - name: IM-Forma
+        value: im-forma

@@ -19,11 +19,20 @@ export type IrAutoSaveConfig = {
 };
 
 /**
+ * アプリ I/O パス設定
+ */
+export type AppIoConfig = {
+	exportDir?: string;
+	importDir?: string;
+};
+
+/**
  * application.yml 相当の静的アプリ設定
  */
 export type ApplicationConfig = {
 	app: {
 		name: string;
+		io?: AppIoConfig;
 	};
 	ir?: {
 		autoSave?: IrAutoSaveConfig;
@@ -259,6 +268,37 @@ function parsePreview(raw: unknown): PreviewConfig {
 }
 
 /**
+ * app.io ブロックをパースする
+ */
+function parseAppIo(raw: unknown): AppIoConfig | undefined {
+	if (raw === undefined) {
+		return undefined;
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "app.io" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	const io: AppIoConfig = {};
+
+	if (block.exportDir !== undefined) {
+		if (typeof block.exportDir !== 'string' || block.exportDir.trim() === '') {
+			throw new Error('application config "app.io.exportDir" must be a non-empty string when set');
+		}
+		io.exportDir = block.exportDir.trim();
+	}
+
+	if (block.importDir !== undefined) {
+		if (typeof block.importDir !== 'string' || block.importDir.trim() === '') {
+			throw new Error('application config "app.io.importDir" must be a non-empty string when set');
+		}
+		io.importDir = block.importDir.trim();
+	}
+
+	return io;
+}
+
+/**
  * merge 済み mapping を ApplicationConfig としてパースする
  */
 export function parseApplicationConfigRoot(root: Record<string, unknown>): ApplicationConfig {
@@ -267,7 +307,8 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 		throw new Error('application config requires an "app" object');
 	}
 
-	const name = (app as Record<string, unknown>).name;
+	const appRecord = app as Record<string, unknown>;
+	const name = appRecord.name;
 	if (typeof name !== 'string' || name.length === 0) {
 		throw new Error('application config requires non-empty "app.name"');
 	}
@@ -277,8 +318,9 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 		throw new Error('application config requires a "preview" object');
 	}
 
+	const io = parseAppIo(appRecord.io);
 	const config: ApplicationConfig = {
-		app: { name },
+		app: io ? { name, io } : { name },
 		preview: parsePreview(previewBlock)
 	};
 
