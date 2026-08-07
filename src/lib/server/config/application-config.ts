@@ -2,6 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import { load } from 'js-yaml';
 import { env } from '$env/dynamic/private';
+import {
+	type PreviewConfig,
+	type PreviewSelectConfig,
+	type PreviewSelectOption
+} from '$lib/config/preview-config';
 
 /**
  * IR 自動保存設定
@@ -23,6 +28,7 @@ export type ApplicationConfig = {
 	ir?: {
 		autoSave?: IrAutoSaveConfig;
 	};
+	preview: PreviewConfig;
 };
 
 let cached: ApplicationConfig | undefined;
@@ -175,6 +181,84 @@ function parseIrAutoSave(raw: unknown): IrAutoSaveConfig | undefined {
 }
 
 /**
+ * preview の Select options 配列をパースする
+ */
+function parsePreviewSelectOptions(raw: unknown, pathPrefix: string): PreviewSelectOption[] {
+	if (!Array.isArray(raw) || raw.length === 0) {
+		throw new Error(`application config "${pathPrefix}.options" must be a non-empty array`);
+	}
+
+	return raw.map((item, index) => {
+		if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+			throw new Error(`application config "${pathPrefix}.options[${index}]" must be an object`);
+		}
+
+		const option = item as Record<string, unknown>;
+		const name = option.name;
+		const value = option.value;
+
+		if (typeof name !== 'string' || name.trim() === '') {
+			throw new Error(
+				`application config "${pathPrefix}.options[${index}].name" must be a non-empty string`
+			);
+		}
+		if (typeof value !== 'string' || value.trim() === '') {
+			throw new Error(
+				`application config "${pathPrefix}.options[${index}].value" must be a non-empty string`
+			);
+		}
+
+		return { name: name.trim(), value: value.trim() };
+	});
+}
+
+/**
+ * preview の theme / transformTarget ブロックをパースする
+ */
+function parsePreviewSelectConfig(raw: unknown, blockName: string): PreviewSelectConfig {
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error(`application config "preview.${blockName}" must be an object`);
+	}
+
+	const block = raw as Record<string, unknown>;
+	const pathPrefix = `preview.${blockName}`;
+	const defaultValue = block.default;
+	const options = parsePreviewSelectOptions(block.options, pathPrefix);
+
+	if (typeof defaultValue !== 'string' || defaultValue.trim() === '') {
+		throw new Error(`application config "${pathPrefix}.default" must be a non-empty string`);
+	}
+
+	const trimmedDefault = defaultValue.trim();
+	const matched = options.find((option) => option.value === trimmedDefault);
+	if (!matched) {
+		throw new Error(
+			`application config "${pathPrefix}.default" must match one of options[].value`
+		);
+	}
+
+	return {
+		default: trimmedDefault,
+		options
+	};
+}
+
+/**
+ * preview ブロックをパースする
+ */
+function parsePreview(raw: unknown): PreviewConfig {
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "preview" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	return {
+		theme: parsePreviewSelectConfig(block.theme, 'theme'),
+		transformTarget: parsePreviewSelectConfig(block.transformTarget, 'transformTarget')
+	};
+}
+
+/**
  * merge 済み mapping を ApplicationConfig としてパースする
  */
 export function parseApplicationConfigRoot(root: Record<string, unknown>): ApplicationConfig {
@@ -188,7 +272,15 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 		throw new Error('application config requires non-empty "app.name"');
 	}
 
-	const config: ApplicationConfig = { app: { name } };
+	const previewBlock = root.preview;
+	if (previewBlock === undefined) {
+		throw new Error('application config requires a "preview" object');
+	}
+
+	const config: ApplicationConfig = {
+		app: { name },
+		preview: parsePreview(previewBlock)
+	};
 
 	const ir = root.ir;
 	if (ir !== undefined) {

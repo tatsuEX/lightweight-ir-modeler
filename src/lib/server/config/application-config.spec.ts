@@ -7,19 +7,35 @@ import {
 	resolveProfileConfigPath
 } from '$lib/server/config/application-config';
 
+const minimalPreviewYaml = `
+preview:
+  theme:
+    default: tailwind-dark
+    options:
+      - name: Tailwind Dark
+        value: tailwind-dark
+  transformTarget:
+    default: primefaces
+    options:
+      - name: PrimeFaces
+        value: primefaces
+`;
+
 describe('parseApplicationConfig', () => {
-	it('parses app.name only', () => {
-		const config = parseApplicationConfig(`
+	it('requires preview object', () => {
+		expect(() =>
+			parseApplicationConfig(`
 app:
   name: test-app
-`);
-		expect(config).toEqual({ app: { name: 'test-app' } });
+`)
+		).toThrow('application config requires a "preview" object');
 	});
 
 	it('parses ir.autoSave with defaults when disabled', () => {
 		const config = parseApplicationConfig(`
 app:
   name: test-app
+${minimalPreviewYaml}
 ir:
   autoSave:
     enabled: false
@@ -37,6 +53,7 @@ ir:
 		const config = parseApplicationConfig(`
 app:
   name: test-app
+${minimalPreviewYaml}
 ir:
   autoSave:
     enabled: true
@@ -57,6 +74,7 @@ ir:
 			parseApplicationConfig(`
 app:
   name: test-app
+${minimalPreviewYaml}
 ir:
   autoSave:
     enabled: true
@@ -69,6 +87,7 @@ ir:
 			parseApplicationConfig(`
 app:
   name: test-app
+${minimalPreviewYaml}
 ir:
   autoSave:
     enabled: true
@@ -83,6 +102,7 @@ ir:
 			parseApplicationConfig(`
 app:
   name: test-app
+${minimalPreviewYaml}
 ir:
   autoSave:
     enabled: true
@@ -90,6 +110,95 @@ ir:
     maxGenerations: 1
 `)
 		).toThrow('ir.autoSave.maxGenerations" must be an integer >= 2');
+	});
+
+	it('parses preview.theme and preview.transformTarget', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+preview:
+  theme:
+    default: tailwind-dark
+    options:
+      - name: Tailwind Dark
+        value: tailwind-dark
+      - name: Tailwind Light
+        value: tailwind-light
+  transformTarget:
+    default: primefaces
+    options:
+      - name: PrimeFaces
+        value: primefaces
+`);
+		expect(config.preview).toEqual({
+			theme: {
+				default: 'tailwind-dark',
+				options: [
+					{ name: 'Tailwind Dark', value: 'tailwind-dark' },
+					{ name: 'Tailwind Light', value: 'tailwind-light' }
+				]
+			},
+			transformTarget: {
+				default: 'primefaces',
+				options: [{ name: 'PrimeFaces', value: 'primefaces' }]
+			}
+		});
+	});
+
+	it('requires preview default to match an option value', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+preview:
+  theme:
+    default: missing
+    options:
+      - name: Tailwind Dark
+        value: tailwind-dark
+  transformTarget:
+    default: primefaces
+    options:
+      - name: PrimeFaces
+        value: primefaces
+`)
+		).toThrow('preview.theme.default" must match one of options[].value');
+	});
+
+	it('rejects empty preview.theme options', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+preview:
+  theme:
+    default: tailwind-dark
+    options: []
+  transformTarget:
+    default: primefaces
+    options:
+      - name: PrimeFaces
+        value: primefaces
+`)
+		).toThrow('preview.theme.options" must be a non-empty array');
+	});
+
+	it('rejects empty preview.transformTarget options', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+preview:
+  theme:
+    default: tailwind-dark
+    options:
+      - name: Tailwind Dark
+        value: tailwind-dark
+  transformTarget:
+    default: primefaces
+    options: []
+`)
+		).toThrow('preview.transformTarget.options" must be a non-empty array');
 	});
 });
 
@@ -138,5 +247,7 @@ describe('profile overlay', () => {
 
 		expect(config.app.name).toBe('lightweight-ir-modeler');
 		expect(config.ir).toBeUndefined();
+		expect(config.preview.theme.default).toBe('tailwind-light');
+		expect(config.preview.transformTarget.options).toHaveLength(3);
 	});
 });

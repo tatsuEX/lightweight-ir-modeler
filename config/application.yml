@@ -7,3 +7,26 @@ app:
   # io:
   #   importDir: ./data/import
   #   exportDir: ./data/export
+
+# プレビュー画面: テーマ選択と外部 UI 定義の出力先
+preview:
+  theme:
+    default: tailwind-light
+    options:
+      - name: Tailwind Dark
+        value: tailwind-dark
+      - name: Tailwind Light
+        value: tailwind-light
+      - name: Bootstrap Dark
+        value: bootstrap-dark
+      - name: Bootstrap Light
+        value: bootstrap-light
+  transformTarget:
+    default: primefaces
+    options:
+      - name: PrimeFaces
+        value: primefaces
+      - name: Bootstrap
+        value: bootstrap
+      - name: Flowbite
+        value: flowbite
