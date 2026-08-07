@@ -1,5 +1,10 @@
 import { dump, load } from 'js-yaml';
 import { nanoid } from 'nanoid';
+import {
+	toEditorMeta,
+	type UiDefinitionEditorMeta,
+	type UiDefinitionSnapshotMeta
+} from '$lib/ir/ui-definition-meta';
 
 /** snapshot ファイル形式のバージョン */
 export const IR_SNAPSHOT_VERSION = 1;
@@ -34,6 +39,7 @@ export const SNAPSHOT_RESTORE_GENERATORS: Record<string, () => unknown> = {
 export type IrSnapshot = {
 	version: typeof IR_SNAPSHOT_VERSION;
 	savedAt: string;
+	uiDefinition?: UiDefinitionSnapshotMeta;
 	components: unknown[];
 };
 
@@ -156,10 +162,15 @@ export function restoreSnapshotComponents(
 /**
  * components 配列から IrSnapshot を組み立てる
  */
-export function createIrSnapshot(components: unknown[], savedAt: Date = new Date()): IrSnapshot {
+export function createIrSnapshot(
+	uiDefinition: UiDefinitionSnapshotMeta,
+	components: unknown[],
+	savedAt: Date = new Date()
+): IrSnapshot {
 	return {
 		version: IR_SNAPSHOT_VERSION,
 		savedAt: savedAt.toISOString(),
+		uiDefinition,
 		components: stripSnapshotComponents(components)
 	};
 }
@@ -183,9 +194,18 @@ export function parseIrSnapshot(value: unknown): IrSnapshot {
 		throw new Error('IR snapshot requires "components" array');
 	}
 
+	const uiDefinition = root.uiDefinition;
+	if (
+		uiDefinition !== undefined &&
+		(uiDefinition === null || typeof uiDefinition !== 'object' || Array.isArray(uiDefinition))
+	) {
+		throw new Error('IR snapshot "uiDefinition" must be an object when present');
+	}
+
 	return {
 		version: IR_SNAPSHOT_VERSION,
 		savedAt: root.savedAt,
+		uiDefinition: uiDefinition as UiDefinitionSnapshotMeta | undefined,
 		components: root.components
 	};
 }
@@ -195,6 +215,22 @@ export function parseIrSnapshot(value: unknown): IrSnapshot {
  */
 export function normalizeComponentsForCompare(components: unknown[]): string {
 	return dump({ components: stripSnapshotComponents(components) }, { sortKeys: true, lineWidth: -1 });
+}
+
+/**
+ * uiDefinition + components の内容を比較用に正規化する
+ */
+export function normalizeSnapshotForCompare(
+	uiDefinition: UiDefinitionEditorMeta | UiDefinitionSnapshotMeta,
+	components: unknown[]
+): string {
+	return dump(
+		{
+			uiDefinition: toEditorMeta(uiDefinition),
+			components: stripSnapshotComponents(components)
+		},
+		{ sortKeys: true, lineWidth: -1 }
+	);
 }
 
 /**

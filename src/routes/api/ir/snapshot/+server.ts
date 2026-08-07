@@ -1,7 +1,35 @@
 import { json } from '@sveltejs/kit';
+import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
-import { writeSnapshot } from '$lib/server/io/ir-snapshot-io';
+import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
 import type { RequestHandler } from './$types';
+
+/**
+ * logicalId 別ディレクトリの最新 snapshot を取得する
+ */
+export const GET: RequestHandler = async ({ url }) => {
+	const config = loadApplicationConfig();
+	if (!config.ir?.autoSave?.enabled) {
+		return json({ error: 'autoSave is disabled' }, { status: 403 });
+	}
+
+	const logicalId = url.searchParams.get('logicalId')?.trim() ?? '';
+	if (!isValidLogicalId(logicalId)) {
+		return json({ error: 'logicalId is required and must be a valid identifier' }, { status: 400 });
+	}
+
+	try {
+		const snapshot = await readLatestSnapshotIfEnabled(logicalId);
+		if (!snapshot) {
+			return json({ error: 'snapshot not found' }, { status: 404 });
+		}
+
+		return json(snapshot);
+	} catch (error) {
+		console.warn('[api/ir/snapshot] read failed:', error);
+		return json({ error: 'failed to read snapshot' }, { status: 500 });
+	}
+};
 
 /**
  * 編集中 UI 定義の snapshot を保存する
@@ -23,13 +51,30 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'body must be an object' }, { status: 400 });
 	}
 
-	const components = (body as Record<string, unknown>).components;
+	const record = body as Record<string, unknown>;
+	const components = record.components;
 	if (!Array.isArray(components)) {
 		return json({ error: 'components must be an array' }, { status: 400 });
 	}
 
+	const uiDefinitionRaw = record.uiDefinition;
+	if (
+		uiDefinitionRaw === null ||
+		typeof uiDefinitionRaw !== 'object' ||
+		Array.isArray(uiDefinitionRaw)
+	) {
+		return json({ error: 'uiDefinition must be an object' }, { status: 400 });
+	}
+
+	const uiDefinitionRecord = uiDefinitionRaw as Record<string, unknown>;
+	const editorMeta = parseEditorMetaFromRecord(uiDefinitionRecord);
+
+	if (!isUiDefinitionMetaReady(editorMeta) || !isValidLogicalId(editorMeta.logicalId)) {
+		return json({ error: 'uiDefinition.logicalId and uiDefinition.name are required' }, { status: 400 });
+	}
+
 	try {
-		const result = await writeSnapshot(components);
+		const result = await writeSnapshot(editorMeta, components);
 		return json(result, { status: result.skipped ? 200 : 201 });
 	} catch (error) {
 		console.warn('[api/ir/snapshot] write failed:', error);

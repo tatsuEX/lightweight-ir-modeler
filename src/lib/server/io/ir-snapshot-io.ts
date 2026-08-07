@@ -3,11 +3,19 @@ import { join } from 'node:path';
 import {
 	createIrSnapshot,
 	deserializeIrSnapshot,
-	normalizeComponentsForCompare,
+	normalizeSnapshotForCompare,
 	restoreSnapshotComponents,
 	serializeIrSnapshot,
 	type IrSnapshot
 } from '$lib/ir/snapshot';
+import {
+	assertSafeLogicalIdPathSegment,
+	buildSnapshotMetaForWrite,
+	createEmptyUiDefinitionMeta,
+	toEditorMeta,
+	type UiDefinitionEditorMeta,
+	type UiDefinitionSnapshotMeta
+} from '$lib/ir/ui-definition-meta';
 import {
 	loadApplicationConfig,
 	resolveApplicationPath,
@@ -24,6 +32,7 @@ const MAX_SNAPSHOT_WRITE_ATTEMPTS = 100;
  */
 function formatSnapshotTimestamp(date: Date): string {
 	const pad = (value: number) => String(value).padStart(2, '0');
+
 	return [
 		date.getFullYear(),
 		pad(date.getMonth() + 1),
@@ -41,17 +50,31 @@ function formatSnapshotTimestamp(date: Date): string {
 function getAutoSaveConfig(): IrAutoSaveConfig {
 	const config = loadApplicationConfig();
 	const autoSave = config.ir?.autoSave;
+
 	if (!autoSave?.enabled) {
 		throw new Error('ir.autoSave is not enabled');
 	}
+
 	return autoSave;
 }
 
 /**
  * autoSave.dir を絶対パスへ解決する
  */
-function resolveSnapshotDir(autoSave: IrAutoSaveConfig): string {
+function resolveSnapshotBaseDir(autoSave: IrAutoSaveConfig): string {
 	return resolveApplicationPath(autoSave.dir);
+}
+
+/**
+ * logicalId ごとの snapshot 保存ディレクトリを解決する
+ */
+export function resolveSnapshotDirForLogicalId(
+	autoSave: IrAutoSaveConfig,
+	logicalId: string
+): string {
+	const safeLogicalId = assertSafeLogicalIdPathSegment(logicalId);
+
+	return join(resolveSnapshotBaseDir(autoSave), safeLogicalId);
 }
 
 /**
@@ -68,6 +91,7 @@ function snapshotSortKey(filename: string): string {
 	if (!filename.startsWith(SNAPSHOT_PREFIX) || !filename.endsWith(SNAPSHOT_SUFFIX)) {
 		return '';
 	}
+
 	return filename.slice(SNAPSHOT_PREFIX.length, -SNAPSHOT_SUFFIX.length);
 }
 
@@ -76,18 +100,44 @@ function snapshotSortKey(filename: string): string {
  */
 export async function listSnapshotFilenames(dir: string): Promise<string[]> {
 	let entries: string[];
+
 	try {
 		entries = await readdir(dir);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
 			return [];
 		}
+
 		throw error;
 	}
 
 	return entries
 		.filter((name) => name.startsWith(SNAPSHOT_PREFIX) && name.endsWith(SNAPSHOT_SUFFIX))
 		.sort((a, b) => snapshotSortKey(b).localeCompare(snapshotSortKey(a)));
+}
+
+/**
+ * autoSave.dir 配下の logicalId ディレクトリ名を列挙する
+ */
+export async function listSnapshotLogicalIds(): Promise<string[]> {
+	const autoSave = getAutoSaveConfig();
+	const baseDir = resolveSnapshotBaseDir(autoSave);
+	let entries;
+
+	try {
+		entries = await readdir(baseDir, { withFileTypes: true });
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+			return [];
+		}
+
+		throw error;
+	}
+
+	return entries
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name)
+		.sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -107,39 +157,71 @@ export async function pruneSnapshots(dir: string, maxGenerations: number): Promi
 }
 
 /**
- * 最新 snapshot の components と同一か判定する
+ * 最新 snapshot の uiDefinition メタデータを取得する
  */
-async function isSameAsLatestSnapshot(dir: string, components: unknown[]): Promise<boolean> {
+async function readLatestSnapshotMeta(dir: string): Promise<UiDefinitionSnapshotMeta | null> {
 	const filenames = await listSnapshotFilenames(dir);
 	const latest = filenames[0];
+
+	if (!latest) {
+		return null;
+	}
+
+	const yamlText = await readFile(join(dir, latest), 'utf8');
+	const snapshot = deserializeIrSnapshot(yamlText);
+
+	return snapshot.uiDefinition ?? null;
+}
+
+/**
+ * 最新 snapshot の内容と同一か判定する
+ */
+async function isSameAsLatestSnapshot(
+	dir: string,
+	editorMeta: UiDefinitionEditorMeta,
+	components: unknown[]
+): Promise<boolean> {
+	const filenames = await listSnapshotFilenames(dir);
+	const latest = filenames[0];
+
 	if (!latest) {
 		return false;
 	}
 
 	const yamlText = await readFile(join(dir, latest), 'utf8');
 	const snapshot = deserializeIrSnapshot(yamlText);
-	return normalizeComponentsForCompare(snapshot.components) === normalizeComponentsForCompare(components);
+	const snapshotEditorMeta = snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : editorMeta;
+
+	return (
+		normalizeSnapshotForCompare(snapshotEditorMeta, snapshot.components) ===
+		normalizeSnapshotForCompare(editorMeta, components)
+	);
 }
 
 /**
- * components を YAML snapshot として書き込む
+ * components を logicalId 別ディレクトリへ YAML snapshot として書き込む
  */
 export async function writeSnapshot(
+	editorMeta: UiDefinitionEditorMeta,
 	components: unknown[]
 ): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
 	const autoSave = getAutoSaveConfig();
-	const dir = resolveSnapshotDir(autoSave);
+	const dir = resolveSnapshotDirForLogicalId(autoSave, editorMeta.logicalId);
+
 	await mkdir(dir, { recursive: true });
 
-	if (await isSameAsLatestSnapshot(dir, components)) {
+	if (await isSameAsLatestSnapshot(dir, editorMeta, components)) {
 		const filenames = await listSnapshotFilenames(dir);
 		const latest = filenames[0];
 		const yamlText = await readFile(join(dir, latest), 'utf8');
 		const snapshot = deserializeIrSnapshot(yamlText);
+
 		return { filename: latest, savedAt: snapshot.savedAt, skipped: true };
 	}
 
 	const savedAt = new Date();
+	const previousMeta = await readLatestSnapshotMeta(dir);
+	const uiDefinition = buildSnapshotMetaForWrite(editorMeta, previousMeta, savedAt);
 
 	for (let attempt = 1; attempt <= MAX_SNAPSHOT_WRITE_ATTEMPTS; attempt += 1) {
 		const suffix = attempt === 1 ? '' : `-${attempt}`;
@@ -147,9 +229,11 @@ export async function writeSnapshot(
 		const targetPath = join(dir, filename);
 
 		try {
-			const snapshot = createIrSnapshot(components, savedAt);
+			const snapshot = createIrSnapshot(uiDefinition, components, savedAt);
+
 			await writeFile(targetPath, serializeIrSnapshot(snapshot), { encoding: 'utf8', flag: 'wx' });
 			await pruneSnapshots(dir, autoSave.maxGenerations);
+
 			return { filename, savedAt: snapshot.savedAt, skipped: false };
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
@@ -164,32 +248,43 @@ export async function writeSnapshot(
 }
 
 /**
- * 最新 snapshot を読み込む（存在しない場合は null）
+ * logicalId 別ディレクトリから最新 snapshot を読み込む（存在しない場合は null）
  */
-export async function readLatestSnapshot(): Promise<IrSnapshot | null> {
+export async function readLatestSnapshot(logicalId: string): Promise<IrSnapshot | null> {
 	const autoSave = getAutoSaveConfig();
-	const dir = resolveSnapshotDir(autoSave);
+	const dir = resolveSnapshotDirForLogicalId(autoSave, logicalId);
 	const filenames = await listSnapshotFilenames(dir);
 	const latest = filenames[0];
+
 	if (!latest) {
 		return null;
 	}
 
 	const yamlText = await readFile(join(dir, latest), 'utf8');
 	const snapshot = deserializeIrSnapshot(yamlText);
+	const editorDefaults = createEmptyUiDefinitionMeta();
+
 	return {
 		...snapshot,
+		uiDefinition: snapshot.uiDefinition ?? {
+			...editorDefaults,
+			logicalId: assertSafeLogicalIdPathSegment(logicalId),
+			createdAt: snapshot.savedAt,
+			modifiedAt: snapshot.savedAt
+		},
 		components: restoreSnapshotComponents(snapshot.components)
 	};
 }
 
 /**
- * autoSave が有効な場合のみ最新 snapshot を読み込む
+ * autoSave が有効な場合のみ logicalId 別ディレクトリから最新 snapshot を読み込む
  */
-export async function readLatestSnapshotIfEnabled(): Promise<IrSnapshot | null> {
+export async function readLatestSnapshotIfEnabled(logicalId: string): Promise<IrSnapshot | null> {
 	const config = loadApplicationConfig();
+
 	if (!config.ir?.autoSave?.enabled) {
 		return null;
 	}
-	return readLatestSnapshot();
+
+	return readLatestSnapshot(logicalId);
 }

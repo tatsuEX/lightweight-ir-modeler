@@ -1,4 +1,5 @@
 import { debounce } from '$lib/utils/debounce';
+import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
 import type { UIDefinition } from './layout-editor.svelte';
 
 /**
@@ -10,6 +11,21 @@ export type IrAutoSaveOptions = {
 };
 
 /**
+ * 保存ペイロードの比較用ハッシュを生成する
+ */
+function buildSaveHash(uiDefinition: UIDefinition): string {
+	return JSON.stringify({
+		uiDefinition: {
+			logicalId: uiDefinition.logicalId,
+			name: uiDefinition.name,
+			description: uiDefinition.description,
+			version: uiDefinition.version
+		},
+		components: uiDefinition.components
+	});
+}
+
+/**
  * 編集途絶え後に snapshot API へ POST する debounce を UIDefinition に接続する
  */
 export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSaveOptions): void {
@@ -17,12 +33,16 @@ export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSave
 		return;
 	}
 
-	let lastSavedHash = JSON.stringify(uiDefinition.components);
+	let lastSavedHash = buildSaveHash(uiDefinition);
 
 	const saveSnapshot = debounce(
-		(components: readonly unknown[], snapshot: string) => {
+		(payload: { uiDefinition: UiDefinitionEditorMeta; components: readonly unknown[] }, snapshot: string) => {
 			void (async () => {
 				if (snapshot === lastSavedHash) {
+					return;
+				}
+
+				if (!isUiDefinitionMetaReady(payload.uiDefinition)) {
 					return;
 				}
 
@@ -30,7 +50,7 @@ export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSave
 					const response = await fetch('/api/ir/snapshot', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ components })
+						body: JSON.stringify(payload)
 					});
 
 					if (response.ok) {
@@ -48,9 +68,17 @@ export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSave
 	);
 
 	$effect(() => {
-		const components = uiDefinition.components;
-		const snapshot = JSON.stringify(components);
-		saveSnapshot(components, snapshot);
+		const payload = {
+			uiDefinition: {
+				logicalId: uiDefinition.logicalId,
+				name: uiDefinition.name,
+				description: uiDefinition.description,
+				version: uiDefinition.version
+			},
+			components: uiDefinition.components
+		};
+		const snapshot = buildSaveHash(uiDefinition);
+		saveSnapshot(payload, snapshot);
 
 		return () => {
 			saveSnapshot.cancel();

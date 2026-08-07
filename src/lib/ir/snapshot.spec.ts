@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createEmptyUiDefinitionMeta } from '$lib/ir/ui-definition-meta';
 import {
 	createIrSnapshot,
 	deserializeIrSnapshot,
@@ -10,16 +11,30 @@ import {
 	stripSnapshotComponents
 } from '$lib/ir/snapshot';
 
+const sampleEditorMeta = {
+	...createEmptyUiDefinitionMeta(),
+	logicalId: 'userRegistration',
+	name: 'ユーザー登録'
+};
+
+const sampleSnapshotMeta = {
+	...sampleEditorMeta,
+	createdAt: '2026-08-07T10:00:00.000Z',
+	modifiedAt: '2026-08-07T10:00:00.000Z'
+};
+
 describe('ir snapshot', () => {
 	it('strips excluded keys when creating snapshot', () => {
-		const snapshot = createIrSnapshot([{ id: 'internal-id', type: 'textbox', label: 'A' }]);
+		const snapshot = createIrSnapshot(sampleSnapshotMeta, [{ id: 'internal-id', type: 'textbox', label: 'A' }]);
 		expect(snapshot.components[0]).toEqual({ type: 'textbox', label: 'A' });
+		expect(snapshot.uiDefinition).toEqual(sampleSnapshotMeta);
 	});
 
 	it('round-trips persisted payload without excluded keys', () => {
-		const snapshot = createIrSnapshot([{ id: 'internal-id', type: 'textbox', label: 'A' }]);
+		const snapshot = createIrSnapshot(sampleSnapshotMeta, [{ id: 'internal-id', type: 'textbox', label: 'A' }]);
 		const restored = deserializeIrSnapshot(serializeIrSnapshot(snapshot));
 		expect(restored.components[0]).toEqual({ type: 'textbox', label: 'A' });
+		expect(restored.uiDefinition).toEqual(sampleSnapshotMeta);
 	});
 
 	it('restoreSnapshotComponents assigns generated values', () => {
