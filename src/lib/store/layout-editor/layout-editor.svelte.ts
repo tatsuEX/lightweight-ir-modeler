@@ -56,6 +56,13 @@ export class UIDefinition {
         ...items
         );
     }
+
+    /**
+     * snapshot から画面定義を復元する
+     */
+    loadSnapshot(components: unknown[]): void {
+        this.replaceComponents(structuredClone(components) as any[]);
+    }
 }
 
 // 注意: ファクトリの引数/戻り値は IR 要素モデル確定後に型設計する。現状は any。
