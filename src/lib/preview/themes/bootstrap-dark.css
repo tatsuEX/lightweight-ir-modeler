@@ -1,0 +1,16 @@
+.preview-theme--bootstrap-dark {
+	--preview-control-padding: 0.375rem 0.75rem;
+	--preview-control-border: 1px solid #495057;
+	--preview-control-radius: 0.375rem;
+	--preview-control-bg: #212529;
+	--preview-control-color: #f8f9fa;
+	--preview-hint-color: #adb5bd;
+	--preview-unknown-bg: #343a40;
+	--preview-unknown-border: #495057;
+}
+
+.preview-theme--bootstrap-dark .preview-field__control:focus {
+	border-color: #86b7fe;
+	outline: 0;
+	box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}

@@ -1,0 +1,15 @@
+.preview-theme--tailwind-light {
+	--preview-control-padding: 0.5rem 0.75rem;
+	--preview-control-border: 1px solid #d1d5db;
+	--preview-control-radius: 0.375rem;
+	--preview-control-bg: #ffffff;
+	--preview-control-color: #111827;
+	--preview-hint-color: #6b7280;
+}
+
+.preview-theme--tailwind-light .preview-field__control:focus {
+	outline: 2px solid transparent;
+	outline-offset: 2px;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}

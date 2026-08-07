@@ -159,7 +159,7 @@
 				<Textarea
 					id="ui-definition-description"
 					class="w-full"
-					rows={2}
+					rows={4}
 					placeholder="画面の説明"
 					aria-label="画面の説明"
 					bind:value={uiDefinition.description}

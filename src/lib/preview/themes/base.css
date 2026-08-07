@@ -1,0 +1,41 @@
+/* プレビューフィールド共通（テーマ非依存の構造スタイル） */
+
+.preview-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.preview-field__control {
+	width: 100%;
+	box-sizing: border-box;
+	padding: var(--preview-control-padding, 0.375rem 0.75rem);
+	border: var(--preview-control-border, 1px solid #ccc);
+	border-radius: var(--preview-control-radius, 4px);
+	background-color: var(--preview-control-bg, #fff);
+	color: var(--preview-control-color, inherit);
+	font-size: var(--preview-control-font-size, 1rem);
+	line-height: var(--preview-control-line-height, 1.5);
+}
+
+.preview-field__control:disabled,
+.preview-field__control[readonly] {
+	opacity: var(--preview-control-disabled-opacity, 0.65);
+	cursor: not-allowed;
+}
+
+.preview-field__hint {
+	margin: 0;
+	font-size: var(--preview-hint-font-size, 0.875rem);
+	color: var(--preview-hint-color, #6b7280);
+}
+
+.preview-field__unknown {
+	margin: 0;
+	padding: 0.375rem 0.75rem;
+	border: 1px dashed var(--preview-unknown-border, #d1d5db);
+	border-radius: var(--preview-control-radius, 4px);
+	font-size: 0.875rem;
+	color: var(--preview-hint-color, #6b7280);
+	background-color: var(--preview-unknown-bg, #f9fafb);
+}
