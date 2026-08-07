@@ -1,5 +1,5 @@
 # アプリケーション静的設定（Spring の application.yml 相当）
-# パスは .env の APP_CONFIG_PATH で指定する
+# ベース設定。環境個別値は APP_PROFILE による application-{profile}.yml で上書きする
 
 app:
   name: lightweight-ir-modeler

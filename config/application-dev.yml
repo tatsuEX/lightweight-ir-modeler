@@ -1,0 +1,16 @@
+# 開発環境 overlay（Spring の application-dev.yml 相当）
+# APP_PROFILE=dev のとき application.yml へ merge される
+
+app:
+  name: lightweight-ir-modeler
+  # 将来の I/O 既定パスなど、起動時に固定したい値をここに置く
+  # io:
+  #   importDir: ./data/import
+  #   exportDir: ./data/export
+
+ir:
+  autoSave:
+    enabled: true
+    delay: 500
+    dir: ./data/ir
+    maxGenerations: 10
