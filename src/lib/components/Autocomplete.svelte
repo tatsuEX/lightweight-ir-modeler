@@ -224,6 +224,7 @@
 		onfocus={handleFocus}
 		oninput={handleInput}
 		onkeydown={handleInputKeydown}
+		autocomplete="off"
 	/>
 	<Dropdown
 		simple

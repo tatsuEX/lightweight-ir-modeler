@@ -10,6 +10,8 @@
 
 	let metaOpen = $state(true);
 	let logicalIdOptions = $state<string[]>([]);
+	/** 入力中の logicalId（blur / 候補選択確定時のみ store へ反映する） */
+	let logicalIdInput = $state(uiDefinition.logicalId);
 
 	const accordionHeader = $derived(
 		isUiDefinitionMetaReady(uiDefinition)
@@ -37,20 +39,36 @@
 	}
 
 	/**
-	 * logicalId 確定時に既存 snapshot があれば hydrate する
+	 * 入力中 logicalId を store へ確定反映する
+	 * @returns logicalId が前回確定値から変わった場合 true
 	 */
-	async function tryHydrateFromLogicalId(): Promise<void> {
+	function commitLogicalIdInput(): boolean {
+		const trimmed = logicalIdInput.trim();
+		logicalIdInput = trimmed;
+		if (trimmed === uiDefinition.logicalId) {
+			return false;
+		}
+		uiDefinition.logicalId = trimmed;
+		return true;
+	}
+
+	/**
+	 * logicalId 変更確定後、当該 snapshot ディレクトリから UI 定義を復元する
+	 */
+	async function restoreFromSnapshotDirectory(): Promise<void> {
 		const logicalId = uiDefinition.logicalId.trim();
 		if (!isValidLogicalId(logicalId)) {
-			return;
-		}
-		if (uiDefinition.components.length > 0 || uiDefinition.name.trim().length > 0) {
 			return;
 		}
 
 		try {
 			const response = await fetch(`/api/ir/snapshot?logicalId=${encodeURIComponent(logicalId)}`);
+			if (response.status === 404) {
+				// WARN: 404 時は現状維持（コピー作成ユースケースで中身を引き継ぐ）
+				return;
+			}
 			if (!response.ok) {
+				console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', response.status);
 				return;
 			}
 
@@ -70,9 +88,20 @@
 				snapshot.components ?? [],
 				snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : undefined
 			);
+			logicalIdInput = uiDefinition.logicalId;
 		} catch (error) {
-			console.warn('[UiDefinitionMetaAccordion] failed to hydrate snapshot:', error);
+			console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', error);
 		}
+	}
+
+	/**
+	 * logicalId の入力確定（blur / 候補選択）を処理する
+	 */
+	function handleLogicalIdCommit(): void {
+		if (!commitLogicalIdInput()) {
+			return;
+		}
+		void restoreFromSnapshotDirectory();
 	}
 
 	onMount(() => {
@@ -105,10 +134,9 @@
 					aria-label="画面定義 ID"
 					options={logicalIdOptions}
 					debounceMs={300}
-					bind:value={uiDefinition.logicalId}
-					onblur={() => {
-						void tryHydrateFromLogicalId();
-					}}
+					bind:value={logicalIdInput}
+					onblur={handleLogicalIdCommit}
+					onselect={handleLogicalIdCommit}
 				/>
 			</div>
 
