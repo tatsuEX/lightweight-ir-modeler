@@ -11,6 +11,104 @@ const FOCUSABLE_SELECTOR =
 
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
+/** 同一入力欄の端での連続左右キー押下を追跡する */
+type EdgeArrowState = {
+	key: 'ArrowLeft' | 'ArrowRight';
+	element: HTMLElement;
+};
+
+let edgeArrowState: EdgeArrowState | null = null;
+
+/**
+ * テキスト入力としてキャレット位置を扱う要素か判定する
+ */
+function isTextEntryInput(
+	element: HTMLElement
+): element is HTMLInputElement | HTMLTextAreaElement {
+	if (element instanceof HTMLTextAreaElement) {
+		return true;
+	}
+	if (!(element instanceof HTMLInputElement)) {
+		return false;
+	}
+	const textTypes = new Set(['', 'text', 'search', 'url', 'tel', 'email', 'password', 'number']);
+	return textTypes.has(element.type);
+}
+
+/**
+ * キャレットが文字列先頭にあるか判定する
+ */
+function isCaretAtStart(input: HTMLInputElement | HTMLTextAreaElement): boolean {
+	return input.selectionStart === 0 && input.selectionEnd === 0;
+}
+
+/**
+ * キャレットが文字列末尾にあるか判定する
+ */
+function isCaretAtEnd(input: HTMLInputElement | HTMLTextAreaElement): boolean {
+	const length = input.value.length;
+	return input.selectionStart === length && input.selectionEnd === length;
+}
+
+/**
+ * 端での連続左右キー押下状態をリセットする
+ */
+function resetEdgeArrowState(): void {
+	edgeArrowState = null;
+}
+
+/**
+ * 左右キーでフォーカス遷移すべきか判定する
+ */
+function shouldNavigateHorizontal(
+	event: KeyboardEvent,
+	focusable: HTMLElement
+): boolean {
+	if (event.ctrlKey) {
+		resetEdgeArrowState();
+		return true;
+	}
+
+	if (!isTextEntryInput(focusable)) {
+		resetEdgeArrowState();
+		return true;
+	}
+
+	if (event.key === 'ArrowLeft') {
+		if (!isCaretAtStart(focusable)) {
+			resetEdgeArrowState();
+			return false;
+		}
+		if (
+			edgeArrowState?.key === 'ArrowLeft' &&
+			edgeArrowState.element === focusable
+		) {
+			resetEdgeArrowState();
+			return true;
+		}
+		edgeArrowState = { key: 'ArrowLeft', element: focusable };
+		return false;
+	}
+
+	if (event.key === 'ArrowRight') {
+		if (!isCaretAtEnd(focusable)) {
+			resetEdgeArrowState();
+			return false;
+		}
+		if (
+			edgeArrowState?.key === 'ArrowRight' &&
+			edgeArrowState.element === focusable
+		) {
+			resetEdgeArrowState();
+			return true;
+		}
+		edgeArrowState = { key: 'ArrowRight', element: focusable };
+		return false;
+	}
+
+	return false;
+}
+
 /**
  * ラッパーまたは自身からフォーカス可能な子孫要素を解決する
  */
@@ -50,10 +148,10 @@ function clearNavigationAttributes(focusable: HTMLElement): void {
 }
 
 /**
- * Ctrl + 矢印キーで同一ルート内のフォーカスを移動する
+ * 矢印キーで同一ルート内のフォーカスを移動する
  */
 function handleArrowNavigation(event: KeyboardEvent, focusable: HTMLElement): void {
-	if (!event.ctrlKey || !ARROW_KEYS.has(event.key)) {
+	if (!ARROW_KEYS.has(event.key)) {
 		return;
 	}
 
@@ -68,17 +166,22 @@ function handleArrowNavigation(event: KeyboardEvent, focusable: HTMLElement): vo
 
 	switch (event.key) {
 		case 'ArrowUp':
+			resetEdgeArrowState();
 			target = root.querySelector<HTMLElement>(
 				`[data-focusable][data-field="${CSS.escape(field)}"][data-row="${Number(row) - 1}"]`
 			);
 			break;
 		case 'ArrowDown':
+			resetEdgeArrowState();
 			target = root.querySelector<HTMLElement>(
 				`[data-focusable][data-field="${CSS.escape(field)}"][data-row="${Number(row) + 1}"]`
 			);
 			break;
 		case 'ArrowLeft':
 		case 'ArrowRight': {
+			if (!shouldNavigateHorizontal(event, focusable)) {
+				return;
+			}
 			const rowFocusables = [
 				...root.querySelectorAll<HTMLElement>(`[data-focusable][data-row="${row}"]`)
 			];
@@ -101,7 +204,7 @@ function handleArrowNavigation(event: KeyboardEvent, focusable: HTMLElement): vo
 }
 
 /**
- * テーブル等の編集セル間を Ctrl + 矢印キーで移動する Svelte action
+ * テーブル等の編集セル間を矢印キーで移動する Svelte action
  */
 export function arrowNavigation(node: HTMLElement, params: ArrowNavigationParams) {
 	let focusable = resolveFocusable(node);
@@ -111,10 +214,16 @@ export function arrowNavigation(node: HTMLElement, params: ArrowNavigationParams
 		}
 		handleArrowNavigation(event, focusable);
 	};
+	const onBlur = () => {
+		if (edgeArrowState?.element === focusable) {
+			resetEdgeArrowState();
+		}
+	};
 
 	if (focusable) {
 		applyNavigationAttributes(focusable, params);
 		focusable.addEventListener('keydown', onKeydown);
+		focusable.addEventListener('blur', onBlur);
 	}
 
 	return {
@@ -126,11 +235,16 @@ export function arrowNavigation(node: HTMLElement, params: ArrowNavigationParams
 			if (nextFocusable !== focusable) {
 				if (focusable) {
 					focusable.removeEventListener('keydown', onKeydown);
+					focusable.removeEventListener('blur', onBlur);
 					clearNavigationAttributes(focusable);
+					if (edgeArrowState?.element === focusable) {
+						resetEdgeArrowState();
+					}
 				}
 				focusable = nextFocusable;
 				if (focusable) {
 					focusable.addEventListener('keydown', onKeydown);
+					focusable.addEventListener('blur', onBlur);
 				}
 			}
 			if (focusable) {
@@ -143,7 +257,11 @@ export function arrowNavigation(node: HTMLElement, params: ArrowNavigationParams
 		destroy() {
 			if (focusable) {
 				focusable.removeEventListener('keydown', onKeydown);
+				focusable.removeEventListener('blur', onBlur);
 				clearNavigationAttributes(focusable);
+				if (edgeArrowState?.element === focusable) {
+					resetEdgeArrowState();
+				}
 			}
 		}
 	};
