@@ -1,0 +1,43 @@
+---
+description: Encapsulate derivable knowledge — callers must not mirror module internals
+alwaysApply: true
+---
+
+# API Encapsulation (Caller Knowledge)
+
+Do **not** design APIs that force callers to know or reconstruct a module’s internal structure (file layout, naming schemes, resolution steps, intermediate keys).
+
+## Rules
+
+1. If information can be derived from arguments the caller **already** passes (same object / same ids), resolve it **inside** the module — prefer fewer call sites and fewer required arguments.
+2. Optional overrides are fine when the caller genuinely needs control (`templateFileName?`, explicit path, feature flags). Defaults must work without those overrides.
+3. Do **not** split “resolve X” and “use X” into two mandatory public calls when the second call’s inputs already determine X, unless responsibilities would clearly diverge (different lifetime, different reuse boundary, or independently useful resolution).
+4. Keep escape hatches for tests or rare overrides; do not make the escape hatch the normal path.
+
+## Examples
+
+```typescript
+// ❌ BAD — caller must know components/<type>.hbs and call resolve then render
+const file = resolveComponentTemplateFile(targetId, field.type);
+serializeHandlebarsTemplate(targetId, file, field);
+
+// ✅ GOOD — omit override; module reads type from context
+serializeHandlebarsTemplate(targetId, field);
+
+// ✅ GOOD — optional override when caller must pick a non-default template
+serializeHandlebarsTemplate(targetId, formContext, 'form.hbs');
+```
+
+```typescript
+// ❌ BAD — leak internal path segments or naming into every caller
+writeArtifact(targetId, `components/${type}.hbs`, ctx);
+
+// ✅ GOOD — pass domain data; path policy stays in the writer/serialize module
+writeArtifact(targetId, ctx);
+```
+
+## When not to over-encapsulate
+
+- Merging would couple unrelated change reasons (architecture boundary violation).
+- The intermediate result is a stable public concept reused by multiple independent callers.
+- Transparency is required for security/audit and hiding it would hide a trust decision from the wrong layer.
