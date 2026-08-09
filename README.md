@@ -1,42 +1,97 @@
-# sv
+# lightweight-ir-modeler
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+UI 定義の試作・編集を高速化するためのツールです。  
+抽象化された **IR（Intermediate Representation）** をドメインの **SSOT（Single Source Of Truth）** とし、GUI での編集結果を外部 UI フレームワーク向け定義ファイルへ変換・出力します。
 
-## Creating a project
+詳細な現行仕様は [`docs/`](./docs/README.md) を参照してください。
 
-If you're seeing this, you've probably already done this step. Congrats!
+## できること（現状）
 
-```sh
-# create a new project
-npx sv create my-app
+| 領域 | 状態 |
+|---|---|
+| Layout Editor（属性・配置・プレビュー） | 実装済み |
+| IR スナップショット自動保存 | 実装済み（プロファイル設定依存） |
+| Export（IR → Raw → validate → Writer） | 実装済み（`primefaces` / `im-forma`） |
+| Import（Reader → Raw → validate → IR） | 未実装 |
+| ドメイン検証 / Undo / プラグイン等 | 初期スコープ外 |
+
+## アーキテクチャ（要約）
+
+```text
+GUI 編集（IR）
+  → Transformer → RawDefinition
+  → SchemaValidator（JSON Schema / Zod）
+  → Writer（shape → serialize）
+  → 外部 UI 定義ファイル
 ```
 
-To recreate this project with the same configuration:
+- **IR** … 永続的な意味の置き場。形式固有知識は持たない
+- **Raw** … 外部ファイルと IR の間の一時モデル
+- **schema** … システム境界での検証
+- **transform / Writer** … 形式固有の変換・出力
+
+モジュール境界とデータフローの詳細は [アーキテクチャ概要](./docs/architecture/overview.md) を参照。
+
+## 前提
+
+- Node.js（LTS 推奨）
+- npm
+
+本リポジトリの `.npmrc` ではサプライチェーン対策として `ignore-scripts=true` などが有効です。  
+インストール後、必要に応じて信頼できるスクリプト（例: `npm run prepare`）を明示実行してください。
+
+## セットアップ
 
 ```sh
-# recreate this project
-npx sv@0.16.3 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" --install npm lightweight-ir-modeler
+npm install
+npm run prepare
 ```
 
-## Developing
+設定ファイルは `config/application.yml` です（パスやプロファイルは環境に合わせて調整）。
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## 開発
 
 ```sh
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
-
-To create a production version of your app:
+ブラウザで Layout Editor 等を操作できます。  
+本番ビルド / プレビュー:
 
 ```sh
 npm run build
+npm run preview
 ```
 
-You can preview the production build with `npm run preview`.
+## よく使うスクリプト
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+| コマンド | 内容 |
+|---|---|
+| `npm run dev` | 開発サーバ |
+| `npm run build` | 本番ビルド |
+| `npm run preview` | ビルド結果のプレビュー |
+| `npm run check` | `svelte-check`（型・Svelte 検査） |
+| `npm run test` | ユニットテスト（Vitest） |
+| `npm run lint` | Prettier / ESLint チェック |
+| `npm run format` | Prettier 整形 |
+
+## ドキュメント
+
+| ドキュメント | 内容 |
+|---|---|
+| [docs/README.md](./docs/README.md) | 索引と現状スコープ |
+| [アーキテクチャ概要](./docs/architecture/overview.md) | モジュール境界・データフロー |
+| [レイアウトエディタ](./docs/use-cases/layout-editor.md) | property / layout / preview |
+| [IR スナップショット自動保存](./docs/use-cases/ir-snapshot-auto-save.md) | 自動保存 |
+| [UI Export](./docs/use-cases/ui-export.md) | 外部定義の出力 |
+| [HTTP API](./docs/api/http-endpoints.md) | エンドポイント契約 |
+
+設計検討のスナップショットは [`.design-logs/`](./.design-logs/)、日々の作業記録は [`.articles/`](./.articles/) にあります。
+
+## 技術スタック
+
+- SvelteKit / Svelte 5（runes）
+- TypeScript
+- Tailwind CSS / Flowbite Svelte
+- Zod / Handlebars（Export 等）
+- Vitest
