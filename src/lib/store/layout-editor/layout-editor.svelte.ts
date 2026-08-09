@@ -1,3 +1,8 @@
+/**
+ * UI 定義のIR (中間定義) データモデルおよび状態を管理する
+ * UIコンポーネント個別定義のデータモデルを生成するファクトリ関数を提供する
+ */
+
 import { createContext } from "svelte";
 import { nanoid } from "nanoid";
 
@@ -190,6 +195,7 @@ export function createTextbox(info: any): any {
         type: 'textbox',
         label: '',
         hint: '',
+        defaultValue: '',
         disabled: false,
         readonly: false,
         hidden: false,
@@ -197,7 +203,14 @@ export function createTextbox(info: any): any {
         validation: {
             required: false,
             pattern: '',
+            minlength: 0,
             maxlength: 30,
+            customErrorMessages: {
+                required: '必須項目です',
+                pattern: '不正な形式です',
+                minlength: '最小文字数を超えています',
+                maxlength: '最大文字数を超えています',
+            },
             ...(validation ?? {}),
         },
         ...rest,
@@ -215,14 +228,23 @@ export function createTextarea(info: any): any {
         type: 'textarea',
         label: '',
         hint: '',
+        defaultValue: '',
         disabled: false,
         readonly: false,
         hidden: false,
         tooltip: '',
+        cols: 30,
         rows: 3,
+        autosize: false,
         validation: {
             required: false,
+            minlength: 0,
             maxlength: 200,
+            customErrorMessages: {
+                required: '必須項目です',
+                minlength: '最小文字数を超えています',
+                maxlength: '最大文字数を超えています',
+            },
             ...(validation ?? {}),
         },
         ...rest,
@@ -240,6 +262,7 @@ export function createNumber(info: any): any {
         type: 'number',
         label: '',
         hint: '',
+        defaultValue: 0,
         disabled: false,
         readonly: false,
         hidden: false,
@@ -249,8 +272,274 @@ export function createNumber(info: any): any {
             min: undefined,
             max: undefined,
             step: 1,
+            customErrorMessages: {
+                required: '必須項目です',
+                min: '最小値を超えています',
+                max: '最大値を超えています',
+            },
             ...(validation ?? {}),
         },
+        ...rest,
+    };
+}
+
+
+/**
+ * チェックボックスを作成する
+ * usage:
+ *   - items: string[]
+ *     - items: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+ *   - items: { label: string; value: string }[]
+ *     - items: [{ label: '日', value: 'sun' }, { label: '月', value: 'mon' }, { label: '火', value: 'tue' }, { label: '水', value: 'wed' }, { label: '木', value: 'thu' }, { label: '金', value: 'fri' }, { label: '土', value: 'sat' }]
+ */
+export function createCheckbox(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'checkbox',
+        label: '',
+        hint: '',
+        defaultValue: [],
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        items: [
+        ],
+        validation: {
+            required: false,
+            customErrorMessages: {
+                required: '必須項目です',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+/**
+ * ラジオボタンを作成する
+ * usage:
+ *   - items: string[]
+ *     - items: ['price-0', 'price-3', 'price-9', 'price-10']
+ *   - items: { label: string; value: string }[]
+ *     - items: [{ label: '～5,000 円', value: 'price-0' }, { label: '～20,000 円', value: 'price-3' }, { label: '～50,000 円', value: 'price-9' }, { label: '50,000 円～', value: 'price-10' }]
+ */
+export function createRadio(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'radio',
+        label: '',
+        hint: '',
+        defaultValue: '',
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        items: [
+        ],
+        validation: {
+            required: false,
+            customErrorMessages: {
+                required: '必須項目です',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+
+/**
+ * ドロップダウンリストを作成する
+ * usage:
+ *   - items: string[]
+ *     - items: ['popular', 'new', 'price-asc', 'price-desc']
+ *   - items: { label: string; value: string }[]
+ *     - items: [{ label: '人気順', value: 'popular' }, { label: '新着順', value: 'new' }, { label: '価格の安い順', value: 'price-asc' }, { label: '価格の高い順', value: 'price-desc' }]
+ */
+export function createDropdown(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'dropdown',
+        label: '',
+        hint: '',
+        defaultValue: '',
+        multiple: false,
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        items: [
+        ],
+        validation: {
+            required: false,
+            customErrorMessages: {
+                required: '必須項目です',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+
+/**
+ * 日付ピッカーを作成する
+ */
+export function createDatepicker(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'datepicker',
+        label: '',
+        hint: '',
+        defaultValue: null,
+        format: 'yyyy-MM-dd',
+        placeholder: 'yyyy-MM-dd',
+        clearable: false,
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        validation: {
+            required: false,
+            minDate: undefined,
+            maxDate: undefined,
+            customErrorMessages: {
+                required: '必須項目です',
+                minDate: '最小日付を超えています',
+                maxDate: '最大日付を超えています',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+/**
+ * 日付範囲ピッカーを作成する
+ */
+export function createDateSpan(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'date-span',
+        label: '',
+        hint: '',
+        defaultValueFrom: null,
+        defaultValueTo: null,
+        format: 'yyyy-MM-dd',
+        placeholder: 'yyyy-MM-dd',
+        clearable: false,
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        validation: {
+            required: false,
+            requiredFrom: false,
+            requiredTo: false,
+            minDate: undefined,
+            maxDate: undefined,
+            customErrorMessages: {
+                required: '必須項目です',
+                requiredFrom: '開始日は必須項目です',
+                requiredTo: '終了日は必須項目です',
+                minDate: '最小日付を超えています',
+                maxDate: '最大日付を超えています',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+
+/**
+ * 時刻ピッカーを作成する
+ */
+export function createDatetimepicker(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'datetimepicker',
+        label: '',
+        hint: '',
+        defaultValue: null,
+        format: 'yyyy-MM-dd HH:mm',
+        placeholder: 'yyyy-MM-dd HH:mm',
+        clearable: false,
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        validation: {
+            required: false,
+            minDateTime: undefined,
+            maxDateTime: undefined,
+            customErrorMessages: {
+                required: '必須項目です',
+                minDateTime: '最小日時を超えています',
+                maxDateTime: '最大日時を超えています',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+/**
+ * 時間ピッカーを作成する
+ */
+export function createTimepicker(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'timepicker',
+        label: '',
+        hint: '',
+        defaultValue: null,
+        format: 'HH:mm',
+        placeholder: 'HH:mm',
+        clearable: false,
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        validation: {
+            required: false,
+            minTime: undefined,
+            maxTime: undefined,
+            customErrorMessages: {
+                required: '必須項目です',
+                minTime: '最小時間を超えています',
+                maxTime: '最大時間を超えています',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
+
+/**
+ * ラベルを作成する
+ */
+export function createLabel(info: any): any {
+    const { ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'label',
+        label: '',
         ...rest,
     };
 }

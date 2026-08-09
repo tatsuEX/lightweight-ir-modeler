@@ -156,23 +156,31 @@
 						</span>
 					</TableBodyCell>
 					<TableBodyCell class={cellClass}>
-						<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
-							<Input
-								size="sm"
-								placeholder="補足説明"
-								aria-label="{component.type} のヒント"
-								bind:value={component.hint}
-							/>
-						</span>
+						{#if component.hint !== undefined}
+							<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
+								<Input
+										size="sm"
+										placeholder="補足説明"
+										aria-label="{component.type} のヒント"
+										bind:value={component.hint}
+									/>
+							</span>
+						{:else}
+							<span class="text-gray-400 dark:text-gray-400">- not supported -</span>
+						{/if}
 					</TableBodyCell>
 					<TableBodyCell class="{cellClass} text-center">
-						<span class="contents" use:arrowNavigation={{ field: 'required', row: rowIndex }}>
-							<Toggle
-								class="justify-center"
-								aria-label="{component.type} の必須指定"
-								bind:checked={component.validation.required}
-							/>
-						</span>
+						{#if component.validation?.required !== undefined}
+							<span class="contents" use:arrowNavigation={{ field: 'required', row: rowIndex }}>
+								<Toggle
+									class="justify-center"
+									aria-label="{component.type} の必須指定"
+									bind:checked={component.validation.required}
+								/>
+							</span>
+						{:else}
+							<span class="text-gray-400 dark:text-gray-400">- not supported -</span>
+						{/if}
 					</TableBodyCell>
 				</TableBodyRow>
 			{/each}
