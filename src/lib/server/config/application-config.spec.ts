@@ -143,6 +143,32 @@ preview:
 				options: [{ name: 'PrimeFaces', value: 'primefaces' }]
 			}
 		});
+		expect(config.layoutEditor.property.itemDelimiter).toBe('|');
+	});
+
+	it('parses layoutEditor.property.itemDelimiter', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+layoutEditor:
+  property:
+    itemDelimiter: "::"
+${minimalPreviewYaml}
+`);
+		expect(config.layoutEditor.property.itemDelimiter).toBe('::');
+	});
+
+	it('rejects empty layoutEditor.property.itemDelimiter', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+layoutEditor:
+  property:
+    itemDelimiter: ""
+${minimalPreviewYaml}
+`)
+		).toThrow('layoutEditor.property.itemDelimiter" must be a non-empty string');
 	});
 
 	it('requires preview default to match an option value', () => {
@@ -251,6 +277,7 @@ describe('profile overlay', () => {
 			'./templates/export/primefaces'
 		);
 		expect(config.ir).toBeUndefined();
+		expect(config.layoutEditor.property.itemDelimiter).toBe('|');
 		expect(config.preview.theme.default).toBe('tailwind-light');
 		expect(config.preview.transformTarget.options).toHaveLength(2);
 		expect(config.preview.transformTarget.options.map((option) => option.value)).toEqual([

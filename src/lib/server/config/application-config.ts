@@ -2,11 +2,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import { load } from 'js-yaml';
 import { env } from '$env/dynamic/private';
+import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
 import {
 	type PreviewConfig,
 	type PreviewSelectConfig,
 	type PreviewSelectOption
 } from '$lib/config/preview-config';
+
+export { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
 
 /**
  * IR 自動保存設定
@@ -42,6 +45,21 @@ export type AppIoConfig = {
 };
 
 /**
+ * Property 属性エディタ設定
+ */
+export type LayoutEditorPropertyConfig = {
+	/** items タグの value / label 区切り（`${value}${itemDelimiter}${label}`） */
+	itemDelimiter: string;
+};
+
+/**
+ * layout-editor 画面向け設定
+ */
+export type LayoutEditorConfig = {
+	property: LayoutEditorPropertyConfig;
+};
+
+/**
  * application.yml 相当の静的アプリ設定
  */
 export type ApplicationConfig = {
@@ -52,6 +70,7 @@ export type ApplicationConfig = {
 	ir?: {
 		autoSave?: IrAutoSaveConfig;
 	};
+	layoutEditor: LayoutEditorConfig;
 	preview: PreviewConfig;
 };
 
@@ -268,6 +287,47 @@ function parsePreviewSelectConfig(raw: unknown, blockName: string): PreviewSelec
 }
 
 /**
+ * layoutEditor.property ブロックをパースする
+ */
+function parseLayoutEditorProperty(raw: unknown): LayoutEditorPropertyConfig {
+	if (raw === undefined) {
+		return { itemDelimiter: DEFAULT_ITEM_DELIMITER };
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "layoutEditor.property" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	if (block.itemDelimiter === undefined) {
+		return { itemDelimiter: DEFAULT_ITEM_DELIMITER };
+	}
+	if (typeof block.itemDelimiter !== 'string' || block.itemDelimiter === '') {
+		throw new Error(
+			'application config "layoutEditor.property.itemDelimiter" must be a non-empty string'
+		);
+	}
+
+	return { itemDelimiter: block.itemDelimiter };
+}
+
+/**
+ * layoutEditor ブロックをパースする（未設定時は既定値）
+ */
+function parseLayoutEditor(raw: unknown): LayoutEditorConfig {
+	if (raw === undefined) {
+		return { property: parseLayoutEditorProperty(undefined) };
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "layoutEditor" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	return {
+		property: parseLayoutEditorProperty(block.property)
+	};
+}
+
+/**
  * preview ブロックをパースする
  */
 function parsePreview(raw: unknown): PreviewConfig {
@@ -411,6 +471,7 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 	const io = parseAppIo(appRecord.io);
 	const config: ApplicationConfig = {
 		app: io ? { name, io } : { name },
+		layoutEditor: parseLayoutEditor(root.layoutEditor),
 		preview: parsePreview(previewBlock)
 	};
 
