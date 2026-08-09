@@ -1,18 +1,19 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T23:45:00"
-summary: "property / layout / preview での UI 定義編集、Basic/Details/Validation 列グループ"
+updated: "2026-08-10T02:10:00"
+summary: "Validation Datepicker の blur 閉鎖と datetime の Date+Time 分割"
 features:
   - layout-editor
   - ui-definition
   - preview
   - ir-snapshot
   - property-attributes
+  - arrow-navigation
 ---
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-09 23:45
+最終更新: 2026-08-10 02:10
 
 ## 概要
 
@@ -93,12 +94,21 @@ flowchart TB
 
 - **常時表示列**: 行選択 / `logicalId` / `type` / `label`
 - **列グループ切替**（presentation state。IR / snapshot には載せない）: `Basic` | `Details` | `Validation`（関心別。type 名では増やさない）
+- Details / Validation は **固定スロット列**（行ごとに td 数が変わらない）。ヘッダは `colspan` でグループ名のみ表示する。
 
-| グループ | 追加列 | 編集対象（セル内で type 分岐） |
+| グループ | 追加列 | 編集対象（列位置に type 別フィールドを載せる） |
 |---|---|---|
-| Basic | hint | 共通。非対応は `- not supported -` |
-| Details | details | choice → `items`、date 系 → `format`、textarea → `cols` / `rows` |
-| Validation | validation | `required`、textbox → `pattern` / `minlength` / `maxlength`、textarea → `maxlength`、number → `min` / `max`、date 系 → min/max 境界 |
+| Basic | hint / required / readonly / disabled | 共通フラグ・hint。非対応は `- not supported -` |
+| Details | details-0..1（2 固定） | 0: items \| format \| cols、1: rows |
+| Validation | validation-0..2（3 固定） | 0: pattern \| maxlength \| min \| minDate / minDateTime(date)…、1: minlength \| max \| maxDate / maxDateTime(date)…、2: textbox maxlength。datetime は同セル内に Datepicker + Timepicker（時刻は `validation-N-time`） |
+
+### 矢印キーナビ（`arrowNavigation`）
+
+- 各入力は一意の `field`（`details-N` / `validation-N` 等）を持つ。Details / Validation スロットは `fieldGroup`（`details` / `validation`）も付与する。
+- **左右**: 同一行の focusable のみ。テキストおよび `date` / `time` 等は、先頭で左 2 連続・末尾で右 2 連続、または Ctrl+左右でセル遷移（1 回では遷移しない）。datetime 境界は `datetime-local` ではなく Datepicker（text）+ Timepicker を並べ、日付側は Selection API で終端判定する。
+- **Datepicker カレンダー**: フォーカスで開くが blur では閉じない（Flowbite 仕様）。セル外へフォーカスが移ったら outside-click 相当で閉じ、下行編集を遮らない。
+- **上下（fieldGroup あり）**: 最寄り行で同 group の入力がある行へ着地 → 同行内で同 `field` → なければ ordinal / 先頭。遠い行の同 field へ飛ばない。
+- **上下（fieldGroup なし / Basic）**: 同 `field` の最寄り行（未対応行はスキップ）。
 
 日付系 IR の SSOT は `format` のみ（`placeholder` は持たない）。PrimeFaces export 時の HTML `placeholder` は shape が `format` の英字トークンを `_` マスク化した文字列を導出する。
 

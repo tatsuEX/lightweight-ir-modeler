@@ -68,23 +68,77 @@
 	}
 
 	/**
-	 * IR の日時文字列を datetime-local 用へ変換する
+	 * IR の yyyy-MM-dd HH:mm を日付 / 時刻に分解する
 	 */
-	function toDatetimeLocalValue(value: unknown): string {
+	function parseDateTimeParts(value: unknown): { date?: Date; time?: string } {
 		if (typeof value !== 'string' || value === '') {
-			return '';
+			return {};
 		}
-		return value.replace(' ', 'T').slice(0, 16);
+		const matched = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/.exec(value);
+		if (matched) {
+			return {
+				date: parseDateString(matched[1]),
+				time: matched[2]
+			};
+		}
+		return { date: parseDateString(value.slice(0, 10)) };
 	}
 
 	/**
-	 * datetime-local 値を IR の yyyy-MM-dd HH:mm へ変換する
+	 * minDateTime / maxDateTime の日付部分を更新する
 	 */
-	function fromDatetimeLocalValue(value: string): string | undefined {
-		if (!value) {
-			return undefined;
+	function setDateTimeDate(key: 'minDateTime' | 'maxDateTime', date: Date | undefined): void {
+		if (!date) {
+			component.validation[key] = undefined;
+			return;
 		}
-		return value.replace('T', ' ').slice(0, 16);
+		const prev = parseDateTimeParts(component.validation?.[key]);
+		const dateStr = formatDateString(date);
+		if (!dateStr) {
+			component.validation[key] = undefined;
+			return;
+		}
+		component.validation[key] = `${dateStr} ${prev.time ?? '00:00'}`;
+	}
+
+	/**
+	 * minDateTime / maxDateTime の時刻部分を更新する
+	 *
+	 * WARN: 日付未設定のときは IR に書かない（日付が SSOT の先頭）。
+	 */
+	function setDateTimeTime(key: 'minDateTime' | 'maxDateTime', time: string): void {
+		const prev = parseDateTimeParts(component.validation?.[key]);
+		const dateStr = formatDateString(prev.date);
+		if (!dateStr) {
+			return;
+		}
+		component.validation[key] = `${dateStr} ${normalizeTimeString(time) ?? '00:00'}`;
+	}
+
+	/**
+	 * Flowbite Datepicker のカレンダーを閉じる
+	 *
+	 * WARN: コンポーネントは input focus で開き、外側 click で閉じるが blur では閉じない。
+	 * isOpen を外から触れないため、フォーカス先（または body）への click を合成して
+	 * 公式の outside-click 経路を使う。他の Datepicker 上へ移った場合はその入力を
+	 * click 対象にし、移り先のカレンダーは閉じない。
+	 */
+	function closeDatepickerOnFocusOut(event: FocusEvent): void {
+		const current = event.currentTarget as HTMLElement;
+		const next = event.relatedTarget as Node | null;
+		if (next && current.contains(next)) {
+			return;
+		}
+
+		queueMicrotask(() => {
+			const active = current.ownerDocument.activeElement;
+			if (active && current.contains(active)) {
+				return;
+			}
+			const clickTarget =
+				active instanceof HTMLElement ? active : current.ownerDocument.body;
+			clickTarget.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		});
 	}
 
 	/**
@@ -99,6 +153,7 @@
 	}
 
 	const fieldName = $derived(`validation-${slotId}`);
+	const timeFieldName = $derived(`${fieldName}-time`);
 
 	const showTextboxPattern = $derived(slotId === 0 && isTextbox);
 	const showTextboxMinlength = $derived(slotId === 1 && isTextbox);
@@ -223,48 +278,54 @@
 {:else if showDateMin}
 	<div>
 		<p class={fieldLabelClass}>minDate</p>
-		<span
-			class="contents"
-			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-		>
-			<Datepicker
-				placeholder="minDate"
-				inputClass="text-sm"
-				showActionButtons
-				bind:value={
-					() => parseDateString(component.validation?.minDate),
-					(date) => {
-						component.validation.minDate = formatDateString(date);
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div onfocusout={closeDatepickerOnFocusOut}>
+			<span
+				class="contents"
+				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+			>
+				<Datepicker
+					placeholder="minDate"
+					inputClass="text-sm"
+					showActionButtons
+					bind:value={
+						() => parseDateString(component.validation?.minDate),
+						(date) => {
+							component.validation.minDate = formatDateString(date);
+						}
 					}
-				}
-				onclear={() => {
-					component.validation.minDate = undefined;
-				}}
-			/>
-		</span>
+					onclear={() => {
+						component.validation.minDate = undefined;
+					}}
+				/>
+			</span>
+		</div>
 	</div>
 {:else if showDateMax}
 	<div>
 		<p class={fieldLabelClass}>maxDate</p>
-		<span
-			class="contents"
-			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-		>
-			<Datepicker
-				placeholder="maxDate"
-				inputClass="text-sm"
-				showActionButtons
-				bind:value={
-					() => parseDateString(component.validation?.maxDate),
-					(date) => {
-						component.validation.maxDate = formatDateString(date);
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div onfocusout={closeDatepickerOnFocusOut}>
+			<span
+				class="contents"
+				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+			>
+				<Datepicker
+					placeholder="maxDate"
+					inputClass="text-sm"
+					showActionButtons
+					bind:value={
+						() => parseDateString(component.validation?.maxDate),
+						(date) => {
+							component.validation.maxDate = formatDateString(date);
+						}
 					}
-				}
-				onclear={() => {
-					component.validation.maxDate = undefined;
-				}}
-			/>
-		</span>
+					onclear={() => {
+						component.validation.maxDate = undefined;
+					}}
+				/>
+			</span>
+		</div>
 	</div>
 {:else if showTimeMin}
 	<div>
@@ -309,41 +370,89 @@
 {:else if showDateTimeMin}
 	<div>
 		<p class={fieldLabelClass}>minDateTime</p>
-		<span
-			class="contents"
-			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-		>
-			<Input
-				type="datetime-local"
-				size="sm"
-				aria-label="{component.type} の最小日時"
-				bind:value={
-					() => toDatetimeLocalValue(component.validation?.minDateTime),
-					(value) => {
-						component.validation.minDateTime = fromDatetimeLocalValue(value);
+		<div class="flex items-start gap-2">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="min-w-0 flex-1" onfocusout={closeDatepickerOnFocusOut}>
+				<span
+					class="contents"
+					use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+				>
+					<Datepicker
+						placeholder="date"
+						inputClass="text-sm"
+						showActionButtons
+						bind:value={
+							() => parseDateTimeParts(component.validation?.minDateTime).date,
+							(date) => {
+								setDateTimeDate('minDateTime', date);
+							}
+						}
+						onclear={() => {
+							component.validation.minDateTime = undefined;
+						}}
+					/>
+				</span>
+			</div>
+			<span
+				class="contents w-28 shrink-0"
+				use:arrowNavigation={{ field: timeFieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+			>
+				<Timepicker
+					id="min-datetime-time-{component.id}"
+					size="sm"
+					required={false}
+					bind:value={
+						() => parseDateTimeParts(component.validation?.minDateTime).time ?? '',
+						(time) => {
+							setDateTimeTime('minDateTime', time);
+						}
 					}
-				}
-			/>
-		</span>
+				/>
+			</span>
+		</div>
 	</div>
 {:else if showDateTimeMax}
 	<div>
 		<p class={fieldLabelClass}>maxDateTime</p>
-		<span
-			class="contents"
-			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-		>
-			<Input
-				type="datetime-local"
-				size="sm"
-				aria-label="{component.type} の最大日時"
-				bind:value={
-					() => toDatetimeLocalValue(component.validation?.maxDateTime),
-					(value) => {
-						component.validation.maxDateTime = fromDatetimeLocalValue(value);
+		<div class="flex items-start gap-2">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="min-w-0 flex-1" onfocusout={closeDatepickerOnFocusOut}>
+				<span
+					class="contents"
+					use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+				>
+					<Datepicker
+						placeholder="date"
+						inputClass="text-sm"
+						showActionButtons
+						bind:value={
+							() => parseDateTimeParts(component.validation?.maxDateTime).date,
+							(date) => {
+								setDateTimeDate('maxDateTime', date);
+							}
+						}
+						onclear={() => {
+							component.validation.maxDateTime = undefined;
+						}}
+					/>
+				</span>
+			</div>
+			<span
+				class="contents w-28 shrink-0"
+				use:arrowNavigation={{ field: timeFieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+			>
+				<Timepicker
+					id="max-datetime-time-{component.id}"
+					size="sm"
+					required={false}
+					bind:value={
+						() => parseDateTimeParts(component.validation?.maxDateTime).time ?? '',
+						(time) => {
+							setDateTimeTime('maxDateTime', time);
+						}
 					}
-				}
-			/>
-		</span>
+				/>
+			</span>
+		</div>
 	</div>
 {/if}
