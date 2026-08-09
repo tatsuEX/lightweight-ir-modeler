@@ -34,9 +34,6 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 	if (typeof source.format === 'string') {
 		field.format = source.format;
 	}
-	if (typeof source.placeholder === 'string') {
-		field.placeholder = source.placeholder;
-	}
 	if (typeof source.clearable === 'boolean') {
 		field.clearable = source.clearable;
 	}

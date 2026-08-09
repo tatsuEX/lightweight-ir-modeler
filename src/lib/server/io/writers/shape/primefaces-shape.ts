@@ -181,7 +181,19 @@ function shapeCommon(field: Record<string, unknown>, logicalId: string): PrimeFa
 }
 
 /**
- * 日付系の format / placeholder / clearable を整形する
+ * 日付 format のトークン（連続する英字）を同長の `_` に置換し、区切りはそのまま残す
+ *
+ * 例: yyyy-MM-dd HH:mm → ____-__-__ __:__
+ * 例: yyyy/MM/dd → ____/__/__
+ */
+function formatToPlaceholderMask(format: string): string {
+	return format.replace(/[A-Za-z]+/g, (token) => '_'.repeat(token.length));
+}
+
+/**
+ * 日付系の format / clearable を整形し、テンプレ用 placeholder を format から導出する
+ *
+ * WARN: IR / Raw の SSOT は format のみ。placeholder は export shape の派生マスク。
  */
 function shapeDateExtras(
 	field: Record<string, unknown>,
@@ -189,12 +201,9 @@ function shapeDateExtras(
 ): { format: string; placeholder: string; clearable: boolean } {
 	const format =
 		asNonEmptyString(field.format) ?? DEFAULT_DATE_FORMAT[type] ?? DEFAULT_DATE_FORMAT.datepicker;
-	const placeholder =
-		asNonEmptyString(field.placeholder) ??
-		(typeof field.hint === 'string' && field.hint.trim() !== '' ? field.hint : format);
 	return {
 		format,
-		placeholder,
+		placeholder: formatToPlaceholderMask(format),
 		clearable: field.clearable === true
 	};
 }

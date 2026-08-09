@@ -137,7 +137,7 @@ describe('shapePrimeFaces', () => {
 				disabled: false,
 				readonly: false,
 				format: 'yyyy-MM-dd',
-				placeholder: 'yyyy-MM-dd',
+				placeholder: '____-__-__',
 				clearable: false
 			},
 			{
@@ -149,7 +149,7 @@ describe('shapePrimeFaces', () => {
 				disabled: false,
 				readonly: false,
 				format: 'yyyy-MM-dd HH:mm',
-				placeholder: 'yyyy-MM-dd HH:mm',
+				placeholder: '____-__-__ __:__',
 				clearable: true
 			},
 			{
@@ -161,7 +161,7 @@ describe('shapePrimeFaces', () => {
 				disabled: false,
 				readonly: false,
 				format: 'HH:mm:ss',
-				placeholder: 'HH:mm:ss',
+				placeholder: '__:__:__',
 				clearable: false
 			},
 			{
@@ -173,7 +173,7 @@ describe('shapePrimeFaces', () => {
 				disabled: false,
 				readonly: false,
 				format: 'yyyy-MM-dd',
-				placeholder: 'yyyy-MM-dd',
+				placeholder: '____-__-__',
 				clearable: false,
 				requiredFrom: true,
 				requiredTo: true

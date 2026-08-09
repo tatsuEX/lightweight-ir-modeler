@@ -1,7 +1,7 @@
 ---
 created: "2026-08-09T22:40:58"
-updated: "2026-08-09T22:40:58"
-summary: "PrimeFaces Export: shape union・component hbs・IR type→タグ対応"
+updated: "2026-08-09T23:50:00"
+summary: "PrimeFaces Export: shape union・component hbs・日付 placeholder マスク導出"
 features:
   - ui-export
   - primefaces
@@ -10,7 +10,7 @@ features:
 
 # PrimeFaces Export（Facelet / Handlebars）
 
-最終更新: 2026-08-09 22:40
+最終更新: 2026-08-09 23:50
 
 Export 全体のパイプライン・API・検証境界は [外部 UI 定義の出力（Export）](./ui-export.md) を参照。  
 本稿は **target `primefaces` 固有** の shape・テンプレート合成・コンポーネント対応をまとめる。
@@ -57,11 +57,12 @@ HTML escape は **component / form テンプレートの `{{ }}`** に委譲す�
 | textarea | `textarea` | `rows` / `cols` / `maxlength`（任意） |
 | label | `label` | （共通のみ） |
 | select | `checkbox` / `radio` / `dropdown` / `dropdown-multi` | `items[]`（`label` / `value`） |
-| date | `datepicker` / `datetimepicker` / `timepicker` | `format` / `placeholder` / `clearable` |
+| date | `datepicker` / `datetimepicker` / `timepicker` | `format` / `clearable`（shape の `placeholder` は `format` から導出） |
 | date-span | `date-span` | 上記 + `requiredFrom` / `requiredTo` |
 
 - select の Raw `items` が文字列のときは `label`/`value` 同一として正規化する
-- 日付系 `format` 未指定時の既定: `yyyy-MM-dd` / `yyyy-MM-dd HH:mm` / `HH:mm`（type 別）
+- 日付系 IR の SSOT は `format` のみ。未指定時の既定: `yyyy-MM-dd` / `yyyy-MM-dd HH:mm` / `HH:mm`（type 別）
+- テンプレート用 `placeholder` は shape が `format` の英字トークンを同長 `_` に置換して導出する（例: `yyyy-MM-dd HH:mm` → `____-__-__ __:__`）。IR に `placeholder` は持たない
 - `clearable === true` のときテンプレートは `showButtonBar="true"` を出力する
 - EL バインド（`value="#{...}"`）は IR 非搭載方針のため **出力しない**（静的スケルトンのみ）
 
