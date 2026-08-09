@@ -1,0 +1,18 @@
+---
+description: Do not edit unapproved review files; prefer non-conflicting work first
+alwaysApply: true
+---
+
+# Unapproved Review Files
+
+When a file is under review and **not yet approved**, treat edits to it as a conflict risk.
+
+## Blocking rule
+
+- If the next change would touch an **unapproved (review-pending) file**, **do not implement** that change.
+- Stop and tell the user that a **conflicting file** would result, then ask whether implementation may proceed.
+
+## Non-conflicting work first
+
+- If the same implementation scope also includes work on **non-conflicting** files (not under unapproved review), **implement those first**.
+- Do this even while the unapproved conflicting files remain unapproved; do not block the whole scope on the pending review.
