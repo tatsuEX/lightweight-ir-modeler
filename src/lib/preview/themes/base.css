@@ -44,3 +44,35 @@
 	color: var(--preview-hint-color, #6b7280);
 	background-color: var(--preview-unknown-bg, #f9fafb);
 }
+
+/*
+  radio
+*/
+.preview-field.preview-field--radio {
+	height: 1.6em;
+	width: 1.4em;
+	border-radius: 50%;
+	margin-right: 0.5em;
+	--color-brand: white;
+}
+.preview-field.preview-field--radio + label {
+	margin-right: 1.5em;
+}
+
+/*
+  checkbox
+*/
+.preview-field.preview-field--checkbox {
+	height: calc(1em / 1);
+	width: calc(1em / 1.25);
+	margin-right: 0.5em;
+	--color-brand: white;
+	font-size: 1.25em;
+}
+.preview-field.preview-field--checkbox:checked {
+	height: calc(1 / 1.5em);
+	width: calc(1 / 1.5em);
+}
+.preview-field.preview-field--checkbox + label {
+	margin-right: 1.5em;
+}

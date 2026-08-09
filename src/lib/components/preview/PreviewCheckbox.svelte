@@ -19,22 +19,27 @@
 	{#if component.readonly ?? false}
 		<p class={PREVIEW_DISP_ONLY}>{values.join(', ') ?? ''}</p>
 	{:else}
-	{#each items as item, index}
 		<div class="flex items-center">
-			<input
-				id={`${component.id}-${index}`}
-				class="{PREVIEW_CONTROL} {previewFieldClass('checkbox')}"
-				type="checkbox"
-				bind:value={values}
-				autocomplete="off"
-				disabled={component.disabled}
-				readonly={component.readonly}
-				checked={defaultValue?.includes(item?.value ?? '') ?? false}
-				aria-required={component.validation?.required ?? false}
-				aria-label={item?.label ?? ''}
-			/>
-			<label for={`${component.id}-${index}`}>{item?.label ?? ''}</label>
+			{#each items as item, index}
+				<input
+					id={`${component.id}-${index}`}
+					class="{PREVIEW_CONTROL} {previewFieldClass('checkbox')}"
+					type="checkbox"
+					autocomplete="off"
+					disabled={component.disabled}
+					readonly={component.readonly}
+					aria-required={component.validation?.required ?? false}
+					aria-label={item?.label ?? ''}
+					onchange={(e) => {
+						if ((e.target as HTMLInputElement).checked) {
+							values.push(item?.value ?? '');
+						} else {
+							values = values.filter(value => value !== item?.value);
+						}
+					}}
+				/>
+				<label for={`${component.id}-${index}`}>{item?.label ?? ''}</label>
+			{/each}
 		</div>
-	{/each}
 	{/if}
 </div>

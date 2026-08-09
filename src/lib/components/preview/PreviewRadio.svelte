@@ -19,8 +19,8 @@
 	{#if component.readonly ?? false}
 		<p class={PREVIEW_DISP_ONLY}>{value ?? ''}</p>
 	{:else}
+	<div class="flex items-center">
 	{#each items as item, index}
-		<div class="flex items-center">
 			<input
 				id={`${component.id}-${index}`}
 				class="{PREVIEW_CONTROL} {previewFieldClass('radio')}"
@@ -34,7 +34,7 @@
 				aria-label={item?.label ?? ''}
 			/>
 			<label for={`${component.id}-${index}`}>{item?.label ?? ''}</label>
+			{/each}
 		</div>
-	{/each}
 	{/if}
 </div>
