@@ -3,6 +3,7 @@
 	import { Dropdown, DropdownItem, Input } from 'flowbite-svelte';
 	import type { InputProps, InputValue } from 'flowbite-svelte';
 	import { debounce } from '$lib/utils/debounce';
+	import { escapeCss } from '$lib/utils/escape-css';
 
 	/** 選択肢の供給元（固定配列またはクエリ文字列から配列を返す関数） */
 	export type AutocompleteOptionsSource = string[] | ((query: string) => string[]);
@@ -38,7 +39,7 @@
 	let inputElementRef = $state<HTMLInputElement | undefined>(undefined);
 
 	const inputId = $derived(id ?? `autocomplete-${crypto.randomUUID()}`);
-	const triggerSelector = $derived(`#${CSS.escape(inputId)}`);
+	const triggerSelector = $derived(`#${escapeCss(inputId)}`);
 
 	// svelte-ignore state_referenced_locally
 	const debouncedRefresh = debounce((query: string) => {
