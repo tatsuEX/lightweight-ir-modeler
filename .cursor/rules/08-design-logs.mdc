@@ -32,3 +32,4 @@ Example: `2026-08-06-2357-layout-editor-store.md`
 
 - Append-only: do not overwrite or delete earlier snapshots unless the user asks.
 - English or Japanese is fine; match the proposal language used in chat.
+- After a proposal is **implemented** and changes detailed-design-level behavior, also update living docs under `docs/` (see `12-docs-maintenance.mdc`). Design logs stay historical; `docs/` reflects current behavior.
