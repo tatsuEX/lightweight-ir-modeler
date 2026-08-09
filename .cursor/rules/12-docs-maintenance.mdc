@@ -1,0 +1,76 @@
+---
+description: Keep docs/ markdown in sync when detailed design policy changes
+alwaysApply: true
+---
+
+# Documentation Maintenance (`docs/`)
+
+`docs/` holds **living** product/architecture documentation (dataflows, sequences, module maps).  
+`.design-logs/` holds **append-only design proposals**. Do not treat them as the same.
+
+## When to update `docs/`
+
+After implementing a **detailed-design-level** policy or behavior change, also create or update the relevant markdown under project-root `docs/`.
+
+Examples that require a docs update:
+
+- New or changed major use case (import, export, snapshot, editor flow)
+- Changed HTTP API shape, status codes, or path/body contract
+- Changed module boundaries, pipeline steps, or SSOT (Single Source Of Truth) ownership
+- Changed on-disk layout (`data/ir`, `data/export`, schema paths) or config keys that callers rely on
+- New export/import target, validation boundary, or caching semantics that affect operators
+
+Examples that usually do **not** require docs:
+
+- Pure refactors with identical external behavior
+- Typo / comment / test-only edits
+- Transient spike code that will be discarded in the same session
+
+## File format
+
+Every `docs/**/*.md` file must start with YAML frontmatter, then the title, then a visible last-updated line.
+
+```markdown
+---
+created: "2026-08-08T22:54:00"
+updated: "2026-08-09T00:36:00"
+summary: "短い概要（1 行）"
+features:
+  - ui-export
+  - raw-validation
+---
+
+# Title
+
+最終更新: 2026-08-09 00:36
+```
+
+| Key | Meaning |
+|---|---|
+| `created` | 作成日時 — `yyyy-mm-ddTHH:mm:ss`（一度だけ設定） |
+| `updated` | 更新日時 — 同じ形式。触るたびに更新 |
+| `summary` | 概要 |
+| `features` | 関連機能（kebab-case のリスト） |
+
+- Body の `最終更新:` は **日付 + 時刻（`HH:mm`）**。frontmatter `updated` と分まで一致させる。
+- Do not omit frontmatter on new docs files.
+
+## How to update
+
+1. Prefer editing the existing topic file under `docs/` (see `docs/README.md` index).
+2. If no suitable file exists, add one (with frontmatter) and link it from `docs/README.md`.
+3. On every edit: refresh frontmatter `updated`, body `最終更新`, and revise `summary` / `features` if the topic scope changed.
+4. Keep diagrams (Mermaid) aligned with the **implemented** code, not the aspirational design alone.
+5. If the change was first proposed in `.design-logs/`, still update `docs/` once the approach is implemented — the design log stays historical.
+
+## Relationship to other note dirs
+
+| Directory | Role |
+|---|---|
+| `docs/` | Current behavior / contracts for humans and agents |
+| `.design-logs/` | Design proposal snapshots (append-only) |
+| `.articles/` | Daily development journal |
+
+## Do not skip
+
+Shipping an implementation that changes a documented contract without updating `docs/` is incomplete work for this repository.
