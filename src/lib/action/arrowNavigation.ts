@@ -1,16 +1,22 @@
 /** 矢印キー遷移 action のパラメータ */
 export type ArrowNavigationParams = {
-	/** 列または入力項目の識別名 */
+	/** 列または入力項目の識別名（行内で一意） */
 	field: string;
 	/** 行 index（0 始まり） */
 	row: number;
+	/**
+	 * 列グループ（Details / Validation など）。
+	 * 上下移動時は「最寄り行で同 group を持つ入力」を先に確定し、遠い同 field へ飛ばない。
+	 */
+	fieldGroup?: string;
 };
 
 const FOCUSABLE_SELECTOR =
 	'input:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** テキスト入力を優先して解決する（複合ウィジェットの dismiss ボタン等を避ける） */
-const TEXT_ENTRY_SELECTOR = 'input:not([disabled]):not([type="button"]):not([type="submit"]):not([type="reset"]), textarea:not([disabled])';
+const TEXT_ENTRY_SELECTOR =
+	'input:not([disabled]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]), textarea:not([disabled])';
 
 /**
  * 複合コンポーネントが「矢印遷移の主フォーカス」を明示する属性。
@@ -29,8 +35,28 @@ type EdgeArrowState = {
 
 let edgeArrowState: EdgeArrowState | null = null;
 
+/** キャレット二重押し遷移の対象にする input type（date/time 系を含む） */
+const TEXT_ENTRY_INPUT_TYPES = new Set([
+	'',
+	'text',
+	'search',
+	'url',
+	'tel',
+	'email',
+	'password',
+	'number',
+	'date',
+	'time',
+	'datetime-local',
+	'month',
+	'week'
+]);
+
 /**
  * テキスト入力としてキャレット位置を扱う要素か判定する
+ *
+ * WARN: date / time / datetime-local 等もここに含める。含めないと左右 1 回で
+ * セル遷移し、ブラウザのセグメント編集より先にフォーカスが逃げる。
  */
 function isTextEntryInput(
 	element: HTMLElement
@@ -41,23 +67,53 @@ function isTextEntryInput(
 	if (!(element instanceof HTMLInputElement)) {
 		return false;
 	}
-	const textTypes = new Set(['', 'text', 'search', 'url', 'tel', 'email', 'password', 'number']);
-	return textTypes.has(element.type);
+	return TEXT_ENTRY_INPUT_TYPES.has(element.type);
+}
+
+/**
+ * selectionStart / selectionEnd を読む（非対応 type は null）
+ */
+function readSelectionRange(
+	input: HTMLInputElement | HTMLTextAreaElement
+): { start: number; end: number } | null {
+	try {
+		const start = input.selectionStart;
+		const end = input.selectionEnd;
+		if (start === null || end === null) {
+			return null;
+		}
+		return { start, end };
+	} catch {
+		// WARN: 一部ブラウザは date/time 系で selection 参照時に例外を投げる
+		return null;
+	}
 }
 
 /**
  * キャレットが文字列先頭にあるか判定する
+ *
+ * WARN: selection が取れない date/time 系は「端」とみなし、二重押しでセル遷移する。
  */
 function isCaretAtStart(input: HTMLInputElement | HTMLTextAreaElement): boolean {
-	return input.selectionStart === 0 && input.selectionEnd === 0;
+	const range = readSelectionRange(input);
+	if (!range) {
+		return true;
+	}
+	return range.start === 0 && range.end === 0;
 }
 
 /**
  * キャレットが文字列末尾にあるか判定する
+ *
+ * WARN: selection が取れない date/time 系は「端」とみなし、二重押しでセル遷移する。
  */
 function isCaretAtEnd(input: HTMLInputElement | HTMLTextAreaElement): boolean {
+	const range = readSelectionRange(input);
+	if (!range) {
+		return true;
+	}
 	const length = input.value.length;
-	return input.selectionStart === length && input.selectionEnd === length;
+	return range.start === length && range.end === length;
 }
 
 /**
@@ -70,10 +126,7 @@ function resetEdgeArrowState(): void {
 /**
  * 左右キーでフォーカス遷移すべきか判定する
  */
-function shouldNavigateHorizontal(
-	event: KeyboardEvent,
-	focusable: HTMLElement
-): boolean {
+function shouldNavigateHorizontal(event: KeyboardEvent, focusable: HTMLElement): boolean {
 	if (event.ctrlKey) {
 		resetEdgeArrowState();
 		return true;
@@ -89,10 +142,7 @@ function shouldNavigateHorizontal(
 			resetEdgeArrowState();
 			return false;
 		}
-		if (
-			edgeArrowState?.key === 'ArrowLeft' &&
-			edgeArrowState.element === focusable
-		) {
+		if (edgeArrowState?.key === 'ArrowLeft' && edgeArrowState.element === focusable) {
 			resetEdgeArrowState();
 			return true;
 		}
@@ -105,10 +155,7 @@ function shouldNavigateHorizontal(
 			resetEdgeArrowState();
 			return false;
 		}
-		if (
-			edgeArrowState?.key === 'ArrowRight' &&
-			edgeArrowState.element === focusable
-		) {
+		if (edgeArrowState?.key === 'ArrowRight' && edgeArrowState.element === focusable) {
 			resetEdgeArrowState();
 			return true;
 		}
@@ -166,6 +213,11 @@ function applyNavigationAttributes(
 	focusable.dataset.field = params.field;
 	focusable.dataset.row = String(params.row);
 	focusable.dataset.focusable = 'true';
+	if (params.fieldGroup) {
+		focusable.dataset.fieldGroup = params.fieldGroup;
+	} else {
+		delete focusable.dataset.fieldGroup;
+	}
 }
 
 /**
@@ -174,6 +226,7 @@ function applyNavigationAttributes(
 function clearNavigationAttributes(focusable: HTMLElement): void {
 	delete focusable.dataset.field;
 	delete focusable.dataset.row;
+	delete focusable.dataset.fieldGroup;
 	delete focusable.dataset.focusable;
 }
 
@@ -208,11 +261,80 @@ function collectRowBounds(root: HTMLElement): { min: number; max: number } | nul
 }
 
 /**
- * 同じ field の上下方向で、未対応行（focusable 無し）を飛ばして次の入力を探す
- *
- * WARN: `- not supported -` セルは data-focusable を持たないため、隣接行指定だと止まる。
+ * 指定行・fieldGroup の focusable を DOM 順で列挙する
  */
-function findVerticalTarget(
+function listGroupMembers(
+	root: HTMLElement,
+	row: number,
+	fieldGroup: string
+): HTMLElement[] {
+	return [
+		...root.querySelectorAll<HTMLElement>(
+			`[data-focusable][data-row="${row}"][data-field-group="${CSS.escape(fieldGroup)}"]`
+		)
+	];
+}
+
+/**
+ * group 内メンバーから遷移先を選ぶ（同 field → 同 ordinal → 先頭）
+ */
+function pickWithinGroupMembers(
+	members: HTMLElement[],
+	currentField: string,
+	currentOrdinal: number
+): HTMLElement | null {
+	if (members.length === 0) {
+		return null;
+	}
+
+	const sameField = members.find((member) => member.dataset.field === currentField);
+	if (sameField) {
+		return sameField;
+	}
+
+	if (currentOrdinal >= 0 && currentOrdinal < members.length) {
+		return members[currentOrdinal] ?? null;
+	}
+
+	return members[0] ?? null;
+}
+
+/**
+ * fieldGroup 付き上下: 最寄り行で group メンバーがいる行を確定し、その行内で field を選ぶ
+ *
+ * WARN: 同 field を遠い行まで探しに行かない（textbox→number を飛ばして次の textbox へ飛ぶのを防ぐ）。
+ */
+function findVerticalTargetInGroup(
+	root: HTMLElement,
+	focusable: HTMLElement,
+	field: string,
+	fieldGroup: string,
+	fromRow: number,
+	delta: -1 | 1
+): HTMLElement | null {
+	const bounds = collectRowBounds(root);
+	if (!bounds) {
+		return null;
+	}
+
+	const currentMembers = listGroupMembers(root, fromRow, fieldGroup);
+	const currentOrdinal = currentMembers.indexOf(focusable);
+
+	let row = fromRow + delta;
+	while (row >= bounds.min && row <= bounds.max) {
+		const members = listGroupMembers(root, row, fieldGroup);
+		if (members.length > 0) {
+			return pickWithinGroupMembers(members, field, currentOrdinal);
+		}
+		row += delta;
+	}
+	return null;
+}
+
+/**
+ * fieldGroup 無し上下: 同 field の最寄り行（空セル行スキップ）
+ */
+function findVerticalTargetByField(
 	root: HTMLElement,
 	field: string,
 	fromRow: number,
@@ -256,16 +378,21 @@ function handleArrowNavigation(event: KeyboardEvent, focusable: HTMLElement): vo
 		return;
 	}
 
+	const fieldGroup = focusable.dataset.fieldGroup;
 	let target: HTMLElement | null = null;
 
 	switch (event.key) {
 		case 'ArrowUp':
 			resetEdgeArrowState();
-			target = findVerticalTarget(root, field, currentRow, -1);
+			target = fieldGroup
+				? findVerticalTargetInGroup(root, focusable, field, fieldGroup, currentRow, -1)
+				: findVerticalTargetByField(root, field, currentRow, -1);
 			break;
 		case 'ArrowDown':
 			resetEdgeArrowState();
-			target = findVerticalTarget(root, field, currentRow, 1);
+			target = fieldGroup
+				? findVerticalTargetInGroup(root, focusable, field, fieldGroup, currentRow, 1)
+				: findVerticalTargetByField(root, field, currentRow, 1);
 			break;
 		case 'ArrowLeft':
 		case 'ArrowRight': {
@@ -319,7 +446,7 @@ export function arrowNavigation(node: HTMLElement, params: ArrowNavigationParams
 
 	return {
 		/**
-		 * field / row の変更時に data 属性を更新する
+		 * field / row / fieldGroup の変更時に data 属性を更新する
 		 */
 		update(nextParams: ArrowNavigationParams) {
 			const nextFocusable = resolveFocusable(node);

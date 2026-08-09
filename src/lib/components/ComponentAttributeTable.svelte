@@ -11,12 +11,15 @@
 		TableBodyRow,
 		TableHead,
 		TableHeadCell,
-		Toggle,
-
+		Toggle
 	} from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
-	import ComponentDetailsCell from '$lib/components/ComponentDetailsCell.svelte';
-	import ComponentValidationCell from '$lib/components/ComponentValidationCell.svelte';
+	import ComponentDetailsCell, {
+		type DetailsSlot
+	} from '$lib/components/ComponentDetailsCell.svelte';
+	import ComponentValidationCell, {
+		type ValidationSlot
+	} from '$lib/components/ComponentValidationCell.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
@@ -50,6 +53,12 @@
 		{ id: 'validation' as const, label: 'Validation' }
 	];
 
+	/** Details 固定スロット（列位置に type 別フィールドを載せる。Validation と同方針） */
+	const DETAILS_SLOTS: DetailsSlot[] = [0, 1];
+
+	/** Validation 固定スロット */
+	const VALIDATION_SLOTS: ValidationSlot[] = [0, 1, 2];
+
 	const componentIds = $derived(uiDefinition.components.map((component) => component.id));
 
 	const allSelected = $derived(
@@ -60,8 +69,10 @@
 		componentIds.length > 0 && componentIds.some((id) => selectedIds.has(id)) && !allSelected
 	);
 
-	/** 空行の colspan（固定 4 + Basic は hint/required/readonly/disabled、他は 1 列） */
-	const totalColCount = $derived(columnGroup === 'basic' ? 8 : 5);
+	/** 空行の colspan（固定 4 + グループ列） */
+	const totalColCount = $derived(
+		columnGroup === 'basic' ? 8 : columnGroup === 'details' ? 6 : 7
+	);
 
 	// 入力行を詰めて一覧性を上げる（Flowbite 既定の px-6 py-4 は広すぎる）
 	const cellClass = 'px-3 py-2';
@@ -162,9 +173,9 @@
 				<TableHeadCell class="{cellClass} w-4">readonly</TableHeadCell>
 				<TableHeadCell class="{cellClass} w-4">disabled</TableHeadCell>
 			{:else if columnGroup === 'details'}
-				<TableHeadCell class={cellClass}>details</TableHeadCell>
+				<TableHeadCell class={cellClass} colspan={DETAILS_SLOTS.length}>Details</TableHeadCell>
 			{:else}
-				<TableHeadCell class={cellClass}>validation</TableHeadCell>
+				<TableHeadCell class={cellClass} colspan={VALIDATION_SLOTS.length}>Validation</TableHeadCell>
 			{/if}
 		</TableHead>
 		<TableBody>
@@ -271,17 +282,26 @@
 								{/if}
 							</TableBodyCell>
 						{:else if columnGroup === 'details'}
-							<TableBodyCell class={cellClass}>
-								<ComponentDetailsCell
-									{component}
-									{rowIndex}
-									itemDelimiter={resolvedItemDelimiter}
-								/>
-							</TableBodyCell>
+							{#each DETAILS_SLOTS as detailsSlot (detailsSlot)}
+								<TableBodyCell class={cellClass}>
+									<ComponentDetailsCell
+										{component}
+										{rowIndex}
+										slotId={detailsSlot}
+										itemDelimiter={resolvedItemDelimiter}
+									/>
+								</TableBodyCell>
+							{/each}
 						{:else}
-							<TableBodyCell class={cellClass}>
-								<ComponentValidationCell {component} {rowIndex} />
-							</TableBodyCell>
+							{#each VALIDATION_SLOTS as validationSlot (validationSlot)}
+								<TableBodyCell class={cellClass}>
+									<ComponentValidationCell
+										{component}
+										{rowIndex}
+										slotId={validationSlot}
+									/>
+								</TableBodyCell>
+							{/each}
 						{/if}
 					</TableBodyRow>
 				{/each}
