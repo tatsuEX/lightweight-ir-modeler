@@ -247,6 +247,9 @@ describe('profile overlay', () => {
 
 		expect(config.app.name).toBe('lightweight-ir-modeler');
 		expect(config.app.io?.exportDir).toBe('./data/export');
+		expect(config.app.io?.export?.templates?.primefaces?.dir).toBe(
+			'./templates/export/primefaces'
+		);
 		expect(config.ir).toBeUndefined();
 		expect(config.preview.theme.default).toBe('tailwind-light');
 		expect(config.preview.transformTarget.options).toHaveLength(2);
@@ -279,5 +282,37 @@ app:
 ${minimalPreviewYaml}
 `)
 		).toThrow('app.io.exportDir" must be a non-empty string when set');
+	});
+
+	it('parses export.templates.<targetId>.dir', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+  io:
+    exportDir: ./data/export
+    export:
+      templates:
+        primefaces:
+          dir: ./templates/export/primefaces
+${minimalPreviewYaml}
+`);
+		expect(config.app.io?.export?.templates).toEqual({
+			primefaces: { dir: './templates/export/primefaces' }
+		});
+	});
+
+	it('rejects empty export.templates.<targetId>.dir', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+  io:
+    export:
+      templates:
+        primefaces:
+          dir: "  "
+${minimalPreviewYaml}
+`)
+		).toThrow('app.io.export.templates.primefaces.dir" must be a non-empty string');
 	});
 });

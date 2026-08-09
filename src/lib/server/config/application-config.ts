@@ -19,11 +19,26 @@ export type IrAutoSaveConfig = {
 };
 
 /**
+ * 出力 target ごとのテンプレート配置（Handlebars 等）
+ */
+export type AppIoExportTemplateTargetConfig = {
+	dir: string;
+};
+
+/**
+ * 外部 UI 定義エクスポート関連の I/O 設定
+ */
+export type AppIoExportConfig = {
+	templates?: Record<string, AppIoExportTemplateTargetConfig>;
+};
+
+/**
  * アプリ I/O パス設定
  */
 export type AppIoConfig = {
 	exportDir?: string;
 	importDir?: string;
+	export?: AppIoExportConfig;
 };
 
 /**
@@ -268,6 +283,60 @@ function parsePreview(raw: unknown): PreviewConfig {
 }
 
 /**
+ * app.io.export.templates ブロックをパースする
+ */
+function parseAppIoExportTemplates(
+	raw: unknown
+): Record<string, AppIoExportTemplateTargetConfig> | undefined {
+	if (raw === undefined) {
+		return undefined;
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "app.io.export.templates" must be an object');
+	}
+
+	const templates: Record<string, AppIoExportTemplateTargetConfig> = {};
+	for (const [targetId, value] of Object.entries(raw as Record<string, unknown>)) {
+		if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+			throw new Error(
+				`application config "app.io.export.templates.${targetId}" must be an object`
+			);
+		}
+
+		const dir = (value as Record<string, unknown>).dir;
+		if (typeof dir !== 'string' || dir.trim() === '') {
+			throw new Error(
+				`application config "app.io.export.templates.${targetId}.dir" must be a non-empty string`
+			);
+		}
+
+		templates[targetId] = { dir: dir.trim() };
+	}
+
+	return templates;
+}
+
+/**
+ * app.io.export ブロックをパースする
+ */
+function parseAppIoExport(raw: unknown): AppIoExportConfig | undefined {
+	if (raw === undefined) {
+		return undefined;
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "app.io.export" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	const templates = parseAppIoExportTemplates(block.templates);
+	if (templates === undefined) {
+		return {};
+	}
+
+	return { templates };
+}
+
+/**
  * app.io ブロックをパースする
  */
 function parseAppIo(raw: unknown): AppIoConfig | undefined {
@@ -295,7 +364,28 @@ function parseAppIo(raw: unknown): AppIoConfig | undefined {
 		io.importDir = block.importDir.trim();
 	}
 
+	const exportConfig = parseAppIoExport(block.export);
+	if (exportConfig !== undefined) {
+		io.export = exportConfig;
+	}
+
 	return io;
+}
+
+/**
+ * target 向けエクスポートテンプレート dir を絶対パスへ解決する
+ */
+export function resolveExportTemplateDir(targetId: string): string {
+	const config = loadApplicationConfig();
+	const dir = config.app.io?.export?.templates?.[targetId]?.dir?.trim();
+
+	if (!dir) {
+		throw new Error(
+			`application config "app.io.export.templates.${targetId}.dir" is not configured`
+		);
+	}
+
+	return resolveApplicationPath(dir);
 }
 
 /**

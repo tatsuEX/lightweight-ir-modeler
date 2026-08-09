@@ -1,30 +1,13 @@
 import { assertSafeLogicalIdPathSegment } from '$lib/ir/ui-definition-meta';
 import type { RawDefinition } from '$lib/raw/raw-definition';
 import type { DefinitionArtifact, DefinitionWriter } from '$lib/server/io/writers/definition-writer';
-import { escapeHtml } from '$lib/utils/escape-html';
+import {
+	serializeHandlebarsTemplate,
+	toHandlebarsSafeString
+} from '$lib/server/io/writers/serialize/serialize-handlebars';
+import { shapePrimeFaces } from '$lib/server/io/writers/shape/primefaces-shape';
 
-/**
- * Raw フィールドを PrimeFaces タグへ変換する
- */
-function fieldToXhtml(field: Record<string, unknown>): string {
-	const id = typeof field.logicalId === 'string' && field.logicalId.trim() !== '' ? field.logicalId : 'field';
-	const required = field.required === true ? ' required="true"' : '';
-	const type = typeof field.type === 'string' ? field.type : 'unknown';
-	const hint = field.hint ? ` placeholder="${escapeHtml(field.hint)}"` : '';
-
-	const label = `\t\t\t<p:outputLabel for="${id}" value="${escapeHtml(field.label)}" />`;
-	
-	switch (type) {
-		case 'textbox':
-			return `${label}\t\t\t<p:inputText id="${id}"${required}${hint} />\n`;
-		case 'textarea':
-			return `${label}\t\t\t<p:inputTextarea id="${id}"${required}${hint} />\n`;
-		case 'number':
-			return `${label}\t\t\t<p:inputNumber id="${id}"${required}${hint} />\n`;
-		default:
-			return `${label}\t\t\t<!-- unsupported type: ${type} id=${id} -->\n`;
-	}
-}
+const PRIMEFACES_FORM_TEMPLATE = 'form.hbs';
 
 /**
  * PrimeFaces Facelet 用 Writer
@@ -44,47 +27,30 @@ export class PrimeFacesWriter implements DefinitionWriter {
 	}
 
 	/**
-	 * Raw を最小 Facelet xhtml 成果物へ変換する
+	 * Raw をコンポーネント別 Handlebars + form 合成で Facelet xhtml へ変換する
 	 */
 	toArtifact(raw: RawDefinition): DefinitionArtifact {
-		const logicalId = typeof raw.logicalId === 'string' ? raw.logicalId : 'form';
-		const identity = this.describeArtifact(logicalId);
-		const name = typeof raw.name === 'string' ? raw.name : identity.filename.replace(/\.xhtml$/, '');
-		const formId = assertSafeLogicalIdPathSegment(logicalId);
-		const fields = Array.isArray(raw.fields) ? raw.fields : [];
+		const shaped = shapePrimeFaces(raw);
+		const formId = assertSafeLogicalIdPathSegment(shaped.formId);
+		const identity = this.describeArtifact(formId);
+		const name = shaped.name.trim() !== '' ? shaped.name : identity.filename.replace(/\.xhtml$/, '');
 
-		const fieldLines = fields
-			.filter((field): field is Record<string, unknown> =>
-				field !== null && typeof field === 'object' && !Array.isArray(field)
-			)
-			.map(fieldToXhtml)
-			.join('\n');
-
-		const content = [
-			'<?xml version="1.0" encoding="UTF-8"?>',
-			'<!DOCTYPE html>',
-			`<html xmlns="http://www.w3.org/1999/xhtml"`,
-			`\txmlns:h="http://xmlns.jcp.org/jsf/html"`,
-			`\txmlns:p="http://primefaces.org/ui">`,
-			`<h:head>`,
-			`\t<title>${name}</title>`,
-			`</h:head>`,
-			`<h:body>`,
-			`\t<h:form id="${formId}">`,
-			`\t\t<p:messages id="messages" showDetail="true" showSummary="true" />`,
-			`\t\t<p:panelGrid columns="2" columnClasses="lg:col-6" />`,
-			fieldLines,
-			`\t\t</p:panelGrid>`,
-			`\t</h:form>`,
-			`</h:body>`,
-			`</html>`,
-			''
-		].join('\n');
+		const fields = shaped.fields.map((field) => {
+			const markup = serializeHandlebarsTemplate(this.targetId, field);
+			return {
+				...field,
+				// WARN: markup は component hbs で既に escape 済み。form では {{{markup}}} で挿入する。
+				markup: toHandlebarsSafeString(markup)
+			};
+		});
 
 		return {
 			...identity,
-			content
+			content: serializeHandlebarsTemplate(
+				this.targetId,
+				{ formId, name, fields },
+				PRIMEFACES_FORM_TEMPLATE
+			)
 		};
 	}
 }
-

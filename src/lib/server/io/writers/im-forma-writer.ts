@@ -1,6 +1,8 @@
 import { assertSafeLogicalIdPathSegment } from '$lib/ir/ui-definition-meta';
 import type { RawDefinition } from '$lib/raw/raw-definition';
 import type { DefinitionArtifact, DefinitionWriter } from '$lib/server/io/writers/definition-writer';
+import { serializeJson } from '$lib/server/io/writers/serialize/serialize-json';
+import { shapeImForma } from '$lib/server/io/writers/shape/im-forma-shape';
 
 /**
  * IM-Forma JSON 用 Writer
@@ -23,21 +25,13 @@ export class IMFormaWriter implements DefinitionWriter {
 	 * Raw を pretty-print JSON 成果物へ変換する
 	 */
 	toArtifact(raw: RawDefinition): DefinitionArtifact {
-		const logicalId = typeof raw.logicalId === 'string' ? raw.logicalId : 'form';
-		const identity = this.describeArtifact(logicalId);
-		const formId = assertSafeLogicalIdPathSegment(logicalId);
-
-		const payload = {
-			formId,
-			formName: typeof raw.name === 'string' ? raw.name : '',
-			description: typeof raw.description === 'string' ? raw.description : '',
-			version: typeof raw.version === 'string' ? raw.version : '',
-			items: Array.isArray(raw.items) ? raw.items : []
-		};
+		const shaped = shapeImForma(raw);
+		const formId = assertSafeLogicalIdPathSegment(shaped.formId);
+		const identity = this.describeArtifact(formId);
 
 		return {
 			...identity,
-			content: `${JSON.stringify(payload, null, 2)}\n`
+			content: serializeJson({ ...shaped, formId })
 		};
 	}
 }

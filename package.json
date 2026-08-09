@@ -47,6 +47,9 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
+		"@types/handlebars": "^4.0.40",
+		"@types/js-yaml": "^4.0.9",
+		"handlebars": "^4.7.9",
 		"js-yaml": "^5.2.1",
 		"nanoid": "^6.0.0",
 		"zod": "^4.4.3"

@@ -6,6 +6,11 @@ app:
   io:
     # importDir: ./data/import
     exportDir: ./data/export
+    export:
+      templates:
+        # Handlebars 等のテンプレート根（target ごと）。plugin 的に差し替え可能
+        primefaces:
+          dir: ./templates/export/primefaces
 
 # プレビュー画面: テーマ選択と外部 UI 定義の出力先
 preview:
