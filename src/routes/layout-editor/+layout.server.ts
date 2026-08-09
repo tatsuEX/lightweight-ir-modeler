@@ -10,6 +10,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	const config = loadApplicationConfig();
 	const autoSave = config.ir?.autoSave;
 	const preview = config.preview;
+	const layoutEditor = config.layoutEditor;
 	const defaultUiDefinition = createEmptyUiDefinitionMeta();
 	const logicalIdParam = url.searchParams.get('logicalId')?.trim() ?? '';
 
@@ -20,6 +21,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		},
 		initialSnapshot: null as unknown[] | null,
 		initialUiDefinition: null as ReturnType<typeof createEmptyUiDefinitionMeta> | null,
+		layoutEditor,
 		preview,
 		uiDefinition: defaultUiDefinition
 	};
@@ -43,6 +45,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 				},
 				initialSnapshot: latest.components,
 				initialUiDefinition: editorMeta,
+				layoutEditor,
 				preview,
 				uiDefinition: editorMeta
 			};
@@ -55,6 +58,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 			},
 			initialSnapshot: null,
 			initialUiDefinition: null,
+			layoutEditor,
 			preview,
 			uiDefinition: {
 				...defaultUiDefinition,
@@ -70,6 +74,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		},
 		initialSnapshot: null,
 		initialUiDefinition: null,
+		layoutEditor,
 		preview,
 		uiDefinition: defaultUiDefinition
 	};

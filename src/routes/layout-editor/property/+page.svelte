@@ -2,6 +2,9 @@
 	import { Button } from 'flowbite-svelte';
 	import ComponentAttributeTable from '$lib/components/ComponentAttributeTable.svelte';
 	import ComponentToolPalette from '$lib/components/ComponentToolPalette.svelte';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 
 	let selectedCount = $state(0);
 	let attributeTable = $state<ComponentAttributeTable | undefined>();
@@ -19,7 +22,7 @@
 		<div>
 			<h1 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Property</h1>
 			<p class="text-gray-600 dark:text-gray-400">
-				UI コンポーネントの基本属性を編集する画面です。
+				UI コンポーネントの属性を編集する画面です。Basic / Details / Validation で列を切り替えられます。
 			</p>
 		</div>
 		<div class="flex shrink-0 items-center gap-2">
@@ -29,5 +32,9 @@
 			<ComponentToolPalette />
 		</div>
 	</div>
-	<ComponentAttributeTable bind:selectedCount bind:this={attributeTable} />
+	<ComponentAttributeTable
+		bind:selectedCount
+		bind:this={attributeTable}
+		itemDelimiter={data.layoutEditor.property.itemDelimiter}
+	/>
 </main>

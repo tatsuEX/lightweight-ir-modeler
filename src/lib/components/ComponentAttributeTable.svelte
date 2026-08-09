@@ -1,6 +1,8 @@
 <script lang="ts">
 	import {
 		Badge,
+		Button,
+		ButtonGroup,
 		Checkbox,
 		Input,
 		Table,
@@ -9,19 +11,44 @@
 		TableBodyRow,
 		TableHead,
 		TableHeadCell,
-		Toggle
+		Toggle,
+
 	} from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
+	import ComponentDetailsCell from '$lib/components/ComponentDetailsCell.svelte';
+	import ComponentValidationCell from '$lib/components/ComponentValidationCell.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
+	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 
-	let { selectedCount = $bindable(0) } = $props();
+	let {
+		selectedCount = $bindable(0),
+		/** items タグの区切り（`${value}${itemDelimiter}${label}`）。未指定時は `|` */
+		itemDelimiter = DEFAULT_ITEM_DELIMITER
+	}: {
+		selectedCount?: number;
+		itemDelimiter?: string;
+	} = $props();
+
+	const resolvedItemDelimiter = $derived(
+		itemDelimiter !== '' ? itemDelimiter : DEFAULT_ITEM_DELIMITER
+	);
 
 	/** 画面定義の状態は Context API 経由でのみ参照する */
 	const uiDefinition = getUIDefinitionContext();
 
 	/** 行選択は Property 画面内の presentation state（domain / snapshot には載せない） */
 	let selectedIds = $state<Set<string>>(new Set());
+
+	/** 属性列グループ（presentation state。IR / snapshot には載せない） */
+	type ColumnGroupId = 'basic' | 'details' | 'validation';
+	let columnGroup = $state<ColumnGroupId>('basic');
+
+	const columnGroups = [
+		{ id: 'basic' as const, label: 'Basic' },
+		{ id: 'details' as const, label: 'Details' },
+		{ id: 'validation' as const, label: 'Validation' }
+	];
 
 	const componentIds = $derived(uiDefinition.components.map((component) => component.id));
 
@@ -33,8 +60,12 @@
 		componentIds.length > 0 && componentIds.some((id) => selectedIds.has(id)) && !allSelected
 	);
 
+	/** 空行の colspan（固定 4 + Basic は hint/required/readonly/disabled、他は 1 列） */
+	const totalColCount = $derived(columnGroup === 'basic' ? 8 : 5);
+
 	// 入力行を詰めて一覧性を上げる（Flowbite 既定の px-6 py-4 は広すぎる）
 	const cellClass = 'px-3 py-2';
+	const notSupportedClass = 'text-gray-400 dark:text-gray-400';
 
 	$effect(() => {
 		selectedCount = selectedIds.size;
@@ -94,96 +125,167 @@
 
 <UiDefinitionMetaAccordion />
 
-<Table hoverable shadow data-arrow-nav-root>
-	<TableHead>
-		<TableHeadCell class="{cellClass} w-12">
-			<Checkbox
-				class="h-6 w-6 focus:ring-0"
-				checked={allSelected}
-				aria-label="すべて選択"
-				onclick={toggleSelectAll}
-			/>
-		</TableHeadCell>
-		<TableHeadCell class="{cellClass} w-56">id</TableHeadCell>
-		<TableHeadCell class="{cellClass} w-28">type</TableHeadCell>
-		<TableHeadCell class={cellClass}>label</TableHeadCell>
-		<TableHeadCell class={cellClass}>hint</TableHeadCell>
-		<TableHeadCell class="{cellClass} w-24 text-center">required</TableHeadCell>
-	</TableHead>
-	<TableBody>
-		{#if uiDefinition.components.length === 0}
-			<TableBodyRow>
-				<TableBodyCell colspan={6} class="{cellClass} text-center text-gray-500 dark:text-gray-400">
-					コンポーネントがありません。ツールパレットから追加してください。
-				</TableBodyCell>
-			</TableBodyRow>
-		{:else}
-			<!-- WARN: key は編集対象の logicalId ではなく内部 id。key を変えると入力中に再マウントされフォーカスが飛ぶ。 -->
-			{#each uiDefinition.components as component, rowIndex (component.id)}
+<div class="mb-3">
+	<ButtonGroup>
+		{#each columnGroups as group (group.id)}
+			<Button
+				type="button"
+				color={columnGroup === group.id ? 'primary' : 'alternative'}
+				outline={columnGroup !== group.id}
+				onclick={() => {
+					columnGroup = group.id;
+				}}
+			>
+				{group.label}
+			</Button>
+		{/each}
+	</ButtonGroup>
+</div>
+
+<div class="overflow-x-auto">
+	<Table hoverable shadow data-arrow-nav-root>
+		<TableHead>
+			<TableHeadCell class="{cellClass} w-12">
+				<Checkbox
+					class="h-6 w-6 focus:ring-0"
+					checked={allSelected}
+					aria-label="すべて選択"
+					onclick={toggleSelectAll}
+				/>
+			</TableHeadCell>
+			<TableHeadCell class="{cellClass} w-56">id</TableHeadCell>
+			<TableHeadCell class="{cellClass} w-28">type</TableHeadCell>
+			<TableHeadCell class={cellClass}>label</TableHeadCell>
+			{#if columnGroup === 'basic'}
+				<TableHeadCell class={cellClass}>hint</TableHeadCell>
+				<TableHeadCell class="{cellClass} w-4">required</TableHeadCell>
+				<TableHeadCell class="{cellClass} w-4">readonly</TableHeadCell>
+				<TableHeadCell class="{cellClass} w-4">disabled</TableHeadCell>
+			{:else if columnGroup === 'details'}
+				<TableHeadCell class={cellClass}>details</TableHeadCell>
+			{:else}
+				<TableHeadCell class={cellClass}>validation</TableHeadCell>
+			{/if}
+		</TableHead>
+		<TableBody>
+			{#if uiDefinition.components.length === 0}
 				<TableBodyRow>
-					<TableBodyCell class={cellClass}>
-						<span class="contents" use:arrowNavigation={{ field: 'selected', row: rowIndex }}>
-							<Checkbox
-								class="h-6 w-6"
-								checked={isSelected(component.id)}
-								aria-label="{component.type} の選択"
-								onchange={(event) =>
-									toggleSelected(component.id, event.currentTarget.checked)}
-							/>
-						</span>
-					</TableBodyCell>
-					<TableBodyCell class={cellClass}>
-						<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
-							<Input
-								size="sm"
-								placeholder="ID"
-								aria-label="{component.type} のID"
-								bind:value={component.logicalId}
-							/>
-						</span>
-					</TableBodyCell>
-					<TableBodyCell class={cellClass}>
-						<Badge color="gray">{component.type}</Badge>
-					</TableBodyCell>
-					<TableBodyCell class={cellClass}>
-						<span class="contents" use:arrowNavigation={{ field: 'label', row: rowIndex }}>
-							<Input
-								size="sm"
-								placeholder="表示ラベル"
-								aria-label="{component.type} のラベル"
-								bind:value={component.label}
-							/>
-						</span>
-					</TableBodyCell>
-					<TableBodyCell class={cellClass}>
-						{#if component.hint !== undefined}
-							<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
-								<Input
-										size="sm"
-										placeholder="補足説明"
-										aria-label="{component.type} のヒント"
-										bind:value={component.hint}
-									/>
-							</span>
-						{:else}
-							<span class="text-gray-400 dark:text-gray-400">- not supported -</span>
-						{/if}
-					</TableBodyCell>
-					<TableBodyCell class="{cellClass} text-center">
-						{#if component.validation?.required !== undefined}
-							<span class="contents" use:arrowNavigation={{ field: 'required', row: rowIndex }}>
-								<Toggle
-									class="justify-center"
-									aria-label="{component.type} の必須指定"
-									bind:checked={component.validation.required}
-								/>
-							</span>
-						{:else}
-							<span class="text-gray-400 dark:text-gray-400">- not supported -</span>
-						{/if}
+					<TableBodyCell
+						colspan={totalColCount}
+						class="{cellClass} text-center text-gray-500 dark:text-gray-400"
+					>
+						コンポーネントがありません。ツールパレットから追加してください。
 					</TableBodyCell>
 				</TableBodyRow>
-			{/each}
-		{/if}
-	</TableBody>
-</Table>
+			{:else}
+				<!-- WARN: key は編集対象の logicalId ではなく内部 id。key を変えると入力中に再マウントされフォーカスが飛ぶ。 -->
+				{#each uiDefinition.components as component, rowIndex (component.id)}
+					<TableBodyRow>
+						<TableBodyCell class={cellClass}>
+							<span class="contents" use:arrowNavigation={{ field: 'selected', row: rowIndex }}>
+								<Checkbox
+									class="h-6 w-6"
+									checked={isSelected(component.id)}
+									aria-label="{component.type} の選択"
+									onchange={(event) =>
+										toggleSelected(component.id, event.currentTarget.checked)}
+								/>
+							</span>
+						</TableBodyCell>
+						<TableBodyCell class={cellClass}>
+							<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
+								<Input
+									size="sm"
+									placeholder="ID"
+									aria-label="{component.type} のID"
+									bind:value={component.logicalId}
+								/>
+							</span>
+						</TableBodyCell>
+						<TableBodyCell class={cellClass}>
+							<Badge color="gray">{component.type}</Badge>
+						</TableBodyCell>
+						<TableBodyCell class={cellClass}>
+							<span class="contents" use:arrowNavigation={{ field: 'label', row: rowIndex }}>
+								<Input
+									size="sm"
+									placeholder="表示ラベル"
+									aria-label="{component.type} のラベル"
+									bind:value={component.label}
+								/>
+							</span>
+						</TableBodyCell>
+
+						{#if columnGroup === 'basic'}
+							<TableBodyCell class={cellClass}>
+								{#if component.hint !== undefined}
+									<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
+										<Input
+											size="sm"
+											placeholder="補足説明"
+											aria-label="{component.type} のヒント"
+											bind:value={component.hint}
+										/>
+									</span>
+								{:else}
+									<span class={notSupportedClass}>- not supported -</span>
+								{/if}
+							</TableBodyCell>
+							<TableBodyCell class={cellClass}>
+								{#if component.validation?.required !== undefined}
+									<span
+										class="contents"
+										use:arrowNavigation={{ field: 'validation-required', row: rowIndex }}
+									>
+										<Toggle
+											aria-label="{component.type} の必須指定"
+											bind:checked={component.validation.required}
+										/>
+									</span>
+								{:else}
+									<span class={notSupportedClass}>- not supported -</span>
+								{/if}
+							</TableBodyCell>
+							<TableBodyCell class={cellClass}>
+								{#if component.readonly !== undefined}
+									<span class="contents" use:arrowNavigation={{ field: 'readonly', row: rowIndex }}>
+										<Toggle
+											aria-label="{component.type} の読み取り専用指定"
+											bind:checked={component.readonly}
+										/>
+									</span>
+								{:else}
+									<span class={notSupportedClass}>- not supported -</span>
+								{/if}
+							</TableBodyCell>
+							<TableBodyCell class={cellClass}>
+								{#if component.disabled !== undefined}
+									<span class="contents" use:arrowNavigation={{ field: 'disabled', row: rowIndex }}>
+										<Toggle
+											aria-label="{component.type} の無効化指定"
+											bind:checked={component.disabled}
+										/>
+									</span>
+								{:else}
+									<span class={notSupportedClass}>- not supported -</span>
+								{/if}
+							</TableBodyCell>
+						{:else if columnGroup === 'details'}
+							<TableBodyCell class={cellClass}>
+								<ComponentDetailsCell
+									{component}
+									{rowIndex}
+									itemDelimiter={resolvedItemDelimiter}
+								/>
+							</TableBodyCell>
+						{:else}
+							<TableBodyCell class={cellClass}>
+								<ComponentValidationCell {component} {rowIndex} />
+							</TableBodyCell>
+						{/if}
+					</TableBodyRow>
+				{/each}
+			{/if}
+		</TableBody>
+	</Table>
+</div>

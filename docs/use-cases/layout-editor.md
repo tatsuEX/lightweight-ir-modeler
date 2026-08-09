@@ -1,17 +1,18 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T00:36:00"
-summary: "property / layout / preview での UI 定義編集と Context 共有、プレビュー描画"
+updated: "2026-08-09T23:45:00"
+summary: "property / layout / preview での UI 定義編集、Basic/Details/Validation 列グループ"
 features:
   - layout-editor
   - ui-definition
   - preview
   - ir-snapshot
+  - property-attributes
 ---
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-09 00:36
+最終更新: 2026-08-09 23:45
 
 ## 概要
 
@@ -86,9 +87,28 @@ flowchart TB
 - テーマは `preview-theme--{value}` クラス + `preview-theme-styles.ts`
 - Export / Download ボタンは `isUiDefinitionMetaReady` かつ非 busy のときのみ有効
 
+## Property 属性テーブル
+
+`ComponentAttributeTable` で `UIDefinition.components` を行編集する。
+
+- **常時表示列**: 行選択 / `logicalId` / `type` / `label`
+- **列グループ切替**（presentation state。IR / snapshot には載せない）: `Basic` | `Details` | `Validation`（関心別。type 名では増やさない）
+
+| グループ | 追加列 | 編集対象（セル内で type 分岐） |
+|---|---|---|
+| Basic | hint | 共通。非対応は `- not supported -` |
+| Details | details | choice → `items`、date 系 → `format`、textarea → `cols` / `rows` |
+| Validation | validation | `required`、textbox → `pattern` / `minlength` / `maxlength`、textarea → `maxlength`、number → `min` / `max`、date 系 → min/max 境界 |
+
+日付系 IR の SSOT は `format` のみ（`placeholder` は持たない）。PrimeFaces export 時の HTML `placeholder` は shape が `format` の英字トークンを `_` マスク化した文字列を導出する。
+
+`TagsInput` は IR 非依存（Enter / カンマで追加、Badge で削除）。`data-arrow-nav-focus` により外側の `arrowNavigation` が削除ボタンではなく入力へフォーカスする。
+
+items 表記は `${value}${itemDelimiter}${label}`（同一なら区切りなし）。`itemDelimiter` は `config/application.yml` の `layoutEditor.property.itemDelimiter`（既定 `|`）。
+
 ## コンポーネント種別（現状）
 
-Factory関数: `createTextbox` / `createTextarea` / `createNumber`  
+Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` / `createRadio` / `createDropdown` / `createDropdownMulti` / `createDatepicker` / `createDateSpan` / `createDatetimepicker` / `createTimepicker` / `createLabel` など。  
 共通フィールド例: `id`, `type`, `logicalId`, `label`, `validation` など。  
 `id` は編集セッション用。snapshot 保存時は除去し、読込時に `nanoid` で再生成する。
 
@@ -99,4 +119,8 @@ Factory関数: `createTextbox` / `createTextarea` / `createNumber`
 | Store | `src/lib/store/layout-editor/layout-editor.svelte.ts` |
 | Layout shell | `src/routes/layout-editor/+layout.svelte` |
 | 初期読込 | `src/routes/layout-editor/+layout.server.ts` |
+| 属性テーブル | `src/lib/components/ComponentAttributeTable.svelte` |
+| Details セル | `src/lib/components/ComponentDetailsCell.svelte` |
+| Validation セル | `src/lib/components/ComponentValidationCell.svelte` |
+| TagsInput | `src/lib/components/TagsInput.svelte` |
 | Preview | `src/lib/components/Preview.svelte` |

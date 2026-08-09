@@ -9,6 +9,16 @@ export type ArrowNavigationParams = {
 const FOCUSABLE_SELECTOR =
 	'input:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** テキスト入力を優先して解決する（複合ウィジェットの dismiss ボタン等を避ける） */
+const TEXT_ENTRY_SELECTOR = 'input:not([disabled]):not([type="button"]):not([type="submit"]):not([type="reset"]), textarea:not([disabled])';
+
+/**
+ * 複合コンポーネントが「矢印遷移の主フォーカス」を明示する属性。
+ * TagsInput など内部に button を持つセルで、外側の use:arrowNavigation が誤って
+ * CloseButton を掴まないようにする。
+ */
+const ARROW_NAV_FOCUS_ATTR = 'data-arrow-nav-focus';
+
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
 /** 同一入力欄の端での連続左右キー押下を追跡する */
@@ -110,13 +120,33 @@ function shouldNavigateHorizontal(
 }
 
 /**
- * ラッパーまたは自身からフォーカス可能な子孫要素を解決する
+ * 明示マークまたはテキスト入力を優先し、フォーカス可能な子孫を解決する
+ *
+ * WARN: querySelector(FOCUSABLE_SELECTOR) だけだと TagsInput の Badge 削除ボタンが
+ * 先に当たるため、data-arrow-nav-focus → text entry → 汎用 focusable の順で探す。
  */
 function resolveFocusable(node: HTMLElement): HTMLElement | null {
+	const marked = node.matches(`[${ARROW_NAV_FOCUS_ATTR}]`)
+		? node
+		: node.querySelector<HTMLElement>(`[${ARROW_NAV_FOCUS_ATTR}]`);
+	if (marked) {
+		if (marked.matches(FOCUSABLE_SELECTOR)) {
+			return marked;
+		}
+		return (
+			marked.querySelector<HTMLElement>(TEXT_ENTRY_SELECTOR) ??
+			marked.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+		);
+	}
+
 	if (node.matches(FOCUSABLE_SELECTOR)) {
 		return node;
 	}
-	return node.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+
+	return (
+		node.querySelector<HTMLElement>(TEXT_ENTRY_SELECTOR) ??
+		node.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+	);
 }
 
 /**
@@ -148,6 +178,65 @@ function clearNavigationAttributes(focusable: HTMLElement): void {
 }
 
 /**
+ * ルート内の data-row の最小・最大を取得する
+ */
+function collectRowBounds(root: HTMLElement): { min: number; max: number } | null {
+	const nodes = root.querySelectorAll<HTMLElement>('[data-focusable][data-row]');
+	if (nodes.length === 0) {
+		return null;
+	}
+
+	let min = Number.POSITIVE_INFINITY;
+	let max = Number.NEGATIVE_INFINITY;
+	for (const node of nodes) {
+		const row = Number(node.dataset.row);
+		if (!Number.isFinite(row)) {
+			continue;
+		}
+		if (row < min) {
+			min = row;
+		}
+		if (row > max) {
+			max = row;
+		}
+	}
+
+	if (!Number.isFinite(min) || !Number.isFinite(max)) {
+		return null;
+	}
+	return { min, max };
+}
+
+/**
+ * 同じ field の上下方向で、未対応行（focusable 無し）を飛ばして次の入力を探す
+ *
+ * WARN: `- not supported -` セルは data-focusable を持たないため、隣接行指定だと止まる。
+ */
+function findVerticalTarget(
+	root: HTMLElement,
+	field: string,
+	fromRow: number,
+	delta: -1 | 1
+): HTMLElement | null {
+	const bounds = collectRowBounds(root);
+	if (!bounds) {
+		return null;
+	}
+
+	let row = fromRow + delta;
+	while (row >= bounds.min && row <= bounds.max) {
+		const candidate = root.querySelector<HTMLElement>(
+			`[data-focusable][data-field="${CSS.escape(field)}"][data-row="${row}"]`
+		);
+		if (candidate) {
+			return candidate;
+		}
+		row += delta;
+	}
+	return null;
+}
+
+/**
  * 矢印キーで同一ルート内のフォーカスを移動する
  */
 function handleArrowNavigation(event: KeyboardEvent, focusable: HTMLElement): void {
@@ -162,26 +251,28 @@ function handleArrowNavigation(event: KeyboardEvent, focusable: HTMLElement): vo
 		return;
 	}
 
+	const currentRow = Number(row);
+	if (!Number.isFinite(currentRow)) {
+		return;
+	}
+
 	let target: HTMLElement | null = null;
 
 	switch (event.key) {
 		case 'ArrowUp':
 			resetEdgeArrowState();
-			target = root.querySelector<HTMLElement>(
-				`[data-focusable][data-field="${CSS.escape(field)}"][data-row="${Number(row) - 1}"]`
-			);
+			target = findVerticalTarget(root, field, currentRow, -1);
 			break;
 		case 'ArrowDown':
 			resetEdgeArrowState();
-			target = root.querySelector<HTMLElement>(
-				`[data-focusable][data-field="${CSS.escape(field)}"][data-row="${Number(row) + 1}"]`
-			);
+			target = findVerticalTarget(root, field, currentRow, 1);
 			break;
 		case 'ArrowLeft':
 		case 'ArrowRight': {
 			if (!shouldNavigateHorizontal(event, focusable)) {
 				return;
 			}
+			// 左右は data-focusable のみ列挙するため、未対応セルは元からスキップされる
 			const rowFocusables = [
 				...root.querySelectorAll<HTMLElement>(`[data-focusable][data-row="${row}"]`)
 			];
