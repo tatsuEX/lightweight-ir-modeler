@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T00:36:00"
+updated: "2026-08-09T22:40:58"
 summary: "docs 索引と現行スコープ、更新方針の案内"
 features:
   - docs
@@ -8,12 +8,13 @@ features:
   - layout-editor
   - ir-snapshot
   - ui-export
+  - primefaces
   - http-api
 ---
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-08-09 00:36
+最終更新: 2026-08-09 22:40
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -23,8 +24,9 @@ features:
 1. [アーキテクチャ概要](./architecture/overview.md) — モジュール境界・データフロー・クラス関係
 2. [レイアウトエディタ編集](./use-cases/layout-editor.md) — property / layout / preview
 3. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
-4. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md)
-5. [HTTP API](./api/http-endpoints.md)
+4. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
+5. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
+6. [HTTP API](./api/http-endpoints.md)
 
 ## ドキュメントの更新方針
 

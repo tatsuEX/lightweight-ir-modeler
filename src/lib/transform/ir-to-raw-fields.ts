@@ -1,5 +1,8 @@
 /**
  * IR component から Raw 用フィールドオブジェクトを組み立てる
+ *
+ * WARN: type 固有プロパティ（items / format 等）は additionalProperties としてそのまま載せる。
+ * shape 層がテンプレート向けに正規化する。
  */
 export function mapComponentToRawField(component: unknown): Record<string, unknown> {
 	if (component === null || typeof component !== 'object' || Array.isArray(component)) {
@@ -13,7 +16,7 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 			? (source.validation as Record<string, unknown>)
 			: {};
 
-	return {
+	const field: Record<string, unknown> = {
 		logicalId: typeof source.logicalId === 'string' ? source.logicalId : '',
 		type,
 		label: typeof source.label === 'string' ? source.label : '',
@@ -24,4 +27,28 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 		required: validation.required === true,
 		validation: { ...validation }
 	};
+
+	if (Array.isArray(source.items)) {
+		field.items = source.items;
+	}
+	if (typeof source.format === 'string') {
+		field.format = source.format;
+	}
+	if (typeof source.placeholder === 'string') {
+		field.placeholder = source.placeholder;
+	}
+	if (typeof source.clearable === 'boolean') {
+		field.clearable = source.clearable;
+	}
+	if (typeof source.rows === 'number') {
+		field.rows = source.rows;
+	}
+	if (typeof source.cols === 'number') {
+		field.cols = source.cols;
+	}
+	if (typeof source.multiple === 'boolean') {
+		field.multiple = source.multiple;
+	}
+
+	return field;
 }

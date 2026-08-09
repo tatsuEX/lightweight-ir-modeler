@@ -110,15 +110,25 @@ describe('DefinitionWriter', () => {
 			fields: [
 				{ logicalId: 'a', type: 'textarea', label: 'A' },
 				{ logicalId: 'b', type: 'number', label: 'B' },
-				{ logicalId: 'c', type: 'datepicker', label: 'C' }
+				{ logicalId: 'c', type: 'datepicker', label: 'C' },
+				{
+					logicalId: 'd',
+					type: 'checkbox',
+					label: 'D',
+					items: [{ label: 'Sun', value: 'sun' }]
+				},
+				{ logicalId: 'e', type: 'not-a-real-type', label: 'E' }
 			]
 		});
 
+		expect(artifact.content).toContain('xmlns:f="http://xmlns.jcp.org/jsf/core"');
 		expect(artifact.content).toContain('<p:outputLabel for="a" value="A" />');
 		expect(artifact.content).toMatch(/<p:inputTextarea[\s\S]*?id="a"[\s\S]*?><\/p:inputTextarea>/);
 		expect(artifact.content).toMatch(/<p:inputNumber[\s\S]*?id="b"/);
-		expect(artifact.content).toContain('<!-- unsupported type: datepicker id=c -->');
-		expect(artifact.content).not.toContain('<p:datepicker');
+		expect(artifact.content).toMatch(/<p:datePicker[\s\S]*?id="c"[\s\S]*?pattern="yyyy-MM-dd"/);
+		expect(artifact.content).toMatch(/<p:selectManyCheckbox[\s\S]*?id="d"/);
+		expect(artifact.content).toContain('<f:selectItem itemValue="sun" itemLabel="Sun" />');
+		expect(artifact.content).toContain('<!-- unsupported type: not-a-real-type id=e -->');
 	});
 
 	it('IMFormaWriter owns json filename and content', () => {

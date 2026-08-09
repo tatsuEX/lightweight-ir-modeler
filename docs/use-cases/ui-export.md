@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T17:34:00"
-summary: "Export: form=レイアウト、components=入力。shape→hbs 合成 / json"
+updated: "2026-08-09T22:40:58"
+summary: "Export パイプライン・API・shape/serialize 境界（target 横断）"
 features:
   - ui-export
   - raw-validation
@@ -13,7 +13,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-08-09 17:34
+最終更新: 2026-08-09 22:40
 
 ## 概要
 
@@ -21,12 +21,13 @@ Preview の「出力」「ダウンロード」から、編集中 IR（store）�
 
 対応 target（現状）:
 
-| targetId | 成果物例 | Transformer | shape | serialize |
-|---|---|---|---|---|
-| `primefaces` | `<logicalId>.xhtml` | `transformToPrimeFacesRaw` | `shapePrimeFaces` | Handlebars（`form.hbs`） |
-| `im-forma` | `<logicalId>.json` | `transformToImFormaRaw` | `shapeImForma` | `JSON.stringify` |
+| targetId | 成果物例 | Transformer | shape | serialize | 詳細 |
+|---|---|---|---|---|---|
+| `primefaces` | `<logicalId>.xhtml` | `transformToPrimeFacesRaw` | `shapePrimeFaces` | Handlebars（`form.hbs`） | [PrimeFaces Export](./primefaces-export.md) |
+| `im-forma` | `<logicalId>.json` | `transformToImFormaRaw` | `shapeImForma` | `JSON.stringify` | （本稿の共通境界のみ） |
 
-クライアントは `targetId` だけを選ぶ。json / yaml / Handlebars の戦略は各 `DefinitionWriter` の内部事情。
+クライアントは `targetId` だけを選ぶ。json / yaml / Handlebars の戦略は各 `DefinitionWriter` の内部事情。  
+**target 固有のコンポーネント対応・shape フィールド・テンプレート規約**は各 target ドキュメントに分離する（`ui-export.md` は横断パイプラインに留める）。
 
 ## API 形状（重要）
 
@@ -126,9 +127,8 @@ sequenceDiagram
 | Writer | `describeArtifact` + shape + serialize の合成 | `*-writer.ts` |
 
 - Handlebars 経路の HTML escape は **コンポーネントテンプレートの `{{ }}`**。独自 `escapeHtml` は使わない。
-- テンプレート根: `app.io.export.templates.<targetId>.dir`（既定: `./templates/export/primefaces`）
-- **primefaces 合成**: `type` → `<dir>/components/<type>.hbs` を描画 → `SafeString` として `<dir>/form.hbs` の `{{{markup}}}` へ統合。未知 type / 不正 type は `components/unsupported.hbs`
-- **primefaces 責務**: `form.hbs` = レイアウト（`outputLabel` 含む）。`components/*.hbs` = type 別入出力コントロールのみ。`outputLabel for` と入力 `id` は同一 field の `{{id}}` で対応付ける
+- テンプレート根: `app.io.export.templates.<targetId>.dir`（config で差し替え可）
+- Handlebars target（現状 `primefaces`）は component 断片を描画して親テンプレートへ統合する。詳細は [PrimeFaces Export](./primefaces-export.md)
 - yaml serialize ヘルパは、yaml を吐く target が追加されたときに同時実装（現状 target なし）
 
 ## Raw 検証と JSON Schema

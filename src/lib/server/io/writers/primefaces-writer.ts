@@ -36,7 +36,10 @@ export class PrimeFacesWriter implements DefinitionWriter {
 		const name = shaped.name.trim() !== '' ? shaped.name : identity.filename.replace(/\.xhtml$/, '');
 
 		const fields = shaped.fields.map((field) => {
-			const markup = serializeHandlebarsTemplate(this.targetId, field);
+			const markup = serializeHandlebarsTemplate(
+				this.targetId,
+				field as unknown as Record<string, unknown>
+			);
 			return {
 				...field,
 				// WARN: markup は component hbs で既に escape 済み。form では {{{markup}}} で挿入する。

@@ -16,6 +16,14 @@ const components = [
 		type: 'textbox',
 		label: 'Name',
 		validation: { required: true }
+	},
+	{
+		id: 'internal2',
+		logicalId: 'days',
+		type: 'checkbox',
+		label: 'Days',
+		items: [{ label: 'Sun', value: 'sun' }],
+		validation: { required: false }
 	}
 ];
 
@@ -30,6 +38,12 @@ describe('IR to Raw transforms', () => {
 				type: 'textbox',
 				label: 'Name',
 				required: true
+			}),
+			expect.objectContaining({
+				logicalId: 'days',
+				type: 'checkbox',
+				label: 'Days',
+				items: [{ label: 'Sun', value: 'sun' }]
 			})
 		]);
 	});
@@ -44,6 +58,11 @@ describe('IR to Raw transforms', () => {
 				type: 'textbox',
 				label: 'Name',
 				required: true
+			}),
+			expect.objectContaining({
+				logicalId: 'days',
+				type: 'checkbox',
+				items: [{ label: 'Sun', value: 'sun' }]
 			})
 		]);
 	});

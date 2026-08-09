@@ -1,0 +1,11 @@
+<p:selectManyMenu
+	id="{{id}}"
+	{{#if required}}required="true"{{/if}}
+	{{#if disabled}}disabled="true"{{/if}}
+	{{#if readonly}}readonly="true"{{/if}}
+	showCheckbox="true"
+>
+{{#each items}}
+	<f:selectItem itemValue="{{value}}" itemLabel="{{label}}" />
+{{/each}}
+</p:selectManyMenu>

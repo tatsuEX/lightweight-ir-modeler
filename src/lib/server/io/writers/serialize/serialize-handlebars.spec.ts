@@ -64,10 +64,22 @@ describe('resolveComponentTemplateFile', () => {
 			'components/textarea.hbs'
 		);
 		expect(resolveComponentTemplateFile('primefaces', 'number')).toBe('components/number.hbs');
+		expect(resolveComponentTemplateFile('primefaces', 'checkbox')).toBe(
+			'components/checkbox.hbs'
+		);
+		expect(resolveComponentTemplateFile('primefaces', 'dropdown-multi')).toBe(
+			'components/dropdown-multi.hbs'
+		);
+		expect(resolveComponentTemplateFile('primefaces', 'datepicker')).toBe(
+			'components/datepicker.hbs'
+		);
+		expect(resolveComponentTemplateFile('primefaces', 'date-span')).toBe(
+			'components/date-span.hbs'
+		);
 	});
 
 	it('falls back to unsupported for unknown or unsafe types', () => {
-		expect(resolveComponentTemplateFile('primefaces', 'datepicker')).toBe(
+		expect(resolveComponentTemplateFile('primefaces', 'not-a-real-type')).toBe(
 			'components/unsupported.hbs'
 		);
 		expect(resolveComponentTemplateFile('primefaces', '../etc/passwd')).toBe(
