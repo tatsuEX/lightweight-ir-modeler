@@ -11,6 +11,7 @@
 		},
 		"logicalId": {
 			"type": "string",
+			"required": true,
 			"minLength": 1,
 			"pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
 		},
@@ -35,17 +36,23 @@
 		"field": {
 			"type": "object",
 			"additionalProperties": true,
-			"required": ["type"],
+			"required": ["logicalId", "type", "label"],
 			"properties": {
+				"logicalId": {
+					"type": "string",
+					"required": true,
+					"minLength": 1,
+					"pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
+				},
 				"type": {
 					"type": "string",
+					"required": true,
 					"minLength": 1
 				},
-				"logicalId": {
-					"type": "string"
-				},
 				"label": {
-					"type": "string"
+					"type": "string",
+					"required": true,
+					"minLength": 1
 				},
 				"hint": {
 					"type": "string"
