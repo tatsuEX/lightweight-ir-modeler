@@ -2,16 +2,34 @@
 	import type { Component } from 'svelte';
 
 	/* === ▽▽▽ PREVIEW COMPONENT REGISTRY ▽▽▽ === */
-	import PreviewNumber from './PreviewNumber.svelte';
-	import PreviewTextarea from './PreviewTextarea.svelte';
 	import PreviewTextbox from './PreviewTextbox.svelte';
+	import PreviewTextarea from './PreviewTextarea.svelte';
+	import PreviewNumber from './PreviewNumber.svelte';
+	import PreviewCheckbox from './PreviewCheckbox.svelte';
+	import PreviewRadio from './PreviewRadio.svelte';
+	import PreviewDropdown from './PreviewDropdown.svelte';
+	import PreviewDropdownMulti from './PreviewDropdownMulti.svelte';
+	// import PreviewDatepicker from './PreviewDatepicker.svelte';
+	// import PreviewDateSpan from './PreviewDateSpan.svelte';
+	// import PreviewDatetimepicker from './PreviewDatetimepicker.svelte';
+	import PreviewLabel from './PreviewLabel.svelte';
 	import PreviewUnknown from './PreviewUnknown.svelte';
 	import type { PreviewComponentType, PreviewRendererProps } from '$lib/preview/preview-types';
 
 	const PREVIEW_COMPONENT_REGISTRY = {
 		textbox: PreviewTextbox,
 		textarea: PreviewTextarea,
-		number: PreviewNumber
+		number: PreviewNumber,
+		checkbox: PreviewCheckbox,
+		radio: PreviewRadio,
+		dropdown: PreviewDropdown,
+		'dropdown-multi': PreviewDropdownMulti,
+		// datepicker: PreviewDatepicker,
+		// date-span: PreviewDateSpan,
+		// datetimepicker: PreviewDatetimepicker,
+		// timepicker: PreviewTimepicker,
+		label: PreviewLabel,
+		unknown: PreviewUnknown,
 	} satisfies Record<PreviewComponentType, Component<PreviewRendererProps>>;
 	/* === △△△ PREVIEW COMPONENT REGISTRY △△△ === */
 

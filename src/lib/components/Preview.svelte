@@ -108,7 +108,7 @@
 					<tr class="border-collapse border border-gray-300">
 						<td class="p-2 border-collapse border border-gray-300 w-1/4 align-top font-bold">
 							{component.label}
-							{#if component.validation.required}
+							{#if component.validation?.required ?? false}
 								<span class="text-red-500"> *</span>
 							{/if}
 						</td>

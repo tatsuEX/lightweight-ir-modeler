@@ -9,6 +9,7 @@ export type PrimeFacesFieldShape = {
 	label: string;
 	hint: string;
 	required: boolean;
+	readonly?: boolean;
 };
 
 /**
@@ -34,7 +35,8 @@ function shapePrimeFacesField(field: Record<string, unknown>): PrimeFacesFieldSh
 		type: typeof field.type === 'string' ? field.type : 'unknown',
 		label: typeof field.label === 'string' ? field.label : '',
 		hint: typeof field.hint === 'string' ? field.hint : '',
-		required: field.required === true
+		required: field.required === true, 
+		readonly: field.readonly === true,
 	};
 }
 

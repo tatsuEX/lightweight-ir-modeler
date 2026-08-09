@@ -10,6 +10,7 @@
 		createDateSpan,
 		createDatetimepicker,
 		createDropdown,
+		createDropdownMulti,
 		createLabel,
 		createNumber,
 		createRadio,
@@ -78,6 +79,13 @@
 	 */
 	function addDropdown() {
 		uiDefinition.append(createDropdown({}));
+	}
+
+	/**
+	 * ドロップダウンマルチ行を追加する
+	 */
+	function addDropdownMulti() {
+		uiDefinition.append(createDropdownMulti({}));
 	}
 
 	/**
@@ -199,6 +207,19 @@
 							fluent-mdl2:dropdown
 							license: MIT
 						  -->
+						<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 2048 2048">
+							<path d="M0 0h2048v2048H0z" fill="none" />
+							<path fill="currentColor" d="M0 256h2048v1408H0zm1920 1280V384H128v1152zm-128-640l-256 256l-256-256z" />
+						</svg>
+					{/snippet}
+				</SidebarItem>
+				<SidebarItem label="Dropdown Multi" onclick={addDropdownMulti} >
+					{#snippet icon()}
+						<!--
+							@see https://icon-sets.iconify.design/?query=dropdown
+							fluent-mdl2:dropdown
+							license: MIT
+						-->
 						<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 2048 2048">
 							<path d="M0 0h2048v2048H0z" fill="none" />
 							<path fill="currentColor" d="M0 256h2048v1408H0zm1920 1280V384H128v1152zm-128-640l-256 256l-256-256z" />

@@ -16,7 +16,7 @@
 
 <div class={previewFieldClass('textarea')}>
 	<textarea
-		class={PREVIEW_CONTROL}
+		class="{PREVIEW_CONTROL} {previewFieldClass('textarea')}"
 		bind:value
 		autocomplete="off"
 		placeholder={component.hint ?? component.label ?? ''}

@@ -16,7 +16,7 @@
 
 <div class={previewFieldClass('textbox')}>
 	<input
-		class={PREVIEW_CONTROL}
+		class="{PREVIEW_CONTROL} {previewFieldClass('textbox')}"
 		type="text"
 		bind:value
 		autocomplete="off"

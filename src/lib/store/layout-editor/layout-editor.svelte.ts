@@ -287,8 +287,6 @@ export function createNumber(info: any): any {
 /**
  * チェックボックスを作成する
  * usage:
- *   - items: string[]
- *     - items: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
  *   - items: { label: string; value: string }[]
  *     - items: [{ label: '日', value: 'sun' }, { label: '月', value: 'mon' }, { label: '火', value: 'tue' }, { label: '水', value: 'wed' }, { label: '木', value: 'thu' }, { label: '金', value: 'fri' }, { label: '土', value: 'sat' }]
  */
@@ -352,12 +350,9 @@ export function createRadio(info: any): any {
     };
 }
 
-
 /**
  * ドロップダウンリストを作成する
  * usage:
- *   - items: string[]
- *     - items: ['popular', 'new', 'price-asc', 'price-desc']
  *   - items: { label: string; value: string }[]
  *     - items: [{ label: '人気順', value: 'popular' }, { label: '新着順', value: 'new' }, { label: '価格の安い順', value: 'price-asc' }, { label: '価格の高い順', value: 'price-desc' }]
  */
@@ -388,6 +383,38 @@ export function createDropdown(info: any): any {
     };
 }
 
+/**
+ * ドロップダウンリストを作成する
+ * usage:
+ *   - items: { label: string; value: string }[]
+ *     - items: [{ label: '人気順', value: 'popular' }, { label: '新着順', value: 'new' }, { label: '価格の安い順', value: 'price-asc' }, { label: '価格の高い順', value: 'price-desc' }]
+ */
+export function createDropdownMulti(info: any): any {
+    const { validation, ...rest } = info;
+    return {
+        id: nanoid(SYSTEM_ID_LENGTH),
+        logicalId: '',
+        type: 'dropdown-multi',
+        label: '',
+        hint: '',
+        defaultValue: [],
+        multiple: true,
+        disabled: false,
+        readonly: false,
+        hidden: false,
+        tooltip: '',
+        items: [
+        ],
+        validation: {
+            required: false,
+            customErrorMessages: {
+                required: '必須項目です',
+            },
+            ...(validation ?? {}),
+        },
+        ...rest,
+    };
+}
 
 /**
  * 日付ピッカーを作成する
@@ -460,7 +487,6 @@ export function createDateSpan(info: any): any {
         ...rest,
     };
 }
-
 
 /**
  * 時刻ピッカーを作成する

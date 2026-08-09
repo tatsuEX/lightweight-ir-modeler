@@ -98,7 +98,7 @@
 	<TableHead>
 		<TableHeadCell class="{cellClass} w-12">
 			<Checkbox
-				size="lg"
+				class="h-6 w-6 focus:ring-0"
 				checked={allSelected}
 				aria-label="すべて選択"
 				onclick={toggleSelectAll}
@@ -124,7 +124,7 @@
 					<TableBodyCell class={cellClass}>
 						<span class="contents" use:arrowNavigation={{ field: 'selected', row: rowIndex }}>
 							<Checkbox
-								size="lg"
+								class="h-6 w-6"
 								checked={isSelected(component.id)}
 								aria-label="{component.type} の選択"
 								onchange={(event) =>

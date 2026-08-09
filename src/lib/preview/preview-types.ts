@@ -1,5 +1,19 @@
 /** 現時点でプレビュー対応している IR component type */
-export type PreviewComponentType = 'textbox' | 'textarea' | 'number';
+export type PreviewComponentType =
+	'textbox' |
+	'textarea' |
+	'number' |
+	'checkbox' |
+	'radio' |
+	'dropdown' |
+	'dropdown-multi' |
+	// 'datepicker' |
+	// 'date-span' |
+	// 'datetimepicker' |
+	// 'timepicker' |
+	'label' |
+	'unknown'
+	;
 
 /**
  * プレビューレンダラが参照するコンポーネントデータ
@@ -21,6 +35,9 @@ export type PreviewComponentData = Record<string, unknown> & {
 		max?: number;
 		step?: number;
 	};
+	items?: { label: string; value: string }[];
+	defaultValue?: string | string[];
+	multiple?: boolean;
 };
 
 /** 型別プレビューレンダラ共通 props */

@@ -10,6 +10,9 @@ export const PREVIEW_FIELD = 'preview-field';
 /** コントロール（input / textarea）の識別クラス */
 export const PREVIEW_CONTROL = 'preview-field__control';
 
+/** ラベルの識別クラス */
+export const PREVIEW_DISP_ONLY = 'preview-field__disp-only';
+
 /** ヒントテキストの識別クラス */
 export const PREVIEW_HINT = 'preview-field__hint';
 
