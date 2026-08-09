@@ -27,6 +27,7 @@
 		min={min}
 		max={max}
 		{step}
+		aria-required={component.validation?.required ?? false}
 		aria-label={component.label || 'number'}
 	/>
 </div>

@@ -24,6 +24,7 @@
 		readonly={component.readonly}
 		maxlength={maxlength}
 		{rows}
+		aria-required={component.validation?.required ?? false}
 		aria-label={component.label || 'textarea'}
 	></textarea>
 </div>

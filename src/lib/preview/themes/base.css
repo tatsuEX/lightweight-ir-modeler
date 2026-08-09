@@ -24,6 +24,11 @@
 	cursor: not-allowed;
 }
 
+.preview-field__control[aria-required="true"] {
+	border: solid 1px #c77;
+	background-color: #ffeaed;
+}
+
 .preview-field__hint {
 	margin: 0;
 	font-size: var(--preview-hint-font-size, 0.875rem);

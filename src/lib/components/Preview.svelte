@@ -106,9 +106,12 @@
 			<tbody class="border-collapse border border-gray-300 divide-y divide-gray-300">
 				{#each uiDefinition.components as component (component.id)}
 					<tr class="border-collapse border border-gray-300">
-						<td class="p-2 border-collapse border border-gray-300 w-1/4 align-top"
-							>{component.label}</td
-						>
+						<td class="p-2 border-collapse border border-gray-300 w-1/4 align-top font-bold">
+							{component.label}
+							{#if component.validation.required}
+								<span class="text-red-500"> *</span>
+							{/if}
+						</td>
 						<td class="p-2 border-collapse border border-gray-300 w-3/4 align-top">
 							<PreviewComponentRenderer {component} />
 						</td>

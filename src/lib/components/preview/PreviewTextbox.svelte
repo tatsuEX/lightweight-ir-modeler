@@ -25,6 +25,7 @@
 		readonly={component.readonly}
 		maxlength={maxlength}
 		pattern={pattern || undefined}
+		aria-required={component.validation?.required ?? false}
 		aria-label={component.label || 'textbox'}
 	/>
 </div>
