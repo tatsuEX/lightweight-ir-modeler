@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T22:40:58"
+updated: "2026-08-10T05:10:00"
 summary: "Export パイプライン・API・shape/serialize 境界（target 横断）"
 features:
   - ui-export
@@ -13,7 +13,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-08-09 22:40
+最終更新: 2026-08-10 05:10
 
 ## 概要
 
@@ -126,6 +126,7 @@ sequenceDiagram
 | serialize | payload → ファイル本文 | `serialize-json.ts` / `serialize-handlebars.ts` |
 | Writer | `describeArtifact` + shape + serialize の合成 | `*-writer.ts` |
 
+- import 由来の残余（`external['<targetId>']`）は shape 層で **先に** spread し、IR 所有キーで上書きする。詳細は [UI Import](./ui-import.md)
 - Handlebars 経路の HTML escape は **コンポーネントテンプレートの `{{ }}`**。独自 `escapeHtml` は使わない。
 - テンプレート根: `app.io.export.templates.<targetId>.dir`（config で差し替え可）
 - Handlebars target（現状 `primefaces`）は component 断片を描画して親テンプレートへ統合する。詳細は [PrimeFaces Export](./primefaces-export.md)

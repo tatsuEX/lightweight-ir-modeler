@@ -1,4 +1,8 @@
+import { readTargetResidual } from '$lib/ir/external-residual';
 import type { RawDefinition } from '$lib/raw/raw-definition';
+
+/** shape / unshape で共有する PrimeFaces の target 識別子 */
+export const PRIMEFACES_TARGET_ID = 'primefaces';
 
 /**
  * 選択肢 1 件（select* 系テンプレート向け）
@@ -95,11 +99,15 @@ export type PrimeFacesFieldShape =
 
 /**
  * PrimeFaces Handlebars 向け transport payload
+ *
+ * WARN: index signature は import 由来の残余（ベンダー固有キー）を載せるため。
+ * form.hbs は既知キーのみ参照する。
  */
 export type PrimeFacesShape = {
 	formId: string;
 	name: string;
 	fields: PrimeFacesFieldShape[];
+	[key: string]: unknown;
 };
 
 const SELECT_TYPES = new Set(['checkbox', 'radio', 'dropdown', 'dropdown-multi']);
@@ -212,70 +220,69 @@ function shapeDateExtras(
  * Raw フィールド 1 件を Handlebars context 用へ整形する
  */
 function shapePrimeFacesField(field: Record<string, unknown>): PrimeFacesFieldShape {
+	const { external, ...source } = field;
 	const logicalId =
-		typeof field.logicalId === 'string' && field.logicalId.trim() !== ''
-			? field.logicalId
+		typeof source.logicalId === 'string' && source.logicalId.trim() !== ''
+			? source.logicalId
 			: 'field';
-	const type = typeof field.type === 'string' && field.type.trim() !== '' ? field.type : 'unknown';
-	const common = shapeCommon(field, logicalId);
+	const type = typeof source.type === 'string' && source.type.trim() !== '' ? source.type : 'unknown';
+	const common = shapeCommon(source, logicalId);
+
+	let shaped: PrimeFacesFieldShape;
 
 	if (type === 'textarea') {
 		const validation =
-			field.validation !== null &&
-			typeof field.validation === 'object' &&
-			!Array.isArray(field.validation)
-				? (field.validation as Record<string, unknown>)
+			source.validation !== null &&
+			typeof source.validation === 'object' &&
+			!Array.isArray(source.validation)
+				? (source.validation as Record<string, unknown>)
 				: {};
-		return {
+		shaped = {
 			...common,
 			type: 'textarea',
-			rows: asFiniteNumber(field.rows),
-			cols: asFiniteNumber(field.cols),
-			maxlength: asFiniteNumber(validation.maxlength) ?? asFiniteNumber(field.maxlength)
+			rows: asFiniteNumber(source.rows),
+			cols: asFiniteNumber(source.cols),
+			maxlength: asFiniteNumber(validation.maxlength) ?? asFiniteNumber(source.maxlength)
 		};
-	}
-
-	if (type === 'textbox' || type === 'number') {
-		return { ...common, type };
-	}
-
-	if (type === 'label') {
-		return { ...common, type: 'label' };
-	}
-
-	if (SELECT_TYPES.has(type)) {
-		return {
+	} else if (type === 'textbox' || type === 'number') {
+		shaped = { ...common, type };
+	} else if (type === 'label') {
+		shaped = { ...common, type: 'label' };
+	} else if (SELECT_TYPES.has(type)) {
+		shaped = {
 			...common,
 			type: type as PrimeFacesSelectFieldShape['type'],
-			items: shapeSelectItems(field.items)
+			items: shapeSelectItems(source.items)
 		};
-	}
-
-	if (DATE_TYPES.has(type)) {
-		return {
+	} else if (DATE_TYPES.has(type)) {
+		shaped = {
 			...common,
 			type: type as PrimeFacesDateFieldShape['type'],
-			...shapeDateExtras(field, type)
+			...shapeDateExtras(source, type)
 		};
-	}
-
-	if (type === 'date-span') {
+	} else if (type === 'date-span') {
 		const validation =
-			field.validation !== null &&
-			typeof field.validation === 'object' &&
-			!Array.isArray(field.validation)
-				? (field.validation as Record<string, unknown>)
+			source.validation !== null &&
+			typeof source.validation === 'object' &&
+			!Array.isArray(source.validation)
+				? (source.validation as Record<string, unknown>)
 				: {};
-		return {
+		shaped = {
 			...common,
 			type: 'date-span',
-			...shapeDateExtras(field, type),
+			...shapeDateExtras(source, type),
 			requiredFrom: validation.requiredFrom === true,
 			requiredTo: validation.requiredTo === true
 		};
+	} else {
+		shaped = { ...common, type };
 	}
 
-	return { ...common, type };
+	// WARN: 残余を先に spread する。IR が所有するキーは必ず後勝ちにする。
+	return {
+		...readTargetResidual(external, PRIMEFACES_TARGET_ID),
+		...shaped
+	} as PrimeFacesFieldShape;
 }
 
 /**
@@ -286,7 +293,9 @@ function shapePrimeFacesField(field: Record<string, unknown>): PrimeFacesFieldSh
 export function shapePrimeFaces(raw: RawDefinition): PrimeFacesShape {
 	const fields = Array.isArray(raw.fields) ? raw.fields : [];
 
+	// WARN: 残余を先に spread する。IR が所有するキーは必ず後勝ちにする。
 	return {
+		...readTargetResidual(raw.external, PRIMEFACES_TARGET_ID),
 		formId: typeof raw.logicalId === 'string' ? raw.logicalId : 'form',
 		name: typeof raw.name === 'string' ? raw.name : 'form',
 		fields: fields

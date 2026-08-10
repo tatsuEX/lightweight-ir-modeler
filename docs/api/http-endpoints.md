@@ -1,16 +1,17 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T00:36:00"
-summary: "IR snapshot と UI export/download の HTTP エンドポイント契約"
+updated: "2026-08-10T06:20:00"
+summary: "IR snapshot と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
   - ir-snapshot
   - ui-export
+  - ui-import
 ---
 
 # HTTP API
 
-最終更新: 2026-08-09 00:36
+最終更新: 2026-08-10 06:20
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -87,6 +88,40 @@ Body 例:
 
 成果物が無いときのみ最新 snapshot から `exportFromLatestSnapshot` を実行する。
 
+## UI Import
+
+### `POST /api/ui/import`
+
+`multipart/form-data` でアップロードした外部 UI 定義ファイルを IR へ変換して返す。ファイルは保存しない。
+
+| フィールド | 内容 |
+|---|---|
+| `target` | Reader 実装済み targetId（`im-forma` / `primefaces`） |
+| `file` | 定義ファイル本体（2MB 以下。`im-forma` は `.json`、`primefaces` は `.xhtml`） |
+
+成功 **200**:
+
+```json
+{
+  "target": "im-forma",
+  "uiDefinition": {
+    "logicalId": "applyForm",
+    "name": "申請フォーム",
+    "description": "",
+    "version": "1.0.0",
+    "external": { "im-forma": { "formSystemId": "IMF-FORM-0001" } }
+  },
+  "components": []
+}
+```
+
+`components` にエディタ用 `id` は含まれない（クライアントのファクトリが採番する）。
+
+失敗:
+
+- **400**: 未対応 target / `file` 未指定 / サイズ超過 / 拡張子不一致 / パース失敗 / Raw 検証失敗（`issues[]` 付き）
+- **500**: その他
+
 ## ページルート（参考）
 
 | Path | 説明 |
@@ -101,3 +136,4 @@ Body 例:
 
 - [IR snapshot ユースケース](../use-cases/ir-snapshot-auto-save.md)
 - [UI Export ユースケース](../use-cases/ui-export.md)
+- [UI Import ユースケース](../use-cases/ui-import.md)

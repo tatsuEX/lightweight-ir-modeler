@@ -2,6 +2,7 @@
 	import { Button } from 'flowbite-svelte';
 	import ComponentAttributeTable from '$lib/components/ComponentAttributeTable.svelte';
 	import ComponentToolPalette from '$lib/components/ComponentToolPalette.svelte';
+	import DefinitionImportModal from '$lib/components/DefinitionImportModal.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -26,6 +27,7 @@
 			</p>
 		</div>
 		<div class="flex shrink-0 items-center gap-2">
+			<DefinitionImportModal />
 			<Button color="red" disabled={selectedCount === 0} onclick={removeSelectedRows}>
 				選択行を削除
 			</Button>

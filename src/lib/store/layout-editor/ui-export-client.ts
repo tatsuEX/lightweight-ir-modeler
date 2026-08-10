@@ -58,7 +58,9 @@ export class HttpUiExportClient implements UiExportClient {
 					logicalId: ui.logicalId,
 					name: ui.name,
 					description: ui.description,
-					version: ui.version
+					version: ui.version,
+					// WARN: external を送らないと import 由来のベンダー固有キーが出力で復元されない。
+					...(ui.external ? { external: ui.external } : {})
 				},
 				components: ui.components
 			})

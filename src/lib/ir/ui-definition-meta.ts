@@ -1,14 +1,20 @@
+import { normalizeExternalResidual, type ExternalResidual } from '$lib/ir/external-residual';
+
 /** 画面定義 version の初期値 */
 export const DEFAULT_UI_DEFINITION_VERSION = '1.0.0';
 
 /**
  * エディタ UI から編集する画面定義メタデータ
+ *
+ * WARN: `external` は import 元の外部定義が持っていたベンダー固有キーの退避先。
+ * エディタでは編集せず、export 時に shape 層が元の形へ復元するためだけに保持する。
  */
 export type UiDefinitionEditorMeta = {
 	logicalId: string;
 	name: string;
 	description: string;
 	version: string;
+	external?: ExternalResidual;
 };
 
 /**
@@ -35,11 +41,15 @@ export function createEmptyUiDefinitionMeta(): UiDefinitionEditorMeta {
  * snapshot 用メタデータからエディタ編集フィールドのみを取り出す
  */
 export function toEditorMeta(meta: UiDefinitionSnapshotMeta | UiDefinitionEditorMeta): UiDefinitionEditorMeta {
+	const external = normalizeExternalResidual(meta.external);
+
+	// WARN: external は無い場合キー自体を落とす。YAML dump / 比較ハッシュに undefined を混ぜない。
 	return {
 		logicalId: meta.logicalId,
 		name: meta.name,
 		description: meta.description,
-		version: meta.version
+		version: meta.version,
+		...(external ? { external } : {})
 	};
 }
 
@@ -98,10 +108,13 @@ export function assertSafeLogicalIdPathSegment(logicalId: string): string {
  * API リクエスト body からエディタ編集メタデータを取り出す（日時は無視）
  */
 export function parseEditorMetaFromRecord(record: Record<string, unknown>): UiDefinitionEditorMeta {
+	const external = normalizeExternalResidual(record.external);
+
 	return {
 		logicalId: typeof record.logicalId === 'string' ? record.logicalId : '',
 		name: typeof record.name === 'string' ? record.name : '',
 		description: typeof record.description === 'string' ? record.description : '',
-		version: typeof record.version === 'string' ? record.version : ''
+		version: typeof record.version === 'string' ? record.version : '',
+		...(external ? { external } : {})
 	};
 }

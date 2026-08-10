@@ -31,9 +31,16 @@
 			"items": {
 				"$ref": "#/$defs/item"
 			}
+		},
+		"external": {
+			"$ref": "#/$defs/external"
 		}
 	},
 	"$defs": {
+		"external": {
+			"type": "object",
+			"additionalProperties": true
+		},
 		"item": {
 			"type": "object",
 			"additionalProperties": true,
@@ -73,6 +80,9 @@
 				"validation": {
 					"type": "object",
 					"additionalProperties": true
+				},
+				"external": {
+					"$ref": "#/$defs/external"
 				}
 			}
 		}

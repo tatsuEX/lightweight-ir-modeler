@@ -11,16 +11,26 @@ export type IrAutoSaveOptions = {
 };
 
 /**
+ * 保存対象のメタデータを取り出す
+ *
+ * WARN: external を落とすと import 由来のベンダー固有キーが snapshot 経由で失われる。
+ */
+function buildSaveMeta(uiDefinition: UIDefinition): UiDefinitionEditorMeta {
+	return {
+		logicalId: uiDefinition.logicalId,
+		name: uiDefinition.name,
+		description: uiDefinition.description,
+		version: uiDefinition.version,
+		...(uiDefinition.external ? { external: uiDefinition.external } : {})
+	};
+}
+
+/**
  * 保存ペイロードの比較用ハッシュを生成する
  */
 function buildSaveHash(uiDefinition: UIDefinition): string {
 	return JSON.stringify({
-		uiDefinition: {
-			logicalId: uiDefinition.logicalId,
-			name: uiDefinition.name,
-			description: uiDefinition.description,
-			version: uiDefinition.version
-		},
+		uiDefinition: buildSaveMeta(uiDefinition),
 		components: uiDefinition.components
 	});
 }
@@ -69,12 +79,7 @@ export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSave
 
 	$effect(() => {
 		const payload = {
-			uiDefinition: {
-				logicalId: uiDefinition.logicalId,
-				name: uiDefinition.name,
-				description: uiDefinition.description,
-				version: uiDefinition.version
-			},
+			uiDefinition: buildSaveMeta(uiDefinition),
 			components: uiDefinition.components
 		};
 		const snapshot = buildSaveHash(uiDefinition);

@@ -5,6 +5,9 @@
 
 import { createContext } from "svelte";
 import { nanoid } from "nanoid";
+import type { ExternalResidual } from "$lib/ir/external-residual";
+import type { UiDefinitionEditorMeta } from "$lib/ir/ui-definition-meta";
+import type { ImportedDefinition } from "$lib/transform/imported-definition";
 
 // 画面定義の状態を管理するコンテキスト
 export const [getUIDefinitionContext, setUIDefinitionContext] = createContext<UIDefinition>();
@@ -21,6 +24,7 @@ export type UIDefinitionState = {
     name: string;
     description: string;
     version: string;
+    external?: ExternalResidual;
 }
 
 export class UIDefinition {
@@ -108,6 +112,20 @@ export class UIDefinition {
     }
 
     /**
+     * 外部定義由来の残余（ベンダー固有キー）を取得する
+     */
+    get external(): ExternalResidual | undefined {
+        return this.#state.external;
+    }
+
+    /**
+     * 外部定義由来の残余（ベンダー固有キー）を設定する
+     */
+    set external(value: ExternalResidual | undefined) {
+        this.#state.external = value;
+    }
+
+    /**
      * 画面定義のコンポーネントを取得する
      */
     get components(): readonly any[] {
@@ -165,19 +183,25 @@ export class UIDefinition {
     /**
      * snapshot から画面定義を復元する
      */
-    loadSnapshot(components: unknown[], meta?: {
-        logicalId: string;
-        name: string;
-        description: string;
-        version: string;
-    }): void {
+    loadSnapshot(components: unknown[], meta?: UiDefinitionEditorMeta): void {
         if (meta) {
             this.logicalId = meta.logicalId;
             this.name = meta.name;
             this.description = meta.description;
             this.version = meta.version;
+            this.external = meta.external;
         }
         this.replaceComponents(structuredClone(components) as any[]);
+    }
+
+    /**
+     * 外部 UI 定義の取り込み結果で編集状態を丸ごと置き換える
+     */
+    loadImported(imported: ImportedDefinition): void {
+        this.loadSnapshot(
+            imported.components.map((component) => createComponentByType(component)),
+            imported.uiDefinition
+        );
     }
 }
 
@@ -564,4 +588,35 @@ export function createLabel(info: any): any {
         label: '',
         ...rest,
     };
+}
+
+// type とファクトリの対応表
+const COMPONENT_FACTORY_REGISTRY: Record<string, (info: any) => any> = {
+    textbox: createTextbox,
+    textarea: createTextarea,
+    number: createNumber,
+    checkbox: createCheckbox,
+    radio: createRadio,
+    dropdown: createDropdown,
+    'dropdown-multi': createDropdownMulti,
+    datepicker: createDatepicker,
+    'date-span': createDateSpan,
+    datetimepicker: createDatetimepicker,
+    timepicker: createTimepicker,
+    label: createLabel,
+};
+
+/**
+ * info.type に対応するファクトリでコンポーネントを作成する
+ *
+ * WARN: 未登録 type はデフォルトを補えないため、id だけ付けて素通しする。
+ */
+export function createComponentByType(info: any): any {
+    const factory = COMPONENT_FACTORY_REGISTRY[info?.type];
+
+    if (!factory) {
+        return { id: nanoid(SYSTEM_ID_LENGTH), ...info };
+    }
+
+    return factory(info);
 }

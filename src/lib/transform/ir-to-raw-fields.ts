@@ -1,3 +1,5 @@
+import { normalizeExternalResidual } from '$lib/ir/external-residual';
+
 /**
  * IR component から Raw 用フィールドオブジェクトを組み立てる
  *
@@ -45,6 +47,12 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 	}
 	if (typeof source.multiple === 'boolean') {
 		field.multiple = source.multiple;
+	}
+
+	// WARN: このマッピングは allowlist。external を通さないと import 由来のベンダー固有キーが export で消える。
+	const external = normalizeExternalResidual(source.external);
+	if (external) {
+		field.external = external;
 	}
 
 	return field;
