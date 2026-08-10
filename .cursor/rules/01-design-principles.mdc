@@ -15,3 +15,4 @@ alwaysApply: true
 - Prefer a direct solution that works for the current format/flow.
 - Do not add extension points “for later” unless required by an accepted boundary in architecture rules.
 - For public/module APIs, also follow **API Encapsulation** (`.cursor/rules/13-api-encapsulation.mdc`): do not require callers to know internal structure when it is derivable from arguments already passed; optional overrides are OK.
+- For **where to put or split modules** (visibility, change reasons), follow **Module Boundaries vs API Encapsulation** (`.cursor/rules/14-module-vs-api-boundaries.mdc`). Do not split modules just to separate technical layers if that recreates a mandatory call sequence across imports.

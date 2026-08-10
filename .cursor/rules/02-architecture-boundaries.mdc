@@ -14,6 +14,8 @@ alwaysApply: true
 | `schema/` | Trust boundary (JSON Schema / Zod) |
 | `transform/` | Raw ⇄ IR |
 | `io/` | External file read/write |
+| `config/` | Client-safe application config types, defaults, pure helpers |
+| `server/config/` | Server-only YAML load / merge / parse / path resolution |
 | `store/` | Presentation-facing IR operations |
 | `components/` | Svelte UI widgets (not IR elements) |
 

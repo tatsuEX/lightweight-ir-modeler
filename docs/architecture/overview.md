@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-10T06:20:00"
-summary: "モジュール境界・Import/Export の shape/unshape・設定キーの概観"
+updated: "2026-08-10T13:13:00"
+summary: "モジュール境界・Import/Export の shape/unshape・設定（型/yaml/parse）の概観"
 features:
   - architecture
   - ir
@@ -16,7 +16,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-10 06:20
+最終更新: 2026-08-10 13:13
 
 ## 目的
 
@@ -31,11 +31,17 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
 | `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | `ir-to-raw-fields.ts`, `raw-to-ir-fields.ts`, `primefaces-transform.ts`, `im-forma-transform.ts` |
+| `config/` | クライアント安全な設定 type・既定値・純関数 | `application-types.ts`, `layout-editor-config.ts`, `preview-config.ts` |
 | `server/io/` | ファイル I/O | `ir-snapshot-io.ts`, `definition-export-io.ts`, `writers/`（shape / serialize）, `readers/`（parse / unshape） |
 | `server/ui/` | Import / Export オーケストレーション | `export-pipeline.ts`, `export-target-registry.ts`, `import-pipeline.ts`, `import-target-registry.ts` |
-| `server/config/` | `application.yml` 読込 | `application-config.ts` |
+| `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
 | `store/layout-editor/` | 画面向け状態 | `layout-editor.svelte.ts` ほか |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
+
+設定の可視性:
+
+- クライアントは `config/*` の type / 既定値のみを直接 import する（`DEFAULT_ITEM_DELIMITER` 等）
+- サーバ呼び出し元は `server/config/application-config.ts` の `loadApplicationConfig()` 等を使う（yaml → parse の手順は公開 API に内包）
 
 依存の原則:
 

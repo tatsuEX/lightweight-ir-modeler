@@ -13,13 +13,17 @@ app:
           dir: ./templates/export/primefaces
 
 # Property 属性エディタ（layout-editor/property）
+# =================================================================================================
 layoutEditor:
   property:
     # items タグ表記: `${value}${itemDelimiter}${label}`（同一なら区切りなしの単一文字列）
-    itemDelimiter: "|"
+    itemDelimiter: ":"
 
 # プレビュー画面: テーマ選択と外部 UI 定義の出力先
+# =================================================================================================
 preview:
+
+  # プレビュー画面：UIテーマ
   theme:
     default: tailwind-light
     options:
@@ -31,6 +35,8 @@ preview:
         value: bootstrap-dark
       - name: Bootstrap Light
         value: bootstrap-light
+
+  # 変換先（target）
   transformTarget:
     default: primefaces
     options:

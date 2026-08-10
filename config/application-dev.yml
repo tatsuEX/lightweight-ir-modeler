@@ -7,7 +7,11 @@ app:
     # importDir: ./data/import
     exportDir: ./data/export
 
+# IR に関する設定
+# =================================================================================================
 ir:
+
+  # IR snapshot ファイルの自動保存
   autoSave:
     enabled: true
     delay: 500

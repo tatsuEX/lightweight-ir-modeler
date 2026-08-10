@@ -143,7 +143,7 @@ preview:
 				options: [{ name: 'PrimeFaces', value: 'primefaces' }]
 			}
 		});
-		expect(config.layoutEditor.property.itemDelimiter).toBe('|');
+		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
 	});
 
 	it('parses layoutEditor.property.itemDelimiter', () => {
@@ -277,7 +277,7 @@ describe('profile overlay', () => {
 			'./templates/export/primefaces'
 		);
 		expect(config.ir).toBeUndefined();
-		expect(config.layoutEditor.property.itemDelimiter).toBe('|');
+		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
 		expect(config.preview.theme.default).toBe('tailwind-light');
 		expect(config.preview.transformTarget.options).toHaveLength(2);
 		expect(config.preview.transformTarget.options.map((option) => option.value)).toEqual([

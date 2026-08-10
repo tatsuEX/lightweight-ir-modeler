@@ -1,0 +1,59 @@
+---
+description: Module boundaries (change reasons, visibility) vs API encapsulation (caller knowledge)
+alwaysApply: true
+---
+
+# Module Boundaries vs API Encapsulation
+
+Two different concerns. Do **not** apply API-call encapsulation rules as if they were module-splitting rules.
+
+## API / method surface (see `13-api-encapsulation.mdc`)
+
+- Concern: **caller knowledge** — call order, internal paths, derivable intermediates.
+- Goal: one coherent operation; callers must not orchestrate “resolve then use” when inputs already determine the result.
+- Example: keep YAML load + parse behind `loadApplicationConfig()`; do not force callers to call `loadYaml()` then `parseRoot()` in order.
+
+## Module / package surface
+
+- Concern: **reasons for future change** and **visibility** (who may import what).
+- Goal: split when change reasons or visibility diverge; **do not** split merely to mirror technical layers (type / parse / IO) or file size.
+- There is no intrinsic “call order” between modules — but publishing two modules that are only useful as a fixed sequence recreates the API anti-pattern at import granularity. Prefer one public module (or one facade file) that owns that sequence.
+
+## Visibility (this repo)
+
+| Location | May contain | Must not contain |
+|---|---|---|
+| `src/lib/config/` | Client-safe types, defaults, pure helpers shared by client and server | `fs`, `$env/dynamic/private`, YAML load, absolute path I/O |
+| `src/lib/server/config/` | Server-only load, merge, normalize, path resolution | The only copy of values the **client** must import at runtime |
+
+Client code imports shared fragments from `src/lib/config/*`. Server loaders may use those fragments; do not make the server module the client’s import path for the same constant/type (avoid dual public homes).
+
+### Application config layout (current)
+
+| Module | Responsibility |
+|---|---|
+| `src/lib/config/application-types.ts` | `application.yml` 静的構造の type |
+| `src/lib/config/layout-editor-config.ts` / `preview-config.ts` | クライアント共有の断片 type・既定値・純関数 |
+| `src/lib/server/config/application-config-yaml.ts` | ファイル読込・profile merge・パス解決 |
+| `src/lib/server/config/application-config-parse.ts` | mapping → `ApplicationConfig` 正規化 |
+| `src/lib/server/config/application-config.ts` | 公開 API（`loadApplicationConfig` 等）。yaml+parse を内部で統合 |
+
+Callers use `loadApplicationConfig()` (or other exports from `application-config.ts`). They must not be required to call yaml then parse as two public steps.
+
+## When to split a config (or similar) module
+
+Split when at least one holds:
+
+1. **Different change reason** — e.g. a second config source with its own lifecycle (not “types vs parse” of the same YAML).
+2. **Different visibility** — a type/helper must be imported by the client, while the loader must stay server-only → put the shared fragment under `src/lib/config/`, keep the loader under `src/lib/server/config/`.
+3. **Independent reuse** — an intermediate is a stable public concept with multiple unrelated callers (same escape hatch as rule 13).
+
+Do **not** split because:
+
+- “types and IO feel different” while both only exist to serve one loader API
+- the file is long but still one change reason (`application.yml` → `ApplicationConfig`)
+- speculative future formats or speculative facades
+
+## Relation to design principles
+
+Module cuts still follow YAGNI / change-reason boundaries (`01-design-principles.mdc`). API coalescing still follows (`13-api-encapsulation.mdc`). Use this rule when choosing **file/module placement**, not when designing a single function’s parameter list.

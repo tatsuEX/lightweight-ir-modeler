@@ -41,3 +41,9 @@ writeArtifact(targetId, ctx);
 - Merging would couple unrelated change reasons (architecture boundary violation).
 - The intermediate result is a stable public concept reused by multiple independent callers.
 - Transparency is required for security/audit and hiding it would hide a trust decision from the wrong layer.
+
+## Not the same as module splitting
+
+This rule governs **call/import knowledge at an operation boundary**. It does **not** say “put types, parse, and IO in one file forever.”
+
+For module placement and visibility, see `.cursor/rules/14-module-vs-api-boundaries.mdc`. Keep a mandatory load→parse sequence **inside** one public API; split modules only when change reasons or client/server visibility diverge.
