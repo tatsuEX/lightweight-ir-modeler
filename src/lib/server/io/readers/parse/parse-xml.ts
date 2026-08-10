@@ -22,9 +22,7 @@ const orderedXmlParser = new XMLParser({
 	attributeNamePrefix: XML_ATTR_PREFIX,
 	preserveOrder: true,
 	commentPropName: XML_COMMENT_KEY,
-	ignoreDeclaration: true,
-	// WARN: select の選択肢は 1 件でも配列として扱う（preserveOrder 以外の経路向け保険）
-	isArray: (tagName) => tagName === 'f:selectItem'
+	ignoreDeclaration: true
 });
 
 /**
