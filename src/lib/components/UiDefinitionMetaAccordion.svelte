@@ -10,8 +10,15 @@
 
 	let metaOpen = $state(true);
 	let logicalIdOptions = $state<string[]>([]);
+	/** logicalId 入力中か（true の間だけ draft を表示・編集する） */
+	let editingLogicalId = $state(false);
 	/** 入力中の logicalId（blur / 候補選択確定時のみ store へ反映する） */
-	let logicalIdInput = $state(uiDefinition.logicalId);
+	let logicalIdDraft = $state('');
+
+	/** 非編集中は store を表示し、import / loadSnapshot 後の値をそのまま反映する */
+	const logicalIdField = $derived(
+		editingLogicalId ? logicalIdDraft : uiDefinition.logicalId
+	);
 
 	const accordionHeader = $derived(
 		isUiDefinitionMetaReady(uiDefinition)
@@ -39,15 +46,43 @@
 	}
 
 	/**
+	 * logicalId の編集を開始し、draft を store の現在値で初期化する
+	 */
+	function beginLogicalIdEdit(): void {
+		if (editingLogicalId) {
+			return;
+		}
+		logicalIdDraft = uiDefinition.logicalId;
+		editingLogicalId = true;
+	}
+
+	/**
+	 * Autocomplete からの入力を draft へ反映する
+	 */
+	function handleLogicalIdInput(next: string): void {
+		if (!editingLogicalId) {
+			editingLogicalId = true;
+		}
+		logicalIdDraft = next;
+	}
+
+	/**
 	 * 入力中 logicalId を store へ確定反映する
 	 * @returns logicalId が前回確定値から変わった場合 true
 	 */
 	function commitLogicalIdInput(): boolean {
-		const trimmed = logicalIdInput.trim();
-		logicalIdInput = trimmed;
+		if (!editingLogicalId) {
+			return false;
+		}
+
+		const trimmed = logicalIdDraft.trim();
+		logicalIdDraft = trimmed;
+		editingLogicalId = false;
+
 		if (trimmed === uiDefinition.logicalId) {
 			return false;
 		}
+
 		uiDefinition.logicalId = trimmed;
 		return true;
 	}
@@ -84,11 +119,11 @@
 				components?: unknown[];
 			};
 
+			editingLogicalId = false;
 			uiDefinition.loadSnapshot(
 				snapshot.components ?? [],
 				snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : undefined
 			);
-			logicalIdInput = uiDefinition.logicalId;
 		} catch (error) {
 			console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', error);
 		}
@@ -134,7 +169,9 @@
 					aria-label="画面定義 ID"
 					options={logicalIdOptions}
 					debounceMs={300}
-					bind:value={logicalIdInput}
+					value={logicalIdField}
+					onfocus={beginLogicalIdEdit}
+					oninput={handleLogicalIdInput}
 					onblur={handleLogicalIdCommit}
 					onselect={handleLogicalIdCommit}
 				/>

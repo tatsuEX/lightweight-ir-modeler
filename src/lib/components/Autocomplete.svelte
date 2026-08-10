@@ -16,8 +16,14 @@
 		/** 表示する選択肢の上限 */
 		maxOptions?: number;
 		onselect?: (option: string) => void;
+		onfocus?: () => void;
 		onblur?: () => void;
-	} & Omit<InputProps<InputValue>, 'value' | 'data' | 'onSelect' | 'onblur'>;
+		/** 入力値が変わったとき（親が controlled 表示する場合向け） */
+		oninput?: (value: string) => void;
+	} & Omit<
+		InputProps<InputValue>,
+		'value' | 'data' | 'onSelect' | 'onblur' | 'onfocus' | 'oninput'
+	>;
 
 	let {
 		value = $bindable(''),
@@ -27,7 +33,9 @@
 		id,
 		size = 'sm',
 		onselect,
+		onfocus,
 		onblur,
+		oninput,
 		...inputProps
 	}: Props = $props();
 
@@ -112,6 +120,7 @@
 		isFocused = true;
 		activeOptionIndex = -1;
 		refreshOptionsImmediate(value);
+		onfocus?.();
 	}
 
 	/**
@@ -121,7 +130,9 @@
 		isFocused = true;
 		isOpen = true;
 		activeOptionIndex = -1;
-		debouncedRefresh(value);
+		const next = typeof value === 'string' ? value : String(value ?? '');
+		debouncedRefresh(next);
+		oninput?.(next);
 	}
 
 	/**
@@ -209,6 +220,7 @@
 		value = option;
 		isOpen = false;
 		activeOptionIndex = -1;
+		oninput?.(option);
 		onselect?.(option);
 		inputElementRef?.focus();
 		isFocused = true;

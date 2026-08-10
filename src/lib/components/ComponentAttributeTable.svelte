@@ -26,7 +26,7 @@
 
 	let {
 		selectedCount = $bindable(0),
-		/** items タグの区切り（`${value}${itemDelimiter}${label}`）。未指定時は `|` */
+		/** items タグの区切り（`${value}${itemDelimiter}${label}`）。未指定時は DEFAULT_ITEM_DELIMITER */
 		itemDelimiter = DEFAULT_ITEM_DELIMITER
 	}: {
 		selectedCount?: number;
