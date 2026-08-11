@@ -62,7 +62,6 @@
 	 * Enter / カンマで追加、空入力時 Backspace で末尾削除
 	 */
 	function onKeydown(event: KeyboardEvent): void {
-		console.log('# tags input onKeydown');
 		if (event.key === 'Enter' || event.key === ',') {
 			event.preventDefault();
 			addTag(draft.replace(/,$/, ''));
