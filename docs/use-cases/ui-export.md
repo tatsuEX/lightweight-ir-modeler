@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-10T05:10:00"
-summary: "Export パイプライン・API・shape/serialize 境界（target 横断）"
+updated: "2026-08-12T07:24:00"
+summary: "Export パイプライン・API・shape/serialize・Raw schema(JSON/YAML) 境界"
 features:
   - ui-export
   - raw-validation
@@ -13,7 +13,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-08-10 05:10
+最終更新: 2026-08-12 07:24
 
 ## 概要
 
@@ -134,14 +134,24 @@ sequenceDiagram
 
 ## Raw 検証と JSON Schema
 
-- Schema ファイル: `schemas/raw/<target>.schema.json`
-- 読込: `json-schema-loader.ts` → `z.fromJSONSchema` → プロセス内 `Map` キャッシュ
+- Schema ファイル: `schemas/raw/<filename>`（レジストリでファイル名を明示）
+- 対応拡張子: `.json` / `.yaml` / `.yml`（拡張子に応じて `JSON.parse` または `js-yaml`）
+- 読込: `json-schema-loader.ts` → オブジェクト → `z.fromJSONSchema` → プロセス内 `Map` キャッシュ
 - 検証: `validateRawDefinition`（失敗時 `RawValidationError`、メッセージは Zod 日本語ロケール）
+- WARN: YAML を採用する場合はレジストリに `.yaml` / `.yml` を**明示**する。暗黙の自動探索（同 stem の json/yaml 切り替え）はしない
+- YAML をレジストリに登録した target では、同内容の `.json` 物理ファイルは不要（必要なら `schema:convert` で生成）
+
+### 草案・変換 CLI
+
+| コマンド | 役割 |
+|---|---|
+| `npm run schema:infer -- …` | サンプルから JSON Schema 草案。`--format json\|yaml\|both` |
+| `npm run schema:convert -- <input>` | JSON Schema の JSON ↔ YAML 相互変換（`--check` で往復検証） |
 
 ### 運用上の注意
 
 1. **required はオブジェクトの `required` 配列で指定する**（draft 2020-12）。プロパティ内の `"required": true`（draft-3 名残）だけでは不十分な場合がある。コンポーネント（field/item）側も `logicalId` / `type` / `label` 等を `required` に含めること。
-2. **Schema は target 初回検証時にキャッシュされる**。サーバ起動後に JSON Schema を直しても、現状はプロセス再起動（または将来の `invalidateRawZodSchema` 呼び出し）まで反映されない。
+2. **Schema は target 初回検証時にキャッシュされる**。サーバ起動後に Schema ファイルを直しても、現状はプロセス再起動（または将来の `invalidateRawZodSchema` 呼び出し）まで反映されない。
 3. エディタは空の `logicalId` / `label` を許容し得るが、Schema が `minLength: 1` 等を要求していれば **Export 時に 400** になる（境界検証）。
 
 ## モジュール関係（Export 周辺）

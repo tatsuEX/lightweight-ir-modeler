@@ -14,7 +14,8 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
-		"schema:infer": "node ./scripts/schema-infer.mjs"
+		"schema:infer": "node ./scripts/schema-infer.mjs",
+		"schema:convert": "node ./scripts/schema-convert.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

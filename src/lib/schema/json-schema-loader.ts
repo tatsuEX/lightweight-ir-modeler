@@ -1,14 +1,16 @@
 import { readFileSync } from 'node:fs';
-import { isAbsolute, join, resolve } from 'node:path';
+import { extname, isAbsolute, join, resolve } from 'node:path';
+import { load as yamlLoad } from 'js-yaml';
 import * as z from 'zod';
 import { ensureZodLocaleJa } from '$lib/schema/zod-locale';
 
 /**
  * targetId → スキーマファイル名（ホワイトリスト。path traversal 防止）
+ * WARN: YAML を使う場合は拡張子をレジストリに明示する（.yaml / .yml）。暗黙の自動探索はしない。
  */
 const RAW_SCHEMA_FILENAMES: Record<string, string> = {
-	primefaces: 'primefaces.schema.json',
-	'im-forma': 'im-forma.schema.json'
+	primefaces: 'primefaces.schema.yaml',
+	'im-forma': 'im-forma.schema.yaml'
 };
 
 const compiledSchemaCache = new Map<string, z.ZodType>();
@@ -32,6 +34,14 @@ export function resolveRawSchemaDir(): string {
 }
 
 /**
+ * パスが YAML スキーマファイルかどうかを判定する
+ */
+function isYamlSchemaPath(filePath: string): boolean {
+	const ext = extname(filePath).toLowerCase();
+	return ext === '.yaml' || ext === '.yml';
+}
+
+/**
  * target に対応する JSON Schema ファイル絶対パスを返す
  */
 export function resolveRawSchemaFilePath(targetId: string): string {
@@ -44,18 +54,25 @@ export function resolveRawSchemaFilePath(targetId: string): string {
 }
 
 /**
- * JSON Schema オブジェクトをファイルから読み込む
+ * テキストを JSON Schema オブジェクトとしてパースする
  */
-export function readRawJsonSchema(targetId: string): Record<string, unknown> {
-	const absolutePath = resolveRawSchemaFilePath(targetId);
-	const text = readFileSync(absolutePath, 'utf8');
-	const parsed: unknown = JSON.parse(text);
+function parseSchemaText(absolutePath: string, text: string): Record<string, unknown> {
+	const parsed: unknown = isYamlSchemaPath(absolutePath) ? yamlLoad(text) : JSON.parse(text);
 
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error(`raw JSON Schema must be an object: ${absolutePath}`);
 	}
 
 	return parsed as Record<string, unknown>;
+}
+
+/**
+ * JSON Schema オブジェクトをファイルから読み込む（拡張子に応じ JSON / YAML）
+ */
+export function readRawJsonSchema(targetId: string): Record<string, unknown> {
+	const absolutePath = resolveRawSchemaFilePath(targetId);
+	const text = readFileSync(absolutePath, 'utf8');
+	return parseSchemaText(absolutePath, text);
 }
 
 /**

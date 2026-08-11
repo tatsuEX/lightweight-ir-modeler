@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-10T13:13:00"
-summary: "モジュール境界・Import/Export の shape/unshape・設定（型/yaml/parse）の概観"
+updated: "2026-08-12T07:24:00"
+summary: "モジュール境界・Import/Export の shape/unshape・設定（型/yaml/parse）・schema 読込の概観"
 features:
   - architecture
   - ir
@@ -16,7 +16,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-10 13:13
+最終更新: 2026-08-12 07:24
 
 ## 目的
 
@@ -29,7 +29,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 |---|---|---|
 | `ir/` | ドメイン SSOT 周辺 | `ui-definition-meta.ts`, `snapshot.ts`, `external-residual.ts`（`IRDefinition` / `Component` クラス階層は今後） |
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
-| `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
+| `schema/` | 境界での JSON Schema → Zod 検証（ファイルは json/yaml 明示登録） | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | `ir-to-raw-fields.ts`, `raw-to-ir-fields.ts`, `primefaces-transform.ts`, `im-forma-transform.ts` |
 | `config/` | クライアント安全な設定 type・既定値・純関数 | `application-types.ts`, `layout-editor-config.ts`, `preview-config.ts` |
 | `server/io/` | ファイル I/O | `ir-snapshot-io.ts`, `definition-export-io.ts`, `writers/`（shape / serialize）, `readers/`（parse / unshape） |
