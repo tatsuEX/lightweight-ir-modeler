@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { Badge, Input } from 'flowbite-svelte';
 
+	/** 入力要素 */
+	let inputElement: HTMLInputElement | undefined = $state(undefined);
+
 	type Size = 'sm' | 'md';
 
 	type Props = {
@@ -59,6 +62,7 @@
 	 * Enter / カンマで追加、空入力時 Backspace で末尾削除
 	 */
 	function onKeydown(event: KeyboardEvent): void {
+		console.log('# tags input onKeydown');
 		if (event.key === 'Enter' || event.key === ',') {
 			event.preventDefault();
 			addTag(draft.replace(/,$/, ''));
@@ -71,6 +75,36 @@
 	}
 
 	/**
+	 * TSV or CSV が paste された場合、区切り文字で分割してタグとして追加する
+	 */
+	function onPaste(event: ClipboardEvent): void {
+		// クリップボードから文字列を取得
+		const text = event.clipboardData?.getData('text') ?? '';
+		const SeparatedType: 'tsv' | 'csv' | 'other' = text.includes('\t') ? 'tsv' : text.includes(',') ? 'csv' : 'other';
+
+		// 区切り文字を含まない場合は、ブラウザ標準の貼り付け動作
+		if (SeparatedType === 'other') {
+			return;
+		}
+
+		// 区切り文字で分割する場合は、分割前の文字列が貼り付けられないようにするため、preventDefault する
+		event.preventDefault();
+		text.split(/[\t,]/).forEach(tag => {
+			const separated = tag.trim();
+			switch (SeparatedType) {
+				case 'tsv':
+					addTag(separated);
+					break;
+				case 'csv':
+					// CSV は、囲み文字および列中のダブルクオーテーションを考慮する
+					addTag(separated.replace(/(^"|"$)/g, '').replace(/(""|\\")/g, '"'));
+					break;
+			}
+		});
+		return;
+	}
+
+	/**
 	 * 入力確定（blur）時に下書きが残っていればタグ化する
 	 */
 	function onBlur(): void {
@@ -78,6 +112,21 @@
 			addTag(draft);
 		}
 	}
+
+	/**
+	 * 監視対象
+	 * - 入力DOM要素
+	 */
+	$effect(() => {
+		if (inputElement instanceof HTMLInputElement) {
+			inputElement.addEventListener('paste', onPaste);
+		}
+		return () => {
+			if (inputElement instanceof HTMLInputElement) {
+				inputElement.removeEventListener('paste', onPaste);
+			}
+		};
+	});
 </script>
 
 <div
@@ -98,6 +147,7 @@
 	{/each}
 	<!-- WARN: data-arrow-nav-focus は外側 use:arrowNavigation が Badge 削除ボタンではなく本入力を掴むため -->
 	<Input
+		bind:elementRef={inputElement}
 		{size}
 		{disabled}
 		{placeholder}
