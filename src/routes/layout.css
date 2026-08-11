@@ -39,6 +39,15 @@
   input[type="search"]::-webkit-search-cancel-button {
     display: none;
   }
+
+  /* CSS 標準ではtableの列幅がセル幅から逆算されてレイアウト崩れが発生するため、固定幅指定を既定にする */
+  table {
+    table-layout: fixed;
+  }
+
+  textarea {
+    resize: none;
+  }
 }
 
 ::placeholder {

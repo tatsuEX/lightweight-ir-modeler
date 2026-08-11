@@ -54,7 +54,7 @@
 	];
 
 	/** Details 固定スロット（列位置に type 別フィールドを載せる。Validation と同方針） */
-	const DETAILS_SLOTS: DetailsSlot[] = [0, 1];
+	const DETAILS_SLOTS: DetailsSlot[] = [0, 1, 2];
 
 	/** Validation 固定スロット */
 	const VALIDATION_SLOTS: ValidationSlot[] = [0, 1, 2];
@@ -71,7 +71,7 @@
 
 	/** 空行の colspan（固定 4 + グループ列） */
 	const totalColCount = $derived(
-		columnGroup === 'basic' ? 8 : columnGroup === 'details' ? 6 : 7
+		columnGroup === 'basic' ? 8 : columnGroup === 'details' ? 7 : 7
 	);
 
 	// 入力行を詰めて一覧性を上げる（Flowbite 既定の px-6 py-4 は広すぎる）

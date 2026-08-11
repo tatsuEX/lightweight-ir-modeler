@@ -286,7 +286,7 @@ export function createNumber(info: any): any {
         type: 'number',
         label: '',
         hint: '',
-        defaultValue: 0,
+        defaultValue: null,
         disabled: false,
         readonly: false,
         hidden: false,
@@ -586,6 +586,7 @@ export function createLabel(info: any): any {
         logicalId: '',
         type: 'label',
         label: '',
+        defaultValue: '',
         ...rest,
     };
 }
