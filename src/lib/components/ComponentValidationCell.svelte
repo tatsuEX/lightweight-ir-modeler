@@ -18,7 +18,7 @@
 	const TIME_BOUNDS_TYPES = new Set(['timepicker']);
 	const DATETIME_BOUNDS_TYPES = new Set(['datetimepicker']);
 
-	const notSupportedClass = 'text-gray-400 dark:text-gray-400';
+	const notSupportedClass = 'text-gray-300 dark:text-gray-700';
 	const fieldLabelClass = 'text-xs text-gray-500 dark:text-gray-400';
 	const FIELD_GROUP = 'validation';
 

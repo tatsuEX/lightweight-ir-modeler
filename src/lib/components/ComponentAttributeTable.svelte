@@ -76,7 +76,9 @@
 
 	// 入力行を詰めて一覧性を上げる（Flowbite 既定の px-6 py-4 は広すぎる）
 	const cellClass = 'px-3 py-2';
-	const notSupportedClass = 'text-gray-400 dark:text-gray-400';
+	const detailsCellClass = '';
+	const validationCellClass = '';
+	const notSupportedClass = 'text-gray-300 dark:text-gray-700';
 
 	$effect(() => {
 		selectedCount = selectedIds.size;
@@ -173,9 +175,9 @@
 				<TableHeadCell class="{cellClass} w-4">readonly</TableHeadCell>
 				<TableHeadCell class="{cellClass} w-4">disabled</TableHeadCell>
 			{:else if columnGroup === 'details'}
-				<TableHeadCell class={cellClass} colspan={DETAILS_SLOTS.length}>Details</TableHeadCell>
+				<TableHeadCell class="{cellClass} {detailsCellClass} w-1/{2 * DETAILS_SLOTS.length}" colspan={DETAILS_SLOTS.length}>Details</TableHeadCell>
 			{:else}
-				<TableHeadCell class={cellClass} colspan={VALIDATION_SLOTS.length}>Validation</TableHeadCell>
+				<TableHeadCell class="{cellClass} {validationCellClass} w-1/{2 * VALIDATION_SLOTS.length}" colspan={VALIDATION_SLOTS.length}>Validation</TableHeadCell>
 			{/if}
 		</TableHead>
 		<TableBody>
@@ -283,7 +285,7 @@
 							</TableBodyCell>
 						{:else if columnGroup === 'details'}
 							{#each DETAILS_SLOTS as detailsSlot (detailsSlot)}
-								<TableBodyCell class={cellClass}>
+								<TableBodyCell class="{cellClass} {detailsCellClass} w-1/{2 * DETAILS_SLOTS.length}">
 									<ComponentDetailsCell
 										{component}
 										{rowIndex}
@@ -294,7 +296,7 @@
 							{/each}
 						{:else}
 							{#each VALIDATION_SLOTS as validationSlot (validationSlot)}
-								<TableBodyCell class={cellClass}>
+								<TableBodyCell class="{cellClass} {validationCellClass} w-1/{2 * VALIDATION_SLOTS.length}">
 									<ComponentValidationCell
 										{component}
 										{rowIndex}

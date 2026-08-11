@@ -29,7 +29,7 @@
 	const ITEMS_TYPES = new Set(['radio', 'checkbox', 'dropdown', 'dropdown-multi']);
 	const FORMAT_TYPES = new Set(['datepicker', 'date-span', 'timepicker', 'datetimepicker']);
 
-	const notSupportedClass = 'text-gray-400 dark:text-gray-400';
+	const notSupportedClass = 'text-gray-300 dark:text-gray-700';
 	const fieldLabelClass = 'text-xs text-gray-500 dark:text-gray-400';
 
 	const FIELD_GROUP = 'details';
@@ -111,6 +111,7 @@
 				size="sm"
 				placeholder="value または value{resolvedDelimiter}label"
 				aria-label="{component.type} の選択肢"
+				class="max-w-[30rem]"
 				bind:value={
 					() => itemsToTags(component.items, resolvedDelimiter),
 					(tags) => {
