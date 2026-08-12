@@ -189,19 +189,35 @@ export class UIDefinition {
             this.name = meta.name;
             this.description = meta.description;
             this.version = meta.version;
-            this.external = meta.external;
+            this.external = clonePlainData(meta.external);
         }
-        this.replaceComponents(structuredClone(components) as any[]);
+        this.replaceComponents(clonePlainData(components) as any[]);
     }
 
     /**
      * 外部 UI 定義の取り込み結果で編集状態を丸ごと置き換える
      */
     loadImported(imported: ImportedDefinition): void {
+        const plain = clonePlainData(imported);
         this.loadSnapshot(
-            imported.components.map((component) => createComponentByType(component)),
-            imported.uiDefinition
+            plain.components.map((component) => createComponentByType(component)),
+            plain.uiDefinition
         );
+    }
+}
+
+/**
+ * プレーンな JSON 互換データを複製する（Svelte Proxy 等で structuredClone が失敗したら JSON 経由）
+ */
+function clonePlainData<T>(value: T): T {
+    if (value === undefined) {
+        return value;
+    }
+    try {
+        return structuredClone(value);
+    } catch {
+        // WARN: Proxy / 関数混入時。importBase 等の JSON 互換データ向けフォールバック。
+        return JSON.parse(JSON.stringify(value)) as T;
     }
 }
 
@@ -606,6 +622,13 @@ const COMPONENT_FACTORY_REGISTRY: Record<string, (info: any) => any> = {
     timepicker: createTimepicker,
     label: createLabel,
 };
+
+/**
+ * Property 属性表で編集可能な type か判定する（ファクトリ登録済み）
+ */
+export function isPropertyEditableType(type: unknown): boolean {
+    return typeof type === 'string' && Object.hasOwn(COMPONENT_FACTORY_REGISTRY, type);
+}
 
 /**
  * info.type に対応するファクトリでコンポーネントを作成する
