@@ -7,6 +7,7 @@ import type {
 	IrAutoSaveConfig
 } from '$lib/config/application-types';
 import {
+	DEFAULT_CONFIRM_SNAPSHOT_DIR_CREATION,
 	DEFAULT_ITEM_DELIMITER,
 	type LayoutEditorConfig,
 	type LayoutEditorPropertyConfig
@@ -132,24 +133,40 @@ function parsePreviewSelectConfig(raw: unknown, blockName: string): PreviewSelec
  * layoutEditor.property ブロックをパースする
  */
 function parseLayoutEditorProperty(raw: unknown): LayoutEditorPropertyConfig {
+	const defaults: LayoutEditorPropertyConfig = {
+		itemDelimiter: DEFAULT_ITEM_DELIMITER,
+		confirmSnapshotDirCreation: DEFAULT_CONFIRM_SNAPSHOT_DIR_CREATION
+	};
+
 	if (raw === undefined) {
-		return { itemDelimiter: DEFAULT_ITEM_DELIMITER };
+		return defaults;
 	}
 	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
 		throw new Error('application config "layoutEditor.property" must be an object');
 	}
 
 	const block = raw as Record<string, unknown>;
-	if (block.itemDelimiter === undefined) {
-		return { itemDelimiter: DEFAULT_ITEM_DELIMITER };
-	}
-	if (typeof block.itemDelimiter !== 'string' || block.itemDelimiter === '') {
-		throw new Error(
-			'application config "layoutEditor.property.itemDelimiter" must be a non-empty string'
-		);
+	let itemDelimiter = defaults.itemDelimiter;
+	if (block.itemDelimiter !== undefined) {
+		if (typeof block.itemDelimiter !== 'string' || block.itemDelimiter === '') {
+			throw new Error(
+				'application config "layoutEditor.property.itemDelimiter" must be a non-empty string'
+			);
+		}
+		itemDelimiter = block.itemDelimiter;
 	}
 
-	return { itemDelimiter: block.itemDelimiter };
+	let confirmSnapshotDirCreation = defaults.confirmSnapshotDirCreation;
+	if (block.confirmSnapshotDirCreation !== undefined) {
+		if (typeof block.confirmSnapshotDirCreation !== 'boolean') {
+			throw new Error(
+				'application config "layoutEditor.property.confirmSnapshotDirCreation" must be a boolean'
+			);
+		}
+		confirmSnapshotDirCreation = block.confirmSnapshotDirCreation;
+	}
+
+	return { itemDelimiter, confirmSnapshotDirCreation };
 }
 
 /**

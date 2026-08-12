@@ -18,6 +18,8 @@ layoutEditor:
   property:
     # items タグ表記: `${value}${itemDelimiter}${label}`（同一なら区切りなしの単一文字列）
     itemDelimiter: ":"
+    # 未使用の画面 ID（新規 snapshot ディレクトリ）確定時に確認ダイアログを出す
+    confirmSnapshotDirCreation: true
 
 # プレビュー画面: テーマ選択と外部 UI 定義の出力先
 # =================================================================================================

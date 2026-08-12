@@ -144,6 +144,7 @@ preview:
 			}
 		});
 		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
+		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(true);
 	});
 
 	it('parses layoutEditor.property.itemDelimiter', () => {
@@ -158,6 +159,18 @@ ${minimalPreviewYaml}
 		expect(config.layoutEditor.property.itemDelimiter).toBe('::');
 	});
 
+	it('parses layoutEditor.property.confirmSnapshotDirCreation', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+layoutEditor:
+  property:
+    confirmSnapshotDirCreation: false
+${minimalPreviewYaml}
+`);
+		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(false);
+	});
+
 	it('rejects empty layoutEditor.property.itemDelimiter', () => {
 		expect(() =>
 			parseApplicationConfig(`
@@ -169,6 +182,19 @@ layoutEditor:
 ${minimalPreviewYaml}
 `)
 		).toThrow('layoutEditor.property.itemDelimiter" must be a non-empty string');
+	});
+
+	it('rejects non-boolean layoutEditor.property.confirmSnapshotDirCreation', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+layoutEditor:
+  property:
+    confirmSnapshotDirCreation: "yes"
+${minimalPreviewYaml}
+`)
+		).toThrow('layoutEditor.property.confirmSnapshotDirCreation" must be a boolean');
 	});
 
 	it('requires preview default to match an option value', () => {
@@ -278,6 +304,7 @@ describe('profile overlay', () => {
 		);
 		expect(config.ir).toBeUndefined();
 		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
+		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(true);
 		expect(config.preview.theme.default).toBe('tailwind-light');
 		expect(config.preview.transformTarget.options).toHaveLength(2);
 		expect(config.preview.transformTarget.options.map((option) => option.value)).toEqual([

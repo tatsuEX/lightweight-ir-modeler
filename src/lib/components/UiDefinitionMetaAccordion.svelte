@@ -2,11 +2,19 @@
 	import { onMount } from 'svelte';
 	import { Accordion, AccordionItem, Input, Label, Textarea } from 'flowbite-svelte';
 	import Autocomplete from '$lib/components/Autocomplete.svelte';
+	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
 	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
+	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
+	import {
+		setSnapshotDirConfirmSkippedByUser,
+		shouldPromptNewSnapshotDir,
+		snapshotDirectoryExists
+	} from '$lib/store/layout-editor/snapshot-dir-confirm';
 
 	/** 画面定義の状態は Context API 経由でのみ参照する */
 	const uiDefinition = getUIDefinitionContext();
+	const layoutEditorConfig = getLayoutEditorConfigContext();
 
 	let metaOpen = $state(true);
 	let logicalIdOptions = $state<string[]>([]);
@@ -14,6 +22,12 @@
 	let editingLogicalId = $state(false);
 	/** 入力中の logicalId（blur / 候補選択確定時のみ store へ反映する） */
 	let logicalIdDraft = $state('');
+
+	let confirmOpen = $state(false);
+	let confirmInitialId = $state('');
+	/** 確認キャンセル時に戻す画面 ID */
+	let confirmPreviousId = $state('');
+	let confirmBusy = $state(false);
 
 	/** 非編集中は store を表示し、import / loadSnapshot 後の値をそのまま反映する */
 	const logicalIdField = $derived(
@@ -49,7 +63,7 @@
 	 * logicalId の編集を開始し、draft を store の現在値で初期化する
 	 */
 	function beginLogicalIdEdit(): void {
-		if (editingLogicalId) {
+		if (editingLogicalId || confirmOpen) {
 			return;
 		}
 		logicalIdDraft = uiDefinition.logicalId;
@@ -60,6 +74,9 @@
 	 * Autocomplete からの入力を draft へ反映する
 	 */
 	function handleLogicalIdInput(next: string): void {
+		if (confirmOpen) {
+			return;
+		}
 		if (!editingLogicalId) {
 			editingLogicalId = true;
 		}
@@ -67,31 +84,9 @@
 	}
 
 	/**
-	 * 入力中 logicalId を store へ確定反映する
-	 * @returns logicalId が前回確定値から変わった場合 true
-	 */
-	function commitLogicalIdInput(): boolean {
-		if (!editingLogicalId) {
-			return false;
-		}
-
-		const trimmed = logicalIdDraft.trim();
-		logicalIdDraft = trimmed;
-		editingLogicalId = false;
-
-		if (trimmed === uiDefinition.logicalId) {
-			return false;
-		}
-
-		uiDefinition.logicalId = trimmed;
-		return true;
-	}
-
-	/**
 	 * logicalId 変更確定後、当該 snapshot ディレクトリから UI 定義を復元する
 	 */
-	async function restoreFromSnapshotDirectory(): Promise<void> {
-		const logicalId = uiDefinition.logicalId.trim();
+	async function restoreFromSnapshotDirectory(logicalId: string): Promise<void> {
 		if (!isValidLogicalId(logicalId)) {
 			return;
 		}
@@ -130,13 +125,84 @@
 	}
 
 	/**
-	 * logicalId の入力確定（blur / 候補選択）を処理する
+	 * 新しい画面 ID を確定する（既存 snapshot があれば復元）
 	 */
-	function handleLogicalIdCommit(): void {
-		if (!commitLogicalIdInput()) {
+	async function applyLogicalIdChange(nextId: string, previousId: string): Promise<void> {
+		uiDefinition.logicalId = nextId;
+		if (nextId === previousId) {
 			return;
 		}
-		void restoreFromSnapshotDirectory();
+		await restoreFromSnapshotDirectory(nextId);
+		void loadLogicalIdOptions();
+	}
+
+	/**
+	 * logicalId の入力確定（blur / 候補選択）を処理する
+	 */
+	async function handleLogicalIdCommit(): Promise<void> {
+		if (!editingLogicalId || confirmOpen || confirmBusy) {
+			return;
+		}
+
+		const previousId = uiDefinition.logicalId;
+		const trimmed = logicalIdDraft.trim();
+		logicalIdDraft = trimmed;
+		editingLogicalId = false;
+
+		if (trimmed === previousId) {
+			return;
+		}
+
+		if (!isValidLogicalId(trimmed)) {
+			uiDefinition.logicalId = trimmed;
+			return;
+		}
+
+		confirmBusy = true;
+		try {
+			const exists = await snapshotDirectoryExists(trimmed);
+			if (exists) {
+				await applyLogicalIdChange(trimmed, previousId);
+				return;
+			}
+
+			if (
+				!shouldPromptNewSnapshotDir(layoutEditorConfig.property.confirmSnapshotDirCreation)
+			) {
+				await applyLogicalIdChange(trimmed, previousId);
+				return;
+			}
+
+			confirmPreviousId = previousId;
+			confirmInitialId = trimmed;
+			confirmOpen = true;
+		} catch (error) {
+			console.warn('[UiDefinitionMetaAccordion] snapshot check failed:', error);
+			await applyLogicalIdChange(trimmed, previousId);
+		} finally {
+			confirmBusy = false;
+		}
+	}
+
+	/**
+	 * 新規 snapshot ディレクトリ確認で続行する
+	 */
+	async function handleConfirmContinue(logicalId: string, dontAskAgain: boolean): Promise<void> {
+		if (dontAskAgain) {
+			setSnapshotDirConfirmSkippedByUser(true);
+		}
+		confirmOpen = false;
+		const previousId = confirmPreviousId;
+		await applyLogicalIdChange(logicalId, previousId);
+	}
+
+	/**
+	 * 新規 snapshot ディレクトリ確認をキャンセルする
+	 */
+	function handleConfirmCancel(): void {
+		confirmOpen = false;
+		logicalIdDraft = confirmPreviousId;
+		editingLogicalId = false;
 	}
 
 	onMount(() => {
@@ -165,15 +231,15 @@
 				<Autocomplete
 					id="ui-definition-logical-id"
 					required
-					placeholder="logicalId"
+					placeholder="画面 ID"
 					aria-label="画面定義 ID"
 					options={logicalIdOptions}
 					debounceMs={300}
 					value={logicalIdField}
 					onfocus={beginLogicalIdEdit}
 					oninput={handleLogicalIdInput}
-					onblur={handleLogicalIdCommit}
-					onselect={handleLogicalIdCommit}
+					onblur={() => void handleLogicalIdCommit()}
+					onselect={() => void handleLogicalIdCommit()}
 				/>
 			</div>
 
@@ -216,3 +282,10 @@
 		</div>
 	</AccordionItem>
 </Accordion>
+
+<ConfirmNewSnapshotDirModal
+	bind:open={confirmOpen}
+	initialId={confirmInitialId}
+	onConfirm={(logicalId, dontAskAgain) => void handleConfirmContinue(logicalId, dontAskAgain)}
+	onCancel={handleConfirmCancel}
+/>
