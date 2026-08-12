@@ -22,7 +22,10 @@
 	} from '$lib/components/ComponentValidationCell.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
-	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
+	import {
+		getUIDefinitionContext,
+		isPropertyEditableType
+	} from '$lib/store/layout-editor/layout-editor.svelte';
 
 	let {
 		selectedCount = $bindable(0),
@@ -43,6 +46,9 @@
 	/** 行選択は Property 画面内の presentation state（domain / snapshot には載せない） */
 	let selectedIds = $state<Set<string>>(new Set());
 
+	/** 編集可能な項目のみ表示（既定 ON。presentation state） */
+	let showEditableOnly = $state(true);
+
 	/** 属性列グループ（presentation state。IR / snapshot には載せない） */
 	type ColumnGroupId = 'basic' | 'details' | 'validation';
 	let columnGroup = $state<ColumnGroupId>('basic');
@@ -59,7 +65,14 @@
 	/** Validation 固定スロット */
 	const VALIDATION_SLOTS: ValidationSlot[] = [0, 1, 2];
 
-	const componentIds = $derived(uiDefinition.components.map((component) => component.id));
+	/** 表示対象コンポーネント（Toggle で編集可能のみに絞る） */
+	const visibleComponents = $derived(
+		showEditableOnly
+			? uiDefinition.components.filter((component) => isPropertyEditableType(component.type))
+			: uiDefinition.components
+	);
+
+	const componentIds = $derived(visibleComponents.map((component) => component.id));
 
 	const allSelected = $derived(
 		componentIds.length > 0 && componentIds.every((id) => selectedIds.has(id))
@@ -138,7 +151,7 @@
 
 <UiDefinitionMetaAccordion />
 
-<div class="mb-3">
+<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
 	<ButtonGroup>
 		{#each columnGroups as group (group.id)}
 			<Button
@@ -153,10 +166,12 @@
 			</Button>
 		{/each}
 	</ButtonGroup>
+
+	<Toggle bind:checked={showEditableOnly}>編集可能な項目のみ</Toggle>
 </div>
 
 <div class="overflow-x-auto">
-	<Table hoverable shadow data-arrow-nav-root>
+	<Table hoverable shadow data-arrow-nav-root class="{columnGroup === 'basic' ? 'table-auto' : ''}">
 		<TableHead>
 			<TableHeadCell class="{cellClass} w-12">
 				<Checkbox
@@ -171,9 +186,9 @@
 			<TableHeadCell class={cellClass}>label</TableHeadCell>
 			{#if columnGroup === 'basic'}
 				<TableHeadCell class={cellClass}>hint</TableHeadCell>
-				<TableHeadCell class="{cellClass} w-4">required</TableHeadCell>
-				<TableHeadCell class="{cellClass} w-4">readonly</TableHeadCell>
-				<TableHeadCell class="{cellClass} w-4">disabled</TableHeadCell>
+				<TableHeadCell class="{cellClass} w-8">required</TableHeadCell>
+				<TableHeadCell class="{cellClass} w-8">readonly</TableHeadCell>
+				<TableHeadCell class="{cellClass} w-8">disabled</TableHeadCell>
 			{:else if columnGroup === 'details'}
 				<TableHeadCell class="{cellClass} {detailsCellClass} w-1/{2 * DETAILS_SLOTS.length}" colspan={DETAILS_SLOTS.length}>Details</TableHeadCell>
 			{:else}
@@ -181,18 +196,22 @@
 			{/if}
 		</TableHead>
 		<TableBody>
-			{#if uiDefinition.components.length === 0}
+			{#if visibleComponents.length === 0}
 				<TableBodyRow>
 					<TableBodyCell
 						colspan={totalColCount}
 						class="{cellClass} text-center text-gray-500 dark:text-gray-400"
 					>
-						コンポーネントがありません。ツールパレットから追加してください。
+						{#if uiDefinition.components.length === 0}
+							コンポーネントがありません。ツールパレットから追加してください。
+						{:else}
+							編集可能な項目がありません。「編集可能な項目のみ」をオフにするとすべて表示されます。
+						{/if}
 					</TableBodyCell>
 				</TableBodyRow>
 			{:else}
 				<!-- WARN: key は編集対象の logicalId ではなく内部 id。key を変えると入力中に再マウントされフォーカスが飛ぶ。 -->
-				{#each uiDefinition.components as component, rowIndex (component.id)}
+				{#each visibleComponents as component, rowIndex (component.id)}
 					<TableBodyRow>
 						<TableBodyCell class={cellClass}>
 							<span class="contents" use:arrowNavigation={{ field: 'selected', row: rowIndex }}>
