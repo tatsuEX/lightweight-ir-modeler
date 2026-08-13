@@ -1,0 +1,53 @@
+---
+description: UTF-8 only; no PowerShell text edits; stop+report on encoding corruption
+alwaysApply: true
+---
+
+# UTF-8 Text Editing (No PowerShell)
+
+## Hard rules
+
+1. **Do not use PowerShell** (or `powershell` / `pwsh` one-liners / `.ps1`) to **create, append, rewrite, or re-encode** project text files (markdown, source, YAML, JSON, configs, `.articles/`, `docs/`, rules, etc.).
+2. All project text files are **UTF-8**. Prefer **UTF-8 without BOM**. Do not convert through CP932 / system ANSI / “Default” encoding.
+3. Prefer the editor **Write / StrReplace** tools for normal edits. When a **scripted** read/write/append is needed (bulk frontmatter update, safe append with verification), use a **Node** script (`node …`) that reads/writes with `'utf8'`.
+
+## Why
+
+Windows PowerShell’s default / pipeline encodings often corrupt Japanese (and other non-ASCII) text. This repository already lost article content that way — do not repeat it.
+
+## Allowed PowerShell uses
+
+Shell may still run PowerShell for **non-text-content** tasks only, for example:
+
+- Listing directories / process checks
+- Commands that do **not** open files to rewrite their body encoding
+
+If a task seems to need “edit this file in the shell”, use **Node** (or Write/StrReplace), never PowerShell `Set-Content` / `Add-Content` / `Out-File` / `[IO.File]::WriteAllText` with a non-UTF-8 encoding / “Default”.
+
+## Node scripted text IO
+
+- Allowed without asking for **one-off UTF-8 file read/write/append** helpers (temporary `.cjs` / `.mjs` under the repo, then delete when done).
+- Still subject to `.cursor/rules/06-npm-ecosystem.mdc` for `npm` / `npx` / `node_modules/.bin` / `package.json` scripts.
+- After scripted writes that include Japanese, verify with a UTF-8 read (e.g. `Buffer` / `fs.readFileSync(..., 'utf8')` contains an expected character), not with PowerShell console display alone.
+
+## On encoding corruption / mixed encodings
+
+If text appears corrupted, mojibake’d, or encodings look **mixed** (or you suspect a bad re-encode just happened):
+
+1. **Stop immediately.** Do **not** attempt recovery, reverse-conversion, “fix then rewrite”, or further edits to the damaged file(s).
+2. **Ask the user for instructions** before any further change to those files.
+3. **Never** apply additional destructive changes in that situation — further “repair” attempts can make restoration from VCS / backups impossible (as already happened once in this repo).
+
+When reporting to the user, state **all three** explicitly:
+
+| Item | What to include |
+|---|---|
+| **Intended operation** | What you were trying to do (e.g. append a journal section, update frontmatter) |
+| **Erroneous operation** | What went wrong (e.g. PowerShell `WriteAllText` with CP932, accidental double encode) |
+| **Impact scope** | Exact paths / sections / time range affected; what is still intact vs damaged |
+
+Do not bury these in a long narrative — lead with the three items so the user can decide (restore from VCS, discard, etc.).
+
+## Articles / docs
+
+When appending `.articles/` or updating `docs/` via script, follow this rule. See also `.cursor/rules/09-dev-articles.mdc`.
