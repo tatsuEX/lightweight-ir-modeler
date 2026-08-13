@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-10T06:20:00"
+updated: "2026-08-12T21:38:00"
 summary: "IR snapshot と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
@@ -11,7 +11,7 @@ features:
 
 # HTTP API
 
-最終更新: 2026-08-10 06:20
+最終更新: 2026-08-12 21:38
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -42,11 +42,11 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 
 ### `POST /api/ui/export`
 
-Body 例:
+Body 例（仮想。`target` は registry 登録済み targetId）:
 
 ```json
 {
-  "target": "primefaces",
+  "target": "<targetId>",
   "uiDefinition": {
     "logicalId": "sampleForm",
     "name": "Sample",
@@ -61,10 +61,10 @@ Body 例:
 
 ```json
 {
-  "target": "primefaces",
+  "target": "<targetId>",
   "logicalId": "sampleForm",
-  "relativePath": "primefaces/sampleForm/sampleForm.xhtml",
-  "filename": "sampleForm.xhtml",
+  "relativePath": "<targetId>/sampleForm/<filename>",
+  "filename": "<filename>",
   "writtenAt": "2026-08-08T13:39:29.652Z"
 }
 ```
@@ -74,6 +74,8 @@ Body 例:
 - **403**: `app.io.exportDir` 未設定
 - **400**: 未対応 target / Raw 検証失敗（`issues[]` 付き）
 - **500**: その他
+
+成果物の拡張子・相対パスの詳細は各 target の Export ドキュメントを参照。
 
 ### `GET /api/ui/download/[target]/[logicalId]`
 
@@ -96,30 +98,42 @@ Body 例:
 
 | フィールド | 内容 |
 |---|---|
-| `target` | Reader 実装済み targetId（`im-forma` / `primefaces`） |
-| `file` | 定義ファイル本体（2MB 以下。`im-forma` は `.json`、`primefaces` は `.xhtml`） |
+| `target` | Reader 実装済み targetId（`IMPORT_TARGET_REGISTRY`） |
+| `file` | 定義ファイル本体（2MB 以下。受付拡張子は各 Reader の `acceptExtensions`） |
 
-成功 **200**:
+成功 **200**（仮想例。`external` の中身は target 固有の不透明残余）:
 
 ```json
 {
-  "target": "im-forma",
+  "target": "<targetId>",
   "uiDefinition": {
-    "logicalId": "applyForm",
-    "name": "申請フォーム",
+    "logicalId": "sampleForm",
+    "name": "Sample Form",
     "description": "",
     "version": "1.0.0",
-    "external": { "im-forma": { "formSystemId": "IMF-FORM-0001" } }
+    "external": {
+      "<targetId>": {}
+    }
   },
-  "components": []
+  "components": [
+    {
+      "logicalId": "field1",
+      "type": "textbox",
+      "label": "Field 1",
+      "external": {
+        "<targetId>": {}
+      }
+    }
+  ]
 }
 ```
 
-`components` にエディタ用 `id` は含まれない（クライアントのファクトリが採番する）。
+`components` にエディタ用 `id` は含まれない（クライアントのファクトリが採番する）。  
+`external['<targetId>']` のキー構成・意味は各 target の Import ドキュメントを参照。
 
 失敗:
 
-- **400**: 未対応 target / `file` 未指定 / サイズ超過 / 拡張子不一致 / パース失敗 / Raw 検証失敗（`issues[]` 付き）
+- **400**: 未対応 target / `file` 未指定 / サイズ超過 / 拡張子不一致 / パース失敗 / target 固有の読取拒否 / Raw 検証失敗（`issues[]` 付き）
 - **500**: その他
 
 ## ページルート（参考）
@@ -137,3 +151,7 @@ Body 例:
 - [IR snapshot ユースケース](../use-cases/ir-snapshot-auto-save.md)
 - [UI Export ユースケース](../use-cases/ui-export.md)
 - [UI Import ユースケース](../use-cases/ui-import.md)
+- [im-forma Import](../use-cases/im-forma-import.md)
+- [im-forma Export](../use-cases/im-forma-export.md)
+- [PrimeFaces Import](../use-cases/primefaces-import.md)
+- [PrimeFaces Export](../use-cases/primefaces-export.md)

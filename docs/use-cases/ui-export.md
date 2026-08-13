@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-10T05:10:00"
-summary: "Export パイプライン・API・shape/serialize 境界（target 横断）"
+updated: "2026-08-12T21:38:00"
+summary: "Export 横断パイプライン・API・shape/merge/serialize・Raw 検証"
 features:
   - ui-export
   - raw-validation
@@ -13,7 +13,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-08-10 05:10
+最終更新: 2026-08-12 21:38
 
 ## 概要
 
@@ -21,13 +21,13 @@ Preview の「出力」「ダウンロード」から、編集中 IR（store）�
 
 対応 target（現状）:
 
-| targetId | 成果物例 | Transformer | shape | serialize | 詳細 |
-|---|---|---|---|---|---|
-| `primefaces` | `<logicalId>.xhtml` | `transformToPrimeFacesRaw` | `shapePrimeFaces` | Handlebars（`form.hbs`） | [PrimeFaces Export](./primefaces-export.md) |
-| `im-forma` | `<logicalId>.json` | `transformToImFormaRaw` | `shapeImForma` | `JSON.stringify` | （本稿の共通境界のみ） |
+| targetId | 詳細 |
+|---|---|
+| `primefaces` | [PrimeFaces Export](./primefaces-export.md) |
+| `im-forma` | [im-forma Export](./im-forma-export.md) |
 
 クライアントは `targetId` だけを選ぶ。json / yaml / Handlebars の戦略は各 `DefinitionWriter` の内部事情。  
-**target 固有のコンポーネント対応・shape フィールド・テンプレート規約**は各 target ドキュメントに分離する（`ui-export.md` は横断パイプラインに留める）。
+**target 固有のコンポーネント対応・shape フィールド・テンプレート規約・serialize 方言**は各 target ドキュメントに分離する（本稿は横断パイプラインに留める）。
 
 ## API 形状（重要）
 
@@ -111,25 +111,23 @@ sequenceDiagram
 ## ファイル配置
 
 ```text
-<data/export>/<targetId>/<logicalId>/<logicalId>.xhtml   # primefaces
-<data/export>/<targetId>/<logicalId>/<logicalId>.json    # im-forma
+<data/export>/<targetId>/<logicalId>/<filename>
 ```
 
-拡張子・MIME は `DefinitionWriter.describeArtifact` / `toArtifact` が決定する。  
+`<filename>` の拡張子・MIME は `DefinitionWriter.describeArtifact` / `toArtifact` が決定する。  
 `definition-export-io` はディレクトリ配置と書込のみを担当する。
 
-## Writer 内部: shape と serialize
+## Writer 内部: shape / merge / serialize
 
 | 層 | 責務 | パス例 |
 |---|---|---|
-| shape | 検証済み Raw → ベンダー埋め込み用 payload（キー寄せ・既定値・派生） | `writers/shape/*` |
-| serialize | payload → ファイル本文 | `serialize-json.ts` / `serialize-handlebars.ts` |
+| shape / merge | 検証済み Raw → ベンダー埋め込み用 payload（必要なら原文 merge） | `writers/shape/*`, `writers/merge/*` |
+| serialize | payload → ファイル本文 | `serialize-*.ts` / Handlebars |
 | Writer | `describeArtifact` + shape + serialize の合成 | `*-writer.ts` |
 
-- import 由来の残余（`external['<targetId>']`）は shape 層で **先に** spread し、IR 所有キーで上書きする。詳細は [UI Import](./ui-import.md)
+- Import 由来の残余（`external['<targetId>']`）を shape でどう扱うかは target 依存。典型例として、残余を先に spread し IR 所有キーで上書きする、または原文を merge 起点にする、などがある。詳細は各 target 文書。
 - Handlebars 経路の HTML escape は **コンポーネントテンプレートの `{{ }}`**。独自 `escapeHtml` は使わない。
 - テンプレート根: `app.io.export.templates.<targetId>.dir`（config で差し替え可）
-- Handlebars target（現状 `primefaces`）は component 断片を描画して親テンプレートへ統合する。詳細は [PrimeFaces Export](./primefaces-export.md)
 - yaml serialize ヘルパは、yaml を吐く target が追加されたときに同時実装（現状 target なし）
 
 ## Raw 検証と JSON Schema
@@ -177,8 +175,16 @@ classDiagram
 | Validate | `src/lib/schema/validate-raw.ts` |
 | Schema loader | `src/lib/schema/json-schema-loader.ts` |
 | shape | `src/lib/server/io/writers/shape/` |
+| merge | `src/lib/server/io/writers/merge/` |
 | serialize | `src/lib/server/io/writers/serialize/` |
 | Templates | `templates/export/<targetId>/`（config で差し替え可） |
 | Client | `src/lib/store/layout-editor/ui-export-client.ts` |
 | API | `src/routes/api/ui/export/+server.ts` |
 | Download API | `src/routes/api/ui/download/[target]/[logicalId]/+server.ts` |
+
+## 関連ドキュメント
+
+- [im-forma Export](./im-forma-export.md)
+- [PrimeFaces Export](./primefaces-export.md)
+- [UI Import](./ui-import.md)
+- [HTTP API](../api/http-endpoints.md)

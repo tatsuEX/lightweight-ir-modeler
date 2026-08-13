@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-10T02:10:00"
-summary: "Validation Datepicker の blur 閉鎖と datetime の Date+Time 分割"
+updated: "2026-08-12T09:30:00"
+summary: "未使用画面 ID の自動保存先確認と Property 編集可能項目フィルタ"
 features:
   - layout-editor
   - ui-definition
@@ -13,7 +13,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-10 02:10
+最終更新: 2026-08-12 09:30
 
 ## 概要
 
@@ -58,14 +58,30 @@ flowchart LR
 
 ## メタ編集と既存画面の読込
 
-`UiDefinitionMetaAccordion` で `logicalId` を blur / オートコンプリート確定したとき:
+`UiDefinitionMetaAccordion` で画面 ID（内部名 `logicalId`）を blur / オートコンプリート確定したとき:
 
 1. `GET /api/ir/snapshot?logicalId=…` を呼ぶ
 2. 見つかれば store をその snapshot で置換
-3. **404 は無視**（新規 logicalId として現在の components を維持＝「既存画面をコピーして別名保存」用途）
+3. **404（未使用 ID）** のとき、設定に応じて確認ダイアログを出し、続行後に現在の components を維持したまま ID だけ切り替える（「既存画面をコピーして別名保存」用途）
+
+定義インポート後も、取り込み結果の画面 ID が未使用なら **同じ確認ダイアログ** を出す（手動変更と共通）。
+
+### 未使用画面 ID の確認ダイアログ
+
+| 項目 | 内容 |
+|---|---|
+| 表示条件 | 画面 ID が変わり、かつその ID の snapshot が無く、かつ確認が有効なとき |
+| 設定 | `layoutEditor.property.confirmSnapshotDirCreation`（既定 `true`） |
+| 「次回以降確認しない」 | ブラウザ `localStorage`（`layout-editor.skipConfirmSnapshotDirCreation`）。application.yml は書き換えない |
+| キャンセル | ID 変更／取り込みを取り消し |
 
 `logicalId` の妥当性は `isValidLogicalId`（`/^[a-zA-Z][a-zA-Z0-9_-]*$/`）。  
 パスセグメントとしても同じ制約（`assertSafeLogicalIdPathSegment`）で traversal を防ぐ。
+
+## Property: 編集可能な項目のみ
+
+属性表上部の Toggle「編集可能な項目のみ」（既定 ON）で、ファクトリ登録済み type だけを一覧表示する。  
+OFF にすると非対応 type（パススルー）も含めて全件表示する。Layout / Preview の表示方針とは独立。
 
 ## プレビュー描画
 
