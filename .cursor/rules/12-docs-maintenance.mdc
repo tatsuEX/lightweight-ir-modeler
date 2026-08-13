@@ -63,6 +63,22 @@ features:
 4. Keep diagrams (Mermaid) aligned with the **implemented** code, not the aspirational design alone.
 5. If the change was first proposed in `.design-logs/`, still update `docs/` once the approach is implemented — the design log stays historical.
 
+## Core vs adapter target docs
+
+The domain core is **pure IR** (SSOT (Single Source Of Truth)). External UI platforms are **adapters**. Living docs must keep that boundary visible.
+
+| Layer | Paths (examples) | May document |
+|---|---|---|
+| **Core** | `docs/architecture/`・`docs/api/`・横断 use-case（`ui-import.md` / `ui-export.md` / `layout-editor.md` / `ir-snapshot-*.md`） | IR・横断パイプライン・HTTP 契約・`external['<targetId>']`・shape / merge / serialize の**一般概念**・registry |
+| **Adapter target** | `docs/use-cases/<targetId>-import.md`・`<targetId>-export.md`（例: `primefaces-*`・`im-forma-*`） | ベンダー語彙・type マップ・文書族判定・merge 手順・serialize 方言・target 固有 WARN |
+
+Rules:
+
+1. Do **not** put vendor / target-specific vocabulary, document-family rules, serialize dialects, or type maps into Core docs.
+2. Core may say that some targets keep residuals for Export merge — without naming vendor keys or procedures.
+3. When adding a new import/export target: add (or update) **target docs**; do **not** inflate Core docs with that target's details. Link from `docs/README.md` and from the relevant Core use-case tables.
+4. Concrete Writer / Reader class names may appear in architecture diagrams as **registered adapters**; their behavior belongs in target docs.
+
 ## Relationship to other note dirs
 
 | Directory | Role |

@@ -16,6 +16,7 @@ alwaysApply: true
 Rationale: the user is still building confidence with npm-native workflows and does not want commands running outside their understanding. Current policy is deliberately strict.
 
 - Allowed without asking: **read-only inspection of installed `node_modules`** — directory listing (e.g. `Get-ChildItem`) and reading file contents (source, `.d.ts`, theme/config files) to confirm an installed package's API.
+- Allowed without asking: **one-off Node scripts** (`node path/to/temp.cjs` or `.mjs`) whose only job is **UTF-8 text file read/write/append** (e.g. `.articles/` journals). Prefer Write/StrReplace when sufficient. Never use PowerShell for that — see `.cursor/rules/15-utf8-text-editing.mdc`.
 - **Never** run autonomously: installs / upgrades (`npm install`, `npm add`, `npm ci`, `npm update`) and any binary or script under `node_modules` (including `node_modules/.bin`, `npx`).
 - **Ask every time** before running `package.json` scripts (`npm run dev` / `build` / `check` / `lint` / `format` / `test`). State the exact command and why it is needed, then wait.
 - If verification requires a command, prefer reporting what should be run over running it.

@@ -99,6 +99,12 @@ Do not omit user-only edits because the agent did not apply the patch.
 - When the user asks to log their own implementation or reports change points for the day’s work — append even if the agent only assisted with diagnosis.
 - Not required for trivial one-line answers with no durable project change.
 
+## Encoding / how to edit
+
+- Files under `.articles/` are **UTF-8** (no BOM preferred).
+- **Never** append or rewrite journal text with PowerShell (`Add-Content`, `Set-Content`, `Out-File`, etc.) — it corrupts Japanese. See `.cursor/rules/15-utf8-text-editing.mdc`.
+- Prefer Write / StrReplace; if scripting is needed, use **Node** with `fs.readFileSync` / `writeFileSync` and `'utf8'`.
+
 ## Notes
 
 - Append-only for body sections within a day; update frontmatter `updated` / `summary` / `categories` as needed.

@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-09T00:36:00"
-summary: "debounce 付き IR YAML snapshot の自動保存・世代管理・二重重複抑制"
+updated: "2026-08-12T09:30:00"
+summary: "debounce 付き IR YAML snapshot の自動保存・未使用 ID 確認"
 features:
   - ir-snapshot
   - auto-save
@@ -10,7 +10,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-09 00:36
+最終更新: 2026-08-12 09:30
 
 ## 概要
 
@@ -76,8 +76,10 @@ sequenceDiagram
 <data/ir>/<logicalId>/ir-snapshot-YYYYMMDDTHHmmss-2.yml   # 同一秒衝突時
 ```
 
+- ディレクトリ名は画面 ID（`logicalId`）。未使用 ID への切替時は確認ダイアログがあり得る（[layout-editor](./layout-editor.md)）
 - ファイル名の時刻は **ローカル時刻**
 - ファイル内 `savedAt` は ISO UTC
+- 画面 ID を変えると別ディレクトリへ保存される。過剰なディレクトリ生成は許容する（復元は ID 単位）
 - 世代のソート・prune は **ファイル名** 基準（mtime ではない）
 - 復元時: component `id` を除去して保存 → 読込時に再採番
 

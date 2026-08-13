@@ -13,6 +13,7 @@
 		createTransformTarget,
 		setTransformTargetContext
 	} from '$lib/store/layout-editor/transform-target.svelte';
+	import { setLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 
 	let { data, children } = $props();
 
@@ -25,6 +26,8 @@
 
 	const transformTarget = createTransformTarget(data.preview.transformTarget);
 	setTransformTargetContext(transformTarget);
+
+	setLayoutEditorConfigContext(data.layoutEditor);
 
 	if (data.initialSnapshot) {
 		uiDefinition.loadSnapshot(
