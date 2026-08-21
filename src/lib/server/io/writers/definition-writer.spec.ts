@@ -131,7 +131,7 @@ describe('DefinitionWriter', () => {
 		expect(artifact.content).toContain('<!-- unsupported type: not-a-real-type id=e -->');
 	});
 
-	it('IMFormaWriter owns json filename and content', () => {
+	it('IMFormaWriter owns json filename and Forma-style content', () => {
 		const writer = new IMFormaWriter();
 		expect(writer.describeArtifact('myForm')).toEqual({
 			filename: 'myForm.json',
@@ -142,14 +142,20 @@ describe('DefinitionWriter', () => {
 			target: 'im-forma',
 			logicalId: 'myForm',
 			name: 'My Form',
-			items: [{ logicalId: 'name', type: 'textbox', required: true }]
+			items: [{ logicalId: 'name', type: 'textbox', label: 'Name', required: true }]
 		});
 
 		expect(artifact.filename).toBe('myForm.json');
-		expect(JSON.parse(artifact.content)).toMatchObject({
-			formId: 'myForm',
-			formName: 'My Form',
-			items: [{ logicalId: 'name', type: 'textbox', required: true }]
+		expect(artifact.content.includes('\n')).toBe(false);
+		expect(artifact.content).toContain('"item_list" :');
+		const parsed = JSON.parse(artifact.content) as {
+			item_list: Record<string, unknown>[];
+		};
+		expect(parsed.item_list).toHaveLength(1);
+		expect(parsed.item_list[0]).toMatchObject({
+			item_type: 'product_72_textbox',
+			item_view_names: { ja: 'Name' }
 		});
 	});
 });
+
