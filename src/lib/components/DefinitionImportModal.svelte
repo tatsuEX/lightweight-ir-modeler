@@ -134,7 +134,7 @@
 	}
 </script>
 
-<Button color="alternative" disabled={targetItems.length === 0} onclick={openImport}>
+<Button size="xs" color="alternative" disabled={targetItems.length === 0} onclick={openImport}>
 	定義インポート
 </Button>
 

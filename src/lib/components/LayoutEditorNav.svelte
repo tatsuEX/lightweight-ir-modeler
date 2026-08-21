@@ -16,11 +16,12 @@
 	}
 </script>
 
-<ButtonGroup>
+<ButtonGroup size="sm">
 	{#each tabs as tab (tab.href)}
 		<Button
 			href={tab.href}
 			color={isActive(tab.href) ? 'primary' : 'alternative'}
+			class="px-3 py-1"
 			outline={!isActive(tab.href)}
 		>
 			{tab.label}

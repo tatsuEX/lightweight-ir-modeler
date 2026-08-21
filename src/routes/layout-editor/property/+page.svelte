@@ -28,7 +28,7 @@
 		</div>
 		<div class="flex shrink-0 items-center gap-2">
 			<DefinitionImportModal />
-			<Button color="red" disabled={selectedCount === 0} onclick={removeSelectedRows}>
+			<Button size="xs" color="red" disabled={selectedCount === 0} onclick={removeSelectedRows}>
 				選択行を削除
 			</Button>
 			<ComponentToolPalette />

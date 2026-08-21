@@ -124,16 +124,16 @@
 	}
 </script>
 
-<Button color="primary" onclick={openPalette}>ツールパレット</Button>
+<Button size="xs" color="primary" onclick={openPalette}>ツールパレット</Button>
 
-<Drawer bind:open placement="right" outsideclose>
+<Drawer bind:open placement="right" outsideclose class="lim-componet-tool-palette">
 	<Drawerhead class="mb-4" onclick={closePalette} title="選択した種類の行をテーブル末尾に追加します。">
 		<h5 class="text-base font-semibold text-gray-500 dark:text-gray-400">コンポーネントを追加</h5>
 	</Drawerhead>
 	<Sidebar disableBreakpoints={true} class="top-16 w-full">
 		<SidebarWrapper>
 			<SidebarGroup>
-				<SidebarItem label="Textbox" onclick={addTextbox} >
+				<SidebarItem class="lim-clickable" label="Textbox" onclick={addTextbox} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=input
@@ -147,7 +147,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Textarea" onclick={addTextarea} >
+				<SidebarItem class="lim-clickable" label="Textarea" onclick={addTextarea} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=input
@@ -161,7 +161,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Number" onclick={addNumber} >
+				<SidebarItem class="lim-clickable" label="Number" onclick={addNumber} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=number&search-page=2
@@ -174,7 +174,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Checkbox" onclick={addCheckbox} >
+				<SidebarItem class="lim-clickable" label="Checkbox" onclick={addCheckbox} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=checkbox
@@ -187,7 +187,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Radio" onclick={addRadio} >
+				<SidebarItem class="lim-clickable" label="Radio" onclick={addRadio} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=radio&search-page=1
@@ -200,7 +200,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Dropdown" onclick={addDropdown} >
+				<SidebarItem class="lim-clickable" label="Dropdown" onclick={addDropdown} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=dropdown
@@ -213,7 +213,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Dropdown Multi" onclick={addDropdownMulti} >
+				<SidebarItem class="lim-clickable" label="Dropdown Multi" onclick={addDropdownMulti} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=dropdown
@@ -226,7 +226,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Datepicker" onclick={addDatepicker} >
+				<SidebarItem class="lim-clickable" label="Datepicker" onclick={addDatepicker} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=calendar&search-page=1
@@ -239,7 +239,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="DateSpan" onclick={addDateSpan} >
+				<SidebarItem class="lim-clickable" label="DateSpan" onclick={addDateSpan} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=date+range
@@ -252,7 +252,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Timepicker" onclick={addTimepicker} >
+				<SidebarItem class="lim-clickable" label="Timepicker" onclick={addTimepicker} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=time
@@ -266,7 +266,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Datetimepicker" onclick={addDatetimepicker} >
+				<SidebarItem class="lim-clickable" label="Datetimepicker" onclick={addDatetimepicker} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=calendar&search-page=8
@@ -279,7 +279,7 @@
 						</svg>
 					{/snippet}
 				</SidebarItem>
-				<SidebarItem label="Label" onclick={addLabel} >
+				<SidebarItem class="lim-clickable" label="Label" onclick={addLabel} >
 					{#snippet icon()}
 						<!--
 							@see https://icon-sets.iconify.design/?query=label
@@ -296,3 +296,29 @@
 		</SidebarWrapper>
 	</Sidebar>
 </Drawer>
+
+<style>
+	:global(.lim-componet-tool-palette .lim-clickable) {
+		position: relative;
+		cursor: pointer;
+		background: #eee;
+		overflow-x: hidden;
+	}
+	:global(.lim-componet-tool-palette .lim-clickable)::before {
+		content: "click to add";
+		position: absolute;
+		display: inline-block;
+		color: #333;
+		font-size: 0.8em;
+		top: 50%;
+		right: 0;
+		transform: translateX(100%) translateY(-50%);
+		opacity: 0;
+		transition: transform 0.5s, opacity 0.5s;
+	}
+	:global(.lim-componet-tool-palette .lim-clickable:hover)::before {
+		transform: translateX(-25%) translateY(-50%);
+		opacity: 0.7;
+		transition: transform 0.5s, opacity 0.5s;
+	}
+</style>

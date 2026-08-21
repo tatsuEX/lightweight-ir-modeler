@@ -157,6 +157,7 @@
 			<Button
 				type="button"
 				color={columnGroup === group.id ? 'primary' : 'alternative'}
+				class="px-3 py-1"
 				outline={columnGroup !== group.id}
 				onclick={() => {
 					columnGroup = group.id;
