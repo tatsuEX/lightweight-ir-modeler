@@ -4,6 +4,15 @@ export const PREVIEW_ROOT = 'preview-root';
 /** プレビューテーマ scope クラスの接頭辞 */
 export const PREVIEW_THEME_PREFIX = 'preview-theme';
 
+/** プレビュー 行 */
+export const PREVIEW_ROW = 'preview-row';
+
+/** プレビュー 行ヘッダ */
+export const PREVIEW_ROW_HEADER = 'preview-row__header';
+
+/** プレビュー 行入力欄 */
+export const PREVIEW_ROW_INPUT = 'preview-row__input';
+
 /** プレビューフィールドの識別クラス接頭辞 */
 export const PREVIEW_FIELD = 'preview-field';
 

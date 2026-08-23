@@ -19,21 +19,23 @@
 	{#if component.readonly ?? false}
 		<p class={PREVIEW_DISP_ONLY}>{value ?? ''}</p>
 	{:else}
-	<div class="flex items-center">
-	{#each items as item, index}
-			<input
+	<div class="flex items-center flex-wrap">
+		{#each items as item, index (index)}
+			<div class="flex">
+				<input
 				id={`${component.id}-${index}`}
 				class="{PREVIEW_CONTROL} {previewFieldClass('radio')}"
 				type="radio"
-				bind:value
-				autocomplete="off"
-				disabled={component.disabled}
-				readonly={component.readonly}
-				checked={defaultValue === item?.value}
-				aria-required={component.validation?.required ?? false}
-				aria-label={item?.label ?? ''}
-			/>
-			<label for={`${component.id}-${index}`}>{item?.label ?? ''}</label>
+					bind:value
+					autocomplete="off"
+					disabled={component.disabled}
+					readonly={component.readonly}
+					checked={defaultValue === item?.value}
+					aria-required={component.validation?.required ?? false}
+					aria-label={item?.label ?? ''}
+					/>
+				<label for={`${component.id}-${index}`}>{item?.label ?? ''}</label>
+			</div>
 			{/each}
 		</div>
 	{/if}

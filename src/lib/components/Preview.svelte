@@ -4,7 +4,7 @@
 
 	import PreviewComponentRenderer from '$lib/components/preview/PreviewComponentRenderer.svelte';
 	import { isUiDefinitionMetaReady } from '$lib/ir/ui-definition-meta';
-	import { PREVIEW_ROOT, previewThemeClass } from '$lib/preview/preview-classes';
+	import { PREVIEW_ROOT, previewThemeClass, PREVIEW_ROW, PREVIEW_ROW_HEADER, PREVIEW_ROW_INPUT } from '$lib/preview/preview-classes';
 	import '$lib/preview/preview-theme-styles';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getPreviewThemeContext } from '$lib/store/layout-editor/preview-theme.svelte';
@@ -105,14 +105,14 @@
 		<table class="w-full table-fixed border-collapse border border-gray-300">
 			<tbody class="border-collapse border border-gray-300 divide-y divide-gray-300">
 				{#each uiDefinition.components as component (component.id)}
-					<tr class="border-collapse border border-gray-300">
-						<td class="p-2 border-collapse border border-gray-300 w-1/4 align-top font-bold">
+					<tr class="{PREVIEW_ROW} border-collapse border border-gray-300">
+						<td class="{PREVIEW_ROW_HEADER} p-2 border-collapse border border-gray-300 w-1/4 align-top font-bold">
 							{component.label}
 							{#if component.validation?.required ?? false}
 								<span class="text-red-500"> *</span>
 							{/if}
 						</td>
-						<td class="p-2 border-collapse border border-gray-300 w-3/4 align-top">
+						<td class="{PREVIEW_ROW_INPUT} p-2 border-collapse border border-gray-300 w-3/4 align-top">
 							<PreviewComponentRenderer {component} />
 						</td>
 					</tr>

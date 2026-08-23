@@ -1,4 +1,17 @@
 /* プレビューフィールド共通（テーマ非依存の構造スタイル） */
+.preview-row {
+
+}
+
+.preview-row__header {
+	background-color: var(--preview-row-header-bg, #eee);
+}
+
+.preview-row__input {
+	background-color: var(--preview-row-input-bg, #fefefe);
+}
+
+/* プレビューフィールド共通（テーマ非依存の構造スタイル） */
 
 .preview-field {
 	display: flex;
@@ -25,8 +38,8 @@
 }
 
 .preview-field__control[aria-required="true"] {
-	border: solid 1px #c77;
-	background-color: #ffeaed;
+	border: solid 1px var(--preview-control-required-border-color, #c77);
+	background-color: var(--preview-control-required-bg-color, #ffeaed);
 }
 
 .preview-field__hint {
@@ -48,31 +61,33 @@
 /*
   radio
 */
-.preview-field.preview-field--radio {
+div.preview-field.preview-field--radio {
+	display: flex;
+}
+input.preview-field.preview-field--radio {
 	height: 1.6em;
-	width: 1.4em;
+	width: 1.2em;
 	border-radius: 50%;
 	margin-right: 0.5em;
 	--color-brand: white;
 }
-.preview-field.preview-field--radio + label {
+input.preview-field.preview-field--radio + label {
 	margin-right: 1.5em;
 }
 
 /*
   checkbox
 */
-.preview-field.preview-field--checkbox {
-	height: calc(1em / 1);
-	width: calc(1em / 1.25);
+input.preview-field.preview-field--checkbox {
+	height: 1.6em;
+	width: 1.2em;
 	margin-right: 0.5em;
 	--color-brand: white;
-	font-size: 1.25em;
 }
-.preview-field.preview-field--checkbox:checked {
-	height: calc(1 / 1.5em);
-	width: calc(1 / 1.5em);
+input.preview-field.preview-field--checkbox:checked {
+	height: calc(1em);
+	width: calc(1em);
 }
-.preview-field.preview-field--checkbox + label {
+input.preview-field.preview-field--checkbox + label {
 	margin-right: 1.5em;
 }
