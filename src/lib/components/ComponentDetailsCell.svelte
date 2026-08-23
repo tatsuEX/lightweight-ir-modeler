@@ -209,7 +209,7 @@
 					type="text"
 					size="sm"
 					placeholder="初期値"
-					pattern="[-]?[0-9]+(\.[0-9]+)?"
+					pattern="-?[0-9]+(\.[0-9]+)?"
 					aria-label="{component.type} のデフォルト値"
 					bind:value={
 						() => component.defaultValue ?? '',
@@ -405,6 +405,11 @@
 							aria-label="{component.type} のデフォルト値: {item.label}"
 							value={item.value}
 							bind:group={component.defaultValue}
+							onclick={(e: MouseEvent) => {
+								if (component.defaultValue === item.value) {
+									component.defaultValue = '';
+								}
+							}}
 						>
 							{item.label}
 						</Radio>
