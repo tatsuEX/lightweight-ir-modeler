@@ -25,7 +25,7 @@
 </script>
 
 <!-- DnD action : コンポーネントをDrag&Dropで並べ替える -->
-<div class="w-1/2 mx-auto flex flex-col gap-2 items-center justify-center"
+<div class="w-3/4 mx-auto flex flex-col gap-2 items-center justify-center"
     use:dndzone={{
         items: components as any[],
         flipDurationMs: 200,
@@ -37,10 +37,11 @@
     onfinalize={(event) => handleDnD(event, true)}
 >
     {#each components as component, index (component.id)}
-        <Card href="javascript:void(0)" class="p-1 sm:p-1 md:p-2 flex flex-row items-center justify-center">
+        <Card href="javascript:void(0)" class="w-3/4 p-1 sm:p-1 md:p-2 flex flex-row items-center justify-center" size="lg">
             <div class="w-10 h-10 flex items-center justify-center">{index + 1}</div>
-            <div class="w-1/2 text-bold mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{component.label}</div>
-            <div class="w-1/2 leading-tight font-normal text-gray-700 dark:text-gray-400">{component.logicalId}</div>
+            <div class="w-1/2 text-bold mb-2 text-[16px] font-bold tracking-tight text-gray-900 dark:text-white">{component.label}</div>
+            <div class="w-1/4 leading-tight font-normal text-[12px] text-gray-700 dark:text-gray-400">{component.type}</div>
+            <div class="w-1/4 leading-tight font-normal text-[12px] text-gray-700 dark:text-gray-400">{component.logicalId}</div>
         </Card>
     {/each}
 </div>
