@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T23:50:00"
-summary: "Property 属性テーブルの列ヘッダフィルタと snapshot 運用コメント"
+updated: "2026-08-25T07:54:00"
+summary: "Property 属性テーブルの列ヘッダフィルタと snapshot 運用コメント（モーダル内ツリー）"
 features:
   - layout-editor
   - ui-definition
@@ -15,7 +15,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-24 23:50
+最終更新: 2026-08-25 07:54
 
 ## 概要
 
@@ -162,11 +162,15 @@ snapshot YAML の `#` コメントを Property から編集する。IR フィー
 
 | 対象 | UI | YAML パス |
 |---|---|---|
-| 画面メタ全体 | アコーディオン右上の `#` | `uiDefinition` |
+| 画面メタ全体 | アコーディオン見出し左の `#` | `uiDefinition` |
+| 画面メタの各キー | コメントモーダル左ペイン | `uiDefinition.logicalId` など |
 | 各コンポーネント | 行の `#` 列 | `components[i]`（要素先頭） |
-| `external` | メタ内ツリー / 行の `external` 折りたたみ | `uiDefinition.external…` / `components[i].external…` |
+| コンポーネントの各キー | コメントモーダル左ペイン | `components[i].logicalId` など |
+| `external` 配下 | 同上（左ペインの一枝） | `uiDefinition.external…` / `components[i].external…` |
 
-入力は Monaco Modal（`language: markdown`）。コメント済みの `#` は hover / focus で Markdown プレビュー。
+`#` は Flowbite Accordion 開閉アイコンと重ねないよう、見出しテキストの左に置く（ヘッダ `<button>` の外）。tooltip は「コメントを編集」。記入済みなら同じ tooltip 内に Markdown プレビューを続ける。
+
+入力は Monaco Modal（`language: markdown`）。左ペインは VS Code のエクスプローラ相当で、開いた対象（画面メタまたはその行）のドメインキーと `external` を選び、右ペインで本文を編集する。Property 上に `external` ツリーは置かない。
 
 ## コンポーネント種別（現状）
 
@@ -184,6 +188,9 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | Property 画面 | `src/routes/layout-editor/property/+page.svelte` |
 | 初期読込 | `src/routes/layout-editor/+layout.server.ts` |
 | 属性テーブル | `src/lib/components/ComponentAttributeTable.svelte` |
+| コメント `#` | `src/lib/components/YamlCommentButton.svelte` |
+| コメントモーダル | `src/lib/components/MarkdownCommentModal.svelte` |
+| コメント対象ツリー | `src/lib/components/CommentTargetTree.svelte` |
 | テキスト列マッチ | `src/lib/utils/text-match.ts` |
 | Details セル | `src/lib/components/ComponentDetailsCell.svelte` |
 | Validation セル | `src/lib/components/ComponentValidationCell.svelte` |

@@ -10,6 +10,8 @@ import { normalizeCommentText, type YamlCommentMap } from '$lib/utils/yaml-comme
 export type OwnerCommentMap = Record<string, string>;
 
 const COMPONENT_PREFIX = 'component:';
+const COMPONENT_REL_PREFIX = 'component-rel:';
+/** 旧プレフィックス。読込互換のみ */
 const COMPONENT_EXTERNAL_PREFIX = 'component-external:';
 const EXTRA_PREFIX = 'extra:';
 
@@ -26,10 +28,17 @@ export function componentCommentKey(componentId: string): string {
 }
 
 /**
+ * コンポーネント配下（ドメインキー / external）コメントのオーナキーを作る
+ */
+export function componentRelCommentKey(componentId: string, relativeYamlPath: string): string {
+	return `${COMPONENT_REL_PREFIX}${componentId}:${relativeYamlPath}`;
+}
+
+/**
  * コンポーネント external 配下コメントのオーナキーを作る
  */
 export function componentExternalCommentKey(componentId: string, relativeYamlPath: string): string {
-	return `${COMPONENT_EXTERNAL_PREFIX}${componentId}:${relativeYamlPath}`;
+	return componentRelCommentKey(componentId, relativeYamlPath);
 }
 
 /**
@@ -52,30 +61,67 @@ function isComponentElementPath(segments: readonly YamlPathSegment[]): boolean {
 }
 
 /**
- * パスが `components[n].external` 以下か判定する
+ * パスが `uiDefinition` 配下か判定する
  */
-function isComponentExternalPath(segments: readonly YamlPathSegment[]): boolean {
+function isUiDefinitionDescendantPath(segments: readonly YamlPathSegment[]): boolean {
+	return segments.length >= 2 && segments[0].type === 'key' && segments[0].key === 'uiDefinition';
+}
+
+/**
+ * パスが `components[n]` 配下か判定する
+ */
+function isComponentDescendantPath(segments: readonly YamlPathSegment[]): boolean {
 	return (
 		segments.length >= 3 &&
 		segments[0].type === 'key' &&
 		segments[0].key === 'components' &&
-		segments[1].type === 'index' &&
-		segments[2].type === 'key' &&
-		segments[2].key === 'external'
+		segments[1].type === 'index'
 	);
 }
 
 /**
- * パスが `uiDefinition.external` 以下か判定する
+ * component-rel / 旧 component-external オーナキーから id と相対パスを取る
  */
-function isUiDefinitionExternalPath(segments: readonly YamlPathSegment[]): boolean {
+function parseComponentRelOwnerKey(ownerKey: string): { id: string; relative: string } | null {
+	const prefix = ownerKey.startsWith(COMPONENT_REL_PREFIX)
+		? COMPONENT_REL_PREFIX
+		: ownerKey.startsWith(COMPONENT_EXTERNAL_PREFIX)
+			? COMPONENT_EXTERNAL_PREFIX
+			: null;
+	if (prefix == null) {
+		return null;
+	}
+	const rest = ownerKey.slice(prefix.length);
+	const sep = rest.indexOf(':');
+	if (sep <= 0) {
+		return null;
+	}
+	return { id: rest.slice(0, sep), relative: rest.slice(sep + 1) };
+}
+
+/**
+ * オーナキーが uiDefinition 配下か判定する
+ */
+export function isUiDefinitionOwnerKey(ownerKey: string): boolean {
 	return (
-		segments.length >= 2 &&
-		segments[0].type === 'key' &&
-		segments[0].key === 'uiDefinition' &&
-		segments[1].type === 'key' &&
-		segments[1].key === 'external'
+		ownerKey === UI_DEFINITION_COMMENT_KEY ||
+		ownerKey.startsWith(`${UI_DEFINITION_COMMENT_KEY}.`) ||
+		ownerKey.startsWith(`${UI_DEFINITION_COMMENT_KEY}[`)
 	);
+}
+
+/**
+ * オーナキーからコンポーネント内部 id を取る
+ */
+export function parseComponentIdFromOwnerKey(ownerKey: string): string | null {
+	const rel = parseComponentRelOwnerKey(ownerKey);
+	if (rel) {
+		return rel.id;
+	}
+	if (ownerKey.startsWith(COMPONENT_PREFIX)) {
+		return ownerKey.slice(COMPONENT_PREFIX.length);
+	}
+	return null;
 }
 
 /**
@@ -114,16 +160,16 @@ export function ownerCommentsFromYamlMap(
 			continue;
 		}
 
-		if (isComponentExternalPath(segments) && segments[1].type === 'index') {
+		if (isComponentDescendantPath(segments) && segments[1].type === 'index') {
 			const id = componentIds[segments[1].index];
 			if (id) {
 				const relative = stringifyYamlKeyPath(segments.slice(2));
-				result[componentExternalCommentKey(id, relative)] = normalized;
+				result[componentRelCommentKey(id, relative)] = normalized;
 			}
 			continue;
 		}
 
-		if (isUiDefinitionExternalPath(segments)) {
+		if (isUiDefinitionDescendantPath(segments)) {
 			result[path] = normalized;
 			continue;
 		}
@@ -155,23 +201,17 @@ export function yamlCommentsFromOwnerMap(
 			continue;
 		}
 
-		if (ownerKey.startsWith(COMPONENT_EXTERNAL_PREFIX)) {
-			const rest = ownerKey.slice(COMPONENT_EXTERNAL_PREFIX.length);
-			const sep = rest.indexOf(':');
-			if (sep <= 0) {
-				continue;
-			}
-			const id = rest.slice(0, sep);
-			const relative = rest.slice(sep + 1);
-			const index = idToIndex.get(id);
+		const rel = parseComponentRelOwnerKey(ownerKey);
+		if (rel) {
+			const index = idToIndex.get(rel.id);
 			if (index === undefined) {
 				continue;
 			}
-			result[joinYamlKeyPath(`components[${index}]`, relative)] = normalized;
+			result[joinYamlKeyPath(`components[${index}]`, rel.relative)] = normalized;
 			continue;
 		}
 
-		if (ownerKey.startsWith(COMPONENT_PREFIX) && !ownerKey.startsWith(COMPONENT_EXTERNAL_PREFIX)) {
+		if (ownerKey.startsWith(COMPONENT_PREFIX)) {
 			const id = ownerKey.slice(COMPONENT_PREFIX.length);
 			const index = idToIndex.get(id);
 			if (index === undefined) {
@@ -193,6 +233,18 @@ export function yamlCommentsFromOwnerMap(
 }
 
 /**
+ * オーナマップが同じキー・本文か判定する
+ */
+export function ownerCommentMapsEqual(left: OwnerCommentMap, right: OwnerCommentMap): boolean {
+	const leftKeys = Object.keys(left);
+	const rightKeys = Object.keys(right);
+	if (leftKeys.length !== rightKeys.length) {
+		return false;
+	}
+	return leftKeys.every((key) => left[key] === right[key]);
+}
+
+/**
  * 残っている component id 以外のコンポーネントコメントを落とす
  */
 export function retainOwnerCommentsForComponentIds(
@@ -202,11 +254,9 @@ export function retainOwnerCommentsForComponentIds(
 	const result: OwnerCommentMap = {};
 
 	for (const [key, value] of Object.entries(ownerComments)) {
-		if (key.startsWith(COMPONENT_EXTERNAL_PREFIX)) {
-			const rest = key.slice(COMPONENT_EXTERNAL_PREFIX.length);
-			const sep = rest.indexOf(':');
-			const id = sep > 0 ? rest.slice(0, sep) : '';
-			if (!componentIds.has(id)) {
+		const rel = parseComponentRelOwnerKey(key);
+		if (rel) {
+			if (!componentIds.has(rel.id)) {
 				continue;
 			}
 		} else if (key.startsWith(COMPONENT_PREFIX)) {

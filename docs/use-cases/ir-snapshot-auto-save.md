@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T23:50:00"
+updated: "2026-08-25T07:54:00"
 summary: "debounce 付き IR YAML snapshot の自動保存・運用コメント"
 features:
   - ir-snapshot
@@ -11,7 +11,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-24 23:50
+最終更新: 2026-08-25 07:54
 
 ## 概要
 
@@ -89,8 +89,9 @@ sequenceDiagram
 Output uses eemeli/yaml Document (not js-yaml). Operational Markdown comments are stored as YAML `#` (`commentBefore`):
 
 - `uiDefinition` key: one comment for the meta accordion as a whole
+- any path under `uiDefinition` (domain keys such as `logicalId`, and `external…`)
 - each `components[]` element: one comment immediately before that element (not before the `components` key)
-- any path under `uiDefinition.external` or `components[i].external`
+- any path under a `components[]` element (domain keys and `external…`)
 
 HTTP GET/POST carry a `comments` map (YAML key path → Markdown). The YAML file itself does not have a `comments:` key.
 

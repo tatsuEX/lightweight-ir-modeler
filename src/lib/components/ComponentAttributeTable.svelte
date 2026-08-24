@@ -24,7 +24,6 @@
 	import ComponentValidationCell, {
 		type ValidationSlot
 	} from '$lib/components/ComponentValidationCell.svelte';
-	import ExternalCommentTree from '$lib/components/ExternalCommentTree.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { componentCommentKey } from '$lib/ir/snapshot-comment-map';
@@ -604,26 +603,11 @@
 							</span>
 						</TableBodyCell>
 						<TableBodyCell class={cellClass}>
-							<div class="flex flex-col items-start gap-1">
-								<YamlCommentButton
-									ownerKey={componentCommentKey(component.id)}
-									title={component.logicalId ? `components[${component.logicalId}]` : 'component'}
-									ariaLabel="{component.type} の運用コメント"
-								/>
-								{#if component.external}
-									<details class="max-w-xs">
-										<summary class="cursor-pointer text-xs text-gray-500 dark:text-gray-400">
-											external
-										</summary>
-										<div class="mt-1 max-h-64 overflow-auto">
-											<ExternalCommentTree
-												value={component.external}
-												scope={{ componentId: component.id }}
-											/>
-										</div>
-									</details>
-								{/if}
-							</div>
+							<YamlCommentButton
+								ownerKey={componentCommentKey(component.id)}
+								title={component.logicalId ? `components[${component.logicalId}]` : 'component'}
+								ariaLabel="{component.type} の運用コメント"
+							/>
 						</TableBodyCell>
 						<TableBodyCell class={cellClass}>
 							<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>

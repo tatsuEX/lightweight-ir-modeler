@@ -1,5 +1,6 @@
 import { createContext } from 'svelte';
 import {
+	ownerCommentMapsEqual,
 	ownerCommentsFromYamlMap,
 	retainOwnerCommentsForComponentIds,
 	yamlCommentsFromOwnerMap,
@@ -86,9 +87,15 @@ export class SnapshotComments {
 
 	/**
 	 * 残っているコンポーネント以外のコメントを落とす
+	 *
+	 * WARN: 内容が同じでも代入すると $effect が自己再入する。変更が無いときは #map を触らない。
 	 */
 	retainComponentIds(componentIds: readonly string[]): void {
-		this.#map = retainOwnerCommentsForComponentIds(this.#map, new Set(componentIds));
+		const next = retainOwnerCommentsForComponentIds(this.#map, new Set(componentIds));
+		if (ownerCommentMapsEqual(this.#map, next)) {
+			return;
+		}
+		this.#map = next;
 	}
 
 	/**
@@ -107,6 +114,21 @@ export class SnapshotComments {
 			title,
 			draft: this.get(ownerKey)
 		};
+	}
+
+	/**
+	 * 編集対象を切り替える（現在の下書きは先にオーナへ載せる）
+	 */
+	selectEditor(ownerKey: string, title: string): void {
+		if (!this.#editor) {
+			this.openEditor(ownerKey, title);
+			return;
+		}
+		if (this.#editor.ownerKey === ownerKey) {
+			return;
+		}
+		this.set(this.#editor.ownerKey, this.#editor.draft);
+		this.openEditor(ownerKey, title);
 	}
 
 	/**

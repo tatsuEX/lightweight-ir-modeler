@@ -1,3 +1,4 @@
+import { untrack } from 'svelte';
 import { debounce } from '$lib/utils/debounce';
 import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
 import type { UIDefinition } from './layout-editor.svelte';
@@ -90,9 +91,16 @@ export function attachIrAutoSave(
 		options.delay
 	);
 
+	// WARN: retain を save と同じ $effect で #map に書くと effect_update_depth_exceeded になる。
 	$effect(() => {
 		const componentIds = uiDefinition.components.map((component) => component.id);
-		comments.retainComponentIds(componentIds);
+		untrack(() => {
+			comments.retainComponentIds(componentIds);
+		});
+	});
+
+	$effect(() => {
+		const componentIds = uiDefinition.components.map((component) => component.id);
 		const payload = {
 			uiDefinition: buildSaveMeta(uiDefinition),
 			components: uiDefinition.components,

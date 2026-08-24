@@ -3,7 +3,6 @@
 	import { Accordion, AccordionItem, Input, Label, Textarea } from 'flowbite-svelte';
 	import Autocomplete from '$lib/components/Autocomplete.svelte';
 	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
-	import ExternalCommentTree from '$lib/components/ExternalCommentTree.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
 	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
@@ -232,7 +231,7 @@
 		}}
 	>
 		{#snippet header()}
-			<span class="pr-10">{accordionHeader}</span>
+			<span class="pl-12 pr-10">{accordionHeader}</span>
 		{/snippet}
 
 		<div class="grid gap-3 border-t border-gray-200 p-4 md:grid-cols-2 dark:border-gray-700">
@@ -291,16 +290,10 @@
 					bind:value={uiDefinition.version}
 				/>
 			</div>
-
-			{#if uiDefinition.external}
-				<div class="{fieldClass} md:col-span-2">
-					<ExternalCommentTree value={uiDefinition.external} scope="uiDefinition" />
-				</div>
-			{/if}
 		</div>
 	</AccordionItem>
 	</Accordion>
-	<div class="absolute top-2 right-3 z-20">
+	<div class="absolute top-2 left-3 z-20">
 		<YamlCommentButton
 			ownerKey={UI_DEFINITION_COMMENT_KEY}
 			title="uiDefinition"

@@ -3,6 +3,8 @@ import {
 	UI_DEFINITION_COMMENT_KEY,
 	componentCommentKey,
 	componentExternalCommentKey,
+	componentRelCommentKey,
+	ownerCommentMapsEqual,
 	ownerCommentsFromYamlMap,
 	retainOwnerCommentsForComponentIds,
 	yamlCommentsFromOwnerMap
@@ -29,6 +31,21 @@ describe('snapshot-comment-map', () => {
 		expect(yamlCommentsFromOwnerMap(owner, ids)).toEqual(yamlMap);
 	});
 
+	it('maps uiDefinition and component domain-key paths', () => {
+		const ids = ['id-a'];
+		const yamlMap = {
+			'uiDefinition.logicalId': '画面 ID',
+			'components[0].logicalId': 'フィールド ID',
+			'components[0].validation.required': '必須'
+		};
+
+		const owner = ownerCommentsFromYamlMap(yamlMap, ids);
+		expect(owner['uiDefinition.logicalId']).toBe('画面 ID');
+		expect(owner[componentRelCommentKey('id-a', 'logicalId')]).toBe('フィールド ID');
+		expect(owner[componentRelCommentKey('id-a', 'validation.required')]).toBe('必須');
+		expect(yamlCommentsFromOwnerMap(owner, ids)).toEqual(yamlMap);
+	});
+
 	it('drops comments for removed component ids', () => {
 		const owner = {
 			[componentCommentKey('keep')]: 'yes',
@@ -41,5 +58,11 @@ describe('snapshot-comment-map', () => {
 			[componentCommentKey('keep')]: 'yes',
 			[UI_DEFINITION_COMMENT_KEY]: 'meta'
 		});
+	});
+
+	it('treats identical owner maps as equal', () => {
+		const map = { [UI_DEFINITION_COMMENT_KEY]: 'meta', [componentCommentKey('a')]: 'x' };
+		expect(ownerCommentMapsEqual(map, { ...map })).toBe(true);
+		expect(ownerCommentMapsEqual(map, { ...map, [componentCommentKey('a')]: 'y' })).toBe(false);
 	});
 });
