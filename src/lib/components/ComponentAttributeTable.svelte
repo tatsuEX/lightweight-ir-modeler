@@ -24,7 +24,10 @@
 	import ComponentValidationCell, {
 		type ValidationSlot
 	} from '$lib/components/ComponentValidationCell.svelte';
+	import ExternalCommentTree from '$lib/components/ExternalCommentTree.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
+	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
+	import { componentCommentKey } from '$lib/ir/snapshot-comment-map';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
 	import {
 		getUIDefinitionContext,
@@ -147,9 +150,9 @@
 		TEXT_MATCH_MODE_ITEMS.find((item) => item.id === logicalIdMode)?.shortLabel ?? '部分'
 	);
 
-	/** 空行の colspan（固定 4 + グループ列） */
+	/** 空行の colspan（固定 4 + コメント + グループ列） */
 	const totalColCount = $derived(
-		columnGroup === 'basic' ? 8 : columnGroup === 'details' ? 7 : 7
+		columnGroup === 'basic' ? 9 : columnGroup === 'details' ? 8 : 8
 	);
 
 	// 入力行を詰めて一覧性を上げる（Flowbite 既定の px-6 py-4 は広すぎる）
@@ -384,6 +387,9 @@
 					onclick={toggleSelectAll}
 				/>
 			</TableHeadCell>
+			<TableHeadCell class="{headCellClass} w-14">
+				<span class="text-xs font-medium text-gray-500 dark:text-gray-400">#</span>
+			</TableHeadCell>
 			<TableHeadCell class="{headCellClass} w-56">
 				<!-- WARN: ヘッダのフィルタ入力は arrowNavigation 対象外。将来ヘッダ ↔ 行の遷移を足す余地がある。 -->
 				<div class="flex min-w-0 flex-col gap-1">
@@ -596,6 +602,28 @@
 										toggleSelected(component.id, event.currentTarget.checked)}
 								/>
 							</span>
+						</TableBodyCell>
+						<TableBodyCell class={cellClass}>
+							<div class="flex flex-col items-start gap-1">
+								<YamlCommentButton
+									ownerKey={componentCommentKey(component.id)}
+									title={component.logicalId ? `components[${component.logicalId}]` : 'component'}
+									ariaLabel="{component.type} の運用コメント"
+								/>
+								{#if component.external}
+									<details class="max-w-xs">
+										<summary class="cursor-pointer text-xs text-gray-500 dark:text-gray-400">
+											external
+										</summary>
+										<div class="mt-1 max-h-64 overflow-auto">
+											<ExternalCommentTree
+												value={component.external}
+												scope={{ componentId: component.id }}
+											/>
+										</div>
+									</details>
+								{/if}
+							</div>
 						</TableBodyCell>
 						<TableBodyCell class={cellClass}>
 							<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
