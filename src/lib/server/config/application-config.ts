@@ -14,6 +14,12 @@ export type {
 	IrAutoSaveConfig
 } from '$lib/config/application-types';
 export type {
+	LoggingConfig,
+	LoggingFileAppenderConfig,
+	LoggingLevel,
+	LoggingRolling
+} from '$lib/config/logging-config';
+export type {
 	LayoutEditorConfig,
 	LayoutEditorPropertyConfig
 } from '$lib/config/layout-editor-config';

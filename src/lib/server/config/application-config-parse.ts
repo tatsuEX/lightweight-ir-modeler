@@ -13,6 +13,13 @@ import {
 	type LayoutEditorPropertyConfig
 } from '$lib/config/layout-editor-config';
 import {
+	DEFAULT_LOGGING_CONFIG,
+	isLoggingLevel,
+	isLoggingRolling,
+	type LoggingConfig,
+	type LoggingFileAppenderConfig
+} from '$lib/config/logging-config';
+import {
 	type PreviewConfig,
 	type PreviewSelectConfig,
 	type PreviewSelectOption
@@ -292,6 +299,140 @@ function parseAppIo(raw: unknown): AppIoConfig | undefined {
 }
 
 /**
+ * logging.file の info / error appender をパースする
+ */
+function parseLoggingFileAppender(
+	raw: unknown,
+	pathPrefix: string,
+	defaults: LoggingFileAppenderConfig
+): LoggingFileAppenderConfig {
+	if (raw === undefined) {
+		return { ...defaults };
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error(`application config "${pathPrefix}" must be an object`);
+	}
+
+	const block = raw as Record<string, unknown>;
+	let enabled = defaults.enabled;
+	if (block.enabled !== undefined) {
+		if (typeof block.enabled !== 'boolean') {
+			throw new Error(`application config "${pathPrefix}.enabled" must be a boolean`);
+		}
+		enabled = block.enabled;
+	}
+
+	let filename = defaults.filename;
+	if (block.filename !== undefined) {
+		if (typeof block.filename !== 'string' || block.filename.trim() === '') {
+			throw new Error(`application config "${pathPrefix}.filename" must be a non-empty string`);
+		}
+		filename = block.filename.trim();
+	}
+
+	let rolling = defaults.rolling;
+	if (block.rolling !== undefined) {
+		if (typeof block.rolling !== 'string' || !isLoggingRolling(block.rolling)) {
+			throw new Error(
+				`application config "${pathPrefix}.rolling" must be daily, monthly, or none`
+			);
+		}
+		rolling = block.rolling;
+	}
+
+	let maxFiles = defaults.maxFiles;
+	if (block.maxFiles !== undefined) {
+		if (typeof block.maxFiles === 'number') {
+			if (!Number.isInteger(block.maxFiles) || block.maxFiles <= 0) {
+				throw new Error(
+					`application config "${pathPrefix}.maxFiles" must be a positive integer or string`
+				);
+			}
+			maxFiles = block.maxFiles;
+		} else if (typeof block.maxFiles === 'string' && block.maxFiles.trim() !== '') {
+			maxFiles = block.maxFiles.trim();
+		} else {
+			throw new Error(
+				`application config "${pathPrefix}.maxFiles" must be a positive integer or string`
+			);
+		}
+	}
+
+	return { enabled, filename, rolling, maxFiles };
+}
+
+/**
+ * logging ブロックをパースする（未設定時はコンソールのみ）
+ */
+function parseLogging(raw: unknown): LoggingConfig {
+	if (raw === undefined) {
+		return {
+			level: DEFAULT_LOGGING_CONFIG.level,
+			console: { ...DEFAULT_LOGGING_CONFIG.console },
+			file: {
+				dir: DEFAULT_LOGGING_CONFIG.file.dir,
+				info: { ...DEFAULT_LOGGING_CONFIG.file.info },
+				error: { ...DEFAULT_LOGGING_CONFIG.file.error }
+			}
+		};
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "logging" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	let level = DEFAULT_LOGGING_CONFIG.level;
+	if (block.level !== undefined) {
+		if (typeof block.level !== 'string' || !isLoggingLevel(block.level)) {
+			throw new Error(
+				'application config "logging.level" must be error, warn, info, http, verbose, debug, or silly'
+			);
+		}
+		level = block.level;
+	}
+
+	let consoleEnabled = DEFAULT_LOGGING_CONFIG.console.enabled;
+	if (block.console !== undefined) {
+		if (block.console === null || typeof block.console !== 'object' || Array.isArray(block.console)) {
+			throw new Error('application config "logging.console" must be an object');
+		}
+		const consoleBlock = block.console as Record<string, unknown>;
+		if (consoleBlock.enabled !== undefined) {
+			if (typeof consoleBlock.enabled !== 'boolean') {
+				throw new Error('application config "logging.console.enabled" must be a boolean');
+			}
+			consoleEnabled = consoleBlock.enabled;
+		}
+	}
+
+	const fileDefaults = DEFAULT_LOGGING_CONFIG.file;
+	let fileDir = fileDefaults.dir;
+	let fileBlock: Record<string, unknown> | undefined;
+	if (block.file !== undefined) {
+		if (block.file === null || typeof block.file !== 'object' || Array.isArray(block.file)) {
+			throw new Error('application config "logging.file" must be an object');
+		}
+		fileBlock = block.file as Record<string, unknown>;
+		if (fileBlock.dir !== undefined) {
+			if (typeof fileBlock.dir !== 'string' || fileBlock.dir.trim() === '') {
+				throw new Error('application config "logging.file.dir" must be a non-empty string');
+			}
+			fileDir = fileBlock.dir.trim();
+		}
+	}
+
+	return {
+		level,
+		console: { enabled: consoleEnabled },
+		file: {
+			dir: fileDir,
+			info: parseLoggingFileAppender(fileBlock?.info, 'logging.file.info', fileDefaults.info),
+			error: parseLoggingFileAppender(fileBlock?.error, 'logging.file.error', fileDefaults.error)
+		}
+	};
+}
+
+/**
  * merge 済み mapping を ApplicationConfig としてパースする
  */
 export function parseApplicationConfigRoot(root: Record<string, unknown>): ApplicationConfig {
@@ -315,7 +456,8 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 	const config: ApplicationConfig = {
 		app: io ? { name, io } : { name },
 		layoutEditor: parseLayoutEditor(root.layoutEditor),
-		preview: parsePreview(previewBlock)
+		preview: parsePreview(previewBlock),
+		logging: parseLogging(root.logging)
 	};
 
 	const ir = root.ir;

@@ -291,6 +291,9 @@ describe('profile overlay', () => {
 			dir: './data/ir',
 			maxGenerations: 10
 		});
+		expect(config.logging.level).toBe('debug');
+		expect(config.logging.file.info.rolling).toBe('daily');
+		expect(config.logging.file.error.rolling).toBe('monthly');
 	});
 
 	it('loads base only when profile is omitted', () => {
@@ -311,6 +314,10 @@ describe('profile overlay', () => {
 			'primefaces',
 			'im-forma'
 		]);
+		expect(config.logging.level).toBe('info');
+		expect(config.logging.file.info.enabled).toBe(true);
+		expect(config.logging.file.info.rolling).toBe('daily');
+		expect(config.logging.file.error.rolling).toBe('monthly');
 	});
 });
 
@@ -368,5 +375,87 @@ app:
 ${minimalPreviewYaml}
 `)
 		).toThrow('app.io.export.templates.primefaces.dir" must be a non-empty string');
+	});
+});
+
+describe('logging', () => {
+	it('uses console-only defaults when logging is omitted', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+${minimalPreviewYaml}
+`);
+		expect(config.logging).toEqual({
+			level: 'info',
+			console: { enabled: true },
+			file: {
+				dir: './logs',
+				info: {
+					enabled: false,
+					filename: 'info.log',
+					rolling: 'daily',
+					maxFiles: '14d'
+				},
+				error: {
+					enabled: false,
+					filename: 'error.log',
+					rolling: 'monthly',
+					maxFiles: '12'
+				}
+			}
+		});
+	});
+
+	it('parses independent rolling for info and error files', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+${minimalPreviewYaml}
+logging:
+  level: debug
+  console:
+    enabled: false
+  file:
+    dir: ./tmp-logs
+    info:
+      enabled: true
+      filename: info.log
+      rolling: daily
+      maxFiles: 7d
+    error:
+      enabled: true
+      filename: error.log
+      rolling: monthly
+      maxFiles: 6
+`);
+		expect(config.logging.level).toBe('debug');
+		expect(config.logging.console.enabled).toBe(false);
+		expect(config.logging.file.dir).toBe('./tmp-logs');
+		expect(config.logging.file.info).toEqual({
+			enabled: true,
+			filename: 'info.log',
+			rolling: 'daily',
+			maxFiles: '7d'
+		});
+		expect(config.logging.file.error).toEqual({
+			enabled: true,
+			filename: 'error.log',
+			rolling: 'monthly',
+			maxFiles: 6
+		});
+	});
+
+	it('rejects invalid logging.level', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+${minimalPreviewYaml}
+logging:
+  level: fatal
+`)
+		).toThrow(
+			'logging.level" must be error, warn, info, http, verbose, debug, or silly'
+		);
 	});
 });

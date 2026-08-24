@@ -46,3 +46,23 @@ preview:
         value: primefaces
       - name: IM-Forma
         value: im-forma
+
+# サーバ側ロギング（Winston）。クライアントには出さない
+# =================================================================================================
+logging:
+  level: info
+  console:
+    enabled: true
+  file:
+    dir: ./logs
+    info:
+      enabled: true
+      filename: info.log
+      rolling: daily
+      maxFiles: 14d
+    error:
+      enabled: true
+      filename: error.log
+      rolling: monthly
+      maxFiles: "12"
+
