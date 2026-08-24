@@ -18,8 +18,8 @@
 	}
 </script>
 
-<main>
-	<div class="mb-4 flex items-start justify-between gap-4">
+<main class="flex h-full min-h-0 flex-col">
+	<div class="mb-4 flex shrink-0 items-start justify-between gap-4">
 		<div>
 			<h1 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Property</h1>
 			<p class="text-gray-600 dark:text-gray-400">
@@ -34,9 +34,11 @@
 			<ComponentToolPalette />
 		</div>
 	</div>
-	<ComponentAttributeTable
-		bind:selectedCount
-		bind:this={attributeTable}
-		itemDelimiter={data.layoutEditor.property.itemDelimiter}
-	/>
+	<div class="h-full min-h-0 flex-1">
+		<ComponentAttributeTable
+			bind:selectedCount
+			bind:this={attributeTable}
+			itemDelimiter={data.layoutEditor.property.itemDelimiter}
+		/>
+	</div>
 </main>

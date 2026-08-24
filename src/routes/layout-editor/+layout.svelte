@@ -39,9 +39,11 @@
 	attachIrAutoSave(uiDefinition, data.autoSave);
 </script>
 
-<div class="p-6">
-	<div class="mb-4">
+<div class="flex h-full min-h-0 flex-col overflow-hidden p-6">
+	<div class="mb-4 shrink-0">
 		<LayoutEditorNav />
 	</div>
-	{@render children()}
+	<div class="min-h-0 flex-1 overflow-hidden">
+		{@render children()}
+	</div>
 </div>
