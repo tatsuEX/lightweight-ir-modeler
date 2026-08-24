@@ -21,6 +21,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		},
 		initialSnapshot: null as unknown[] | null,
 		initialUiDefinition: null as ReturnType<typeof createEmptyUiDefinitionMeta> | null,
+		initialComments: {} as Record<string, string>,
 		layoutEditor,
 		preview,
 		uiDefinition: defaultUiDefinition
@@ -45,6 +46,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 				},
 				initialSnapshot: latest.components,
 				initialUiDefinition: editorMeta,
+				initialComments: latest.comments,
 				layoutEditor,
 				preview,
 				uiDefinition: editorMeta
@@ -58,6 +60,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 			},
 			initialSnapshot: null,
 			initialUiDefinition: null,
+			initialComments: {},
 			layoutEditor,
 			preview,
 			uiDefinition: {
@@ -74,6 +77,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		},
 		initialSnapshot: null,
 		initialUiDefinition: null,
+		initialComments: {},
 		layoutEditor,
 		preview,
 		uiDefinition: defaultUiDefinition

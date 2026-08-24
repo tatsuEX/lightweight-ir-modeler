@@ -1,9 +1,10 @@
-import { json } from '@sveltejs/kit';
-import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
-import { loadApplicationConfig } from '$lib/server/config/application-config';
-import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
-import { getLogger } from '$lib/server/logging/logger';
-import type { RequestHandler } from './$types';
+	import { json } from '@sveltejs/kit';
+	import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
+	import { loadApplicationConfig } from '$lib/server/config/application-config';
+	import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
+	import { getLogger } from '$lib/server/logging/logger';
+	import { parseYamlCommentMap } from '$lib/utils/yaml-comments';
+	import type { RequestHandler } from './$types';
 
 const logger = getLogger(import.meta.url);
 
@@ -76,8 +77,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'uiDefinition.logicalId and uiDefinition.name are required' }, { status: 400 });
 	}
 
+	let comments;
 	try {
-		const result = await writeSnapshot(editorMeta, components);
+		comments = parseYamlCommentMap(record.comments);
+	} catch {
+		return json({ error: 'comments must be a mapping of path to string' }, { status: 400 });
+	}
+
+	try {
+		const result = await writeSnapshot(editorMeta, components, comments);
 		return json(result, { status: result.skipped ? 200 : 201 });
 	} catch (error) {
 		logger.error('snapshot write failed', { errorMessage: error instanceof Error ? error.message : String(error) });

@@ -1,6 +1,7 @@
 import { debounce } from '$lib/utils/debounce';
 import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
 import type { UIDefinition } from './layout-editor.svelte';
+import type { SnapshotComments } from './snapshot-comments.svelte';
 
 /**
  * IR 自動保存のクライアント側オプション
@@ -28,25 +29,37 @@ function buildSaveMeta(uiDefinition: UIDefinition): UiDefinitionEditorMeta {
 /**
  * 保存ペイロードの比較用ハッシュを生成する
  */
-function buildSaveHash(uiDefinition: UIDefinition): string {
+function buildSaveHash(uiDefinition: UIDefinition, comments: SnapshotComments): string {
 	return JSON.stringify({
 		uiDefinition: buildSaveMeta(uiDefinition),
-		components: uiDefinition.components
+		components: uiDefinition.components,
+		comments: comments.toYamlMap(uiDefinition.components.map((component) => component.id))
 	});
 }
 
 /**
- * 編集途絶え後に snapshot API へ POST する debounce を UIDefinition に接続する
+ * 編集途絶え後に snapshot API へ POST する debounce を UIDefinition とコメント store に接続する
  */
-export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSaveOptions): void {
+export function attachIrAutoSave(
+	uiDefinition: UIDefinition,
+	comments: SnapshotComments,
+	options: IrAutoSaveOptions
+): void {
 	if (!options.enabled) {
 		return;
 	}
 
-	let lastSavedHash = buildSaveHash(uiDefinition);
+	let lastSavedHash = buildSaveHash(uiDefinition, comments);
 
 	const saveSnapshot = debounce(
-		(payload: { uiDefinition: UiDefinitionEditorMeta; components: readonly unknown[] }, snapshot: string) => {
+		(
+			payload: {
+				uiDefinition: UiDefinitionEditorMeta;
+				components: readonly unknown[];
+				comments: Record<string, string>;
+			},
+			snapshot: string
+		) => {
 			void (async () => {
 				if (snapshot === lastSavedHash) {
 					return;
@@ -78,11 +91,14 @@ export function attachIrAutoSave(uiDefinition: UIDefinition, options: IrAutoSave
 	);
 
 	$effect(() => {
+		const componentIds = uiDefinition.components.map((component) => component.id);
+		comments.retainComponentIds(componentIds);
 		const payload = {
 			uiDefinition: buildSaveMeta(uiDefinition),
-			components: uiDefinition.components
+			components: uiDefinition.components,
+			comments: comments.toYamlMap(componentIds)
 		};
-		const snapshot = buildSaveHash(uiDefinition);
+		const snapshot = buildSaveHash(uiDefinition, comments);
 		saveSnapshot(payload, snapshot);
 
 		return () => {

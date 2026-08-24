@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T23:54:00"
-summary: "Property 属性テーブルの列ヘッダフィルタ、viewport 内スクロール、編集可能項目フィルタ"
+updated: "2026-08-24T23:50:00"
+summary: "Property 属性テーブルの列ヘッダフィルタと snapshot 運用コメント"
 features:
   - layout-editor
   - ui-definition
@@ -9,12 +9,13 @@ features:
   - ir-snapshot
   - property-attributes
   - property-column-filters
+  - yaml-comments
   - arrow-navigation
 ---
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-24 23:54
+最終更新: 2026-08-24 23:50
 
 ## 概要
 
@@ -155,6 +156,17 @@ flowchart TB
 
 items 表記は `${value}${itemDelimiter}${label}`（同一なら区切りなし）。`itemDelimiter` は `config/application.yml` の `layoutEditor.property.itemDelimiter`（既定 `|`）。
 
+## 運用コメント（Markdown）
+
+snapshot YAML の `#` コメントを Property から編集する。IR フィールドには載せない。
+
+| 対象 | UI | YAML パス |
+|---|---|---|
+| 画面メタ全体 | アコーディオン右上の `#` | `uiDefinition` |
+| 各コンポーネント | 行の `#` 列 | `components[i]`（要素先頭） |
+| `external` | メタ内ツリー / 行の `external` 折りたたみ | `uiDefinition.external…` / `components[i].external…` |
+
+入力は Monaco Modal（`language: markdown`）。コメント済みの `#` は hover / focus で Markdown プレビュー。
 
 ## コンポーネント種別（現状）
 

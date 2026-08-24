@@ -2,12 +2,13 @@ import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
 	createIrSnapshot,
-	deserializeIrSnapshot,
+	deserializeIrSnapshotDocument,
 	normalizeSnapshotForCompare,
 	restoreSnapshotComponents,
 	serializeIrSnapshot,
 	type IrSnapshot
 } from '$lib/ir/snapshot';
+import { normalizeCommentsForCompare, type YamlCommentMap } from '$lib/utils/yaml-comments';
 import {
 	assertSafeLogicalIdPathSegment,
 	buildSnapshotMetaForWrite,
@@ -171,7 +172,7 @@ async function readLatestSnapshotMeta(dir: string): Promise<UiDefinitionSnapshot
 	}
 
 	const yamlText = await readFile(join(dir, latest), 'utf8');
-	const snapshot = deserializeIrSnapshot(yamlText);
+	const { snapshot } = deserializeIrSnapshotDocument(yamlText);
 
 	return snapshot.uiDefinition ?? null;
 }
@@ -182,7 +183,8 @@ async function readLatestSnapshotMeta(dir: string): Promise<UiDefinitionSnapshot
 async function isSameAsLatestSnapshot(
 	dir: string,
 	editorMeta: UiDefinitionEditorMeta,
-	components: unknown[]
+	components: unknown[],
+	comments: YamlCommentMap
 ): Promise<boolean> {
 	const filenames = await listSnapshotFilenames(dir);
 	const latest = filenames[0];
@@ -192,27 +194,35 @@ async function isSameAsLatestSnapshot(
 	}
 
 	const yamlText = await readFile(join(dir, latest), 'utf8');
-	const snapshot = deserializeIrSnapshot(yamlText);
-	const snapshotEditorMeta = snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : editorMeta;
+	const loaded = deserializeIrSnapshotDocument(yamlText);
+	const snapshotEditorMeta = loaded.snapshot.uiDefinition
+		? toEditorMeta(loaded.snapshot.uiDefinition)
+		: editorMeta;
 
 	return (
-		normalizeSnapshotForCompare(snapshotEditorMeta, snapshot.components) ===
-		normalizeSnapshotForCompare(editorMeta, components)
+		normalizeSnapshotForCompare(snapshotEditorMeta, loaded.snapshot.components) ===
+			normalizeSnapshotForCompare(editorMeta, components) &&
+		normalizeCommentsForCompare(loaded.comments) === normalizeCommentsForCompare(comments)
 	);
 }
+
+export type LoadedIrSnapshot = IrSnapshot & {
+	comments: YamlCommentMap;
+};
 
 /**
  * components を logicalId 別ディレクトリへ YAML snapshot として書き込む
  */
 export async function writeSnapshot(
 	editorMeta: UiDefinitionEditorMeta,
-	components: unknown[]
+	components: unknown[],
+	comments: YamlCommentMap = {}
 ): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
 	return runLogged(
 		logger,
 		'writeSnapshot',
 		{ logicalId: editorMeta.logicalId, componentCount: components.length },
-		() => writeSnapshotUnchecked(editorMeta, components)
+		() => writeSnapshotUnchecked(editorMeta, components, comments)
 	);
 }
 
@@ -221,18 +231,19 @@ export async function writeSnapshot(
  */
 async function writeSnapshotUnchecked(
 	editorMeta: UiDefinitionEditorMeta,
-	components: unknown[]
+	components: unknown[],
+	comments: YamlCommentMap
 ): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
 	const autoSave = getAutoSaveConfig();
 	const dir = resolveSnapshotDirForLogicalId(autoSave, editorMeta.logicalId);
 
 	await mkdir(dir, { recursive: true });
 
-	if (await isSameAsLatestSnapshot(dir, editorMeta, components)) {
+	if (await isSameAsLatestSnapshot(dir, editorMeta, components, comments)) {
 		const filenames = await listSnapshotFilenames(dir);
 		const latest = filenames[0];
 		const yamlText = await readFile(join(dir, latest), 'utf8');
-		const snapshot = deserializeIrSnapshot(yamlText);
+		const { snapshot } = deserializeIrSnapshotDocument(yamlText);
 
 		return { filename: latest, savedAt: snapshot.savedAt, skipped: true };
 	}
@@ -249,7 +260,10 @@ async function writeSnapshotUnchecked(
 		try {
 			const snapshot = createIrSnapshot(uiDefinition, components, savedAt);
 
-			await writeFile(targetPath, serializeIrSnapshot(snapshot), { encoding: 'utf8', flag: 'wx' });
+			await writeFile(targetPath, serializeIrSnapshot(snapshot, comments), {
+				encoding: 'utf8',
+				flag: 'wx'
+			});
 			await pruneSnapshots(dir, autoSave.maxGenerations);
 
 			return { filename, savedAt: snapshot.savedAt, skipped: false };
@@ -268,7 +282,7 @@ async function writeSnapshotUnchecked(
 /**
  * logicalId 別ディレクトリから最新 snapshot を読み込む（存在しない場合は null）
  */
-export async function readLatestSnapshot(logicalId: string): Promise<IrSnapshot | null> {
+export async function readLatestSnapshot(logicalId: string): Promise<LoadedIrSnapshot | null> {
 	const autoSave = getAutoSaveConfig();
 	const dir = resolveSnapshotDirForLogicalId(autoSave, logicalId);
 	const filenames = await listSnapshotFilenames(dir);
@@ -279,7 +293,7 @@ export async function readLatestSnapshot(logicalId: string): Promise<IrSnapshot 
 	}
 
 	const yamlText = await readFile(join(dir, latest), 'utf8');
-	const snapshot = deserializeIrSnapshot(yamlText);
+	const { snapshot, comments } = deserializeIrSnapshotDocument(yamlText);
 	const editorDefaults = createEmptyUiDefinitionMeta();
 
 	return {
@@ -290,14 +304,15 @@ export async function readLatestSnapshot(logicalId: string): Promise<IrSnapshot 
 			createdAt: snapshot.savedAt,
 			modifiedAt: snapshot.savedAt
 		},
-		components: restoreSnapshotComponents(snapshot.components)
+		components: restoreSnapshotComponents(snapshot.components),
+		comments
 	};
 }
 
 /**
  * autoSave が有効な場合のみ logicalId 別ディレクトリから最新 snapshot を読み込む
  */
-export async function readLatestSnapshotIfEnabled(logicalId: string): Promise<IrSnapshot | null> {
+export async function readLatestSnapshotIfEnabled(logicalId: string): Promise<LoadedIrSnapshot | null> {
 	return runLogged(logger, 'readLatestSnapshotIfEnabled', { logicalId }, async () => {
 		const config = loadApplicationConfig();
 

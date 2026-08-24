@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T08:11:00"
-summary: "モジュール境界・データフロー・shape/merge/serialize 概観"
+updated: "2026-08-24T23:50:00"
+summary: "モジュール境界・データフロー・shape/merge/serialize 概観・snapshot 運用コメント"
 features:
   - architecture
   - ir
@@ -11,13 +11,14 @@ features:
   - export
   - import
   - ir-snapshot
+  - yaml-comments
   - application-config
   - logging
 ---
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-24 08:11
+最終更新: 2026-08-24 23:50
 
 ## 目的
 
@@ -28,7 +29,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 
 | Path | 役割 | 現状の主な成果物 |
 |---|---|---|
-| `ir/` | ドメイン SSOT 周辺 | `ui-definition-meta.ts`, `snapshot.ts`, `external-residual.ts`（`IRDefinition` / `Component` クラス階層は今後） |
+| `ir/` | ドメイン SSOT 周辺 | `ui-definition-meta.ts`, `snapshot.ts`, `snapshot-comment-map.ts`, `external-residual.ts`（`IRDefinition` / `Component` クラス階層は今後） |
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
 | `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | 共有フィールド変換 + target 固有 `*-transform.ts` |
@@ -38,7 +39,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
 | `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
 | `store/layout-editor/` | 画面向け状態 | `layout-editor.svelte.ts` ほか |
-| `utils/` | YAML key sort / Document stringify | `object-key-sort.ts`, `yaml-document.ts` (IR snapshot; application.yml still js-yaml) |
+| `utils/` | YAML key sort / Document / comments | `object-key-sort.ts`, `yaml-document.ts`, `yaml-comments.ts` (IR snapshot; application.yml still js-yaml) |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
 
 設定の可視性:

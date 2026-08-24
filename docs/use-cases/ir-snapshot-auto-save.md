@@ -1,16 +1,17 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T07:55:00"
-summary: "debounce 付き IR YAML snapshot の自動保存・未使用 ID 確認"
+updated: "2026-08-24T23:50:00"
+summary: "debounce 付き IR YAML snapshot の自動保存・運用コメント"
 features:
   - ir-snapshot
   - auto-save
   - layout-editor
+  - yaml-comments
 ---
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-24 07:55
+最終更新: 2026-08-24 23:50
 
 ## 概要
 
@@ -49,7 +50,7 @@ sequenceDiagram
   else 送信
     Auto->>API: uiDefinition + components
     API->>IO: writeSnapshot
-    IO->>Disk: 最新と比較（id 除外・preferred+ASCII キーソート YAML）
+    IO->>Disk: 最新と比較（id 除外・preferred+ASCII キーソート YAML + コメント）
     alt 内容同一
       IO-->>API: skipped=true → 200
     else 新規
@@ -64,8 +65,8 @@ sequenceDiagram
 
 | 層 | 比較単位 | 備考 |
 |---|---|---|
-| クライアント | `buildSaveHash`（`JSON.stringify`、component `id` 含む） | 連続入力の送信抑制 |
-| サーバ | `normalizeSnapshotForCompare`（`id` 除去 + preferred+ASCII キーソート YAML） | 意味的に同じ内容の再書込を skip |
+| クライアント | `buildSaveHash`（`JSON.stringify`、component `id` と comments を含む） | 連続入力の送信抑制 |
+| サーバ | `normalizeSnapshotForCompare` + `normalizeCommentsForCompare` | 意味的に同じ内容の再書込を skip |
 
 そのため、見た目上の reorder や id 再生成だけではサーバ側で skip されることがある。
 
@@ -85,7 +86,15 @@ sequenceDiagram
 
 ## YAML envelope (version = 1)
 
-Output uses eemeli/yaml Document (not js-yaml). Comments are not emitted yet; createYamlDocument() is the hook for commentBefore.
+Output uses eemeli/yaml Document (not js-yaml). Operational Markdown comments are stored as YAML `#` (`commentBefore`):
+
+- `uiDefinition` key: one comment for the meta accordion as a whole
+- each `components[]` element: one comment immediately before that element (not before the `components` key)
+- any path under `uiDefinition.external` or `components[i].external`
+
+HTTP GET/POST carry a `comments` map (YAML key path → Markdown). The YAML file itself does not have a `comments:` key.
+
+Skip compare includes both IR content and the comment map. Comment-only edits create a new generation.
 
 Key order for every mapping:
 
@@ -117,5 +126,5 @@ application.yml still loads with js-yaml for now; unify onto eemeli/yaml later.
 |---|---|
 | クライアント | `src/lib/store/layout-editor/ir-auto-save.svelte.ts` |
 | IO | `src/lib/server/io/ir-snapshot-io.ts` |
-| メタ / snapshot 型 | `src/lib/ir/ui-definition-meta.ts`, `src/lib/ir/snapshot.ts` |
-| YAML key sort | `src/lib/utils/object-key-sort.ts`, `src/lib/utils/yaml-document.ts` |
+| メタ / snapshot 型 | `src/lib/ir/ui-definition-meta.ts`, `src/lib/ir/snapshot.ts`, `src/lib/ir/snapshot-comment-map.ts` |
+| YAML key sort / comments | `src/lib/utils/object-key-sort.ts`, `src/lib/utils/yaml-document.ts`, `src/lib/utils/yaml-comments.ts` |

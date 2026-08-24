@@ -1,4 +1,5 @@
-import { parseYaml, stringifyYaml } from '$lib/utils/yaml-document';
+import { parseYamlDocument, stringifyYamlDocument, createYamlDocument } from '$lib/utils/yaml-document';
+import { attachYamlComments, extractYamlComments, type YamlCommentMap } from '$lib/utils/yaml-comments';
 import { nanoid } from 'nanoid';
 import {
 	toEditorMeta,
@@ -55,8 +56,10 @@ export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
 /**
  * IR snapshot 向け YAML 文字列を作る
  */
-function stringifySnapshotYaml(value: unknown): string {
-	return stringifyYaml(value, SNAPSHOT_YAML_PREFERRED_KEYS);
+function stringifySnapshotYaml(value: unknown, comments: YamlCommentMap = {}): string {
+	const doc = createYamlDocument(value, SNAPSHOT_YAML_PREFERRED_KEYS);
+	attachYamlComments(doc, comments);
+	return stringifyYamlDocument(doc);
 }
 
 
@@ -287,13 +290,27 @@ export function normalizeSnapshotForCompare(
 /**
  * IrSnapshot を YAML 文字列へシリアライズする
  */
-export function serializeIrSnapshot(snapshot: IrSnapshot): string {
-	return stringifySnapshotYaml(snapshot);
+export function serializeIrSnapshot(snapshot: IrSnapshot, comments: YamlCommentMap = {}): string {
+	return stringifySnapshotYaml(snapshot, comments);
+}
+
+/**
+ * YAML 文字列から IrSnapshot とコメントマップをデシリアライズする
+ */
+export function deserializeIrSnapshotDocument(yamlText: string): {
+	snapshot: IrSnapshot;
+	comments: YamlCommentMap;
+} {
+	const doc = parseYamlDocument(yamlText);
+	return {
+		snapshot: parseIrSnapshot(doc.toJS()),
+		comments: extractYamlComments(doc)
+	};
 }
 
 /**
  * YAML 文字列から IrSnapshot をデシリアライズする
  */
 export function deserializeIrSnapshot(yamlText: string): IrSnapshot {
-	return parseIrSnapshot(parseYaml(yamlText));
+	return deserializeIrSnapshotDocument(yamlText).snapshot;
 }

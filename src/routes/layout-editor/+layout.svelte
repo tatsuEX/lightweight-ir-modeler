@@ -1,10 +1,15 @@
 <script lang="ts">
 	import LayoutEditorNav from '$lib/components/LayoutEditorNav.svelte';
+	import MarkdownCommentModal from '$lib/components/MarkdownCommentModal.svelte';
 	import { attachIrAutoSave } from '$lib/store/layout-editor/ir-auto-save.svelte';
 	import {
 		UIDefinition,
 		setUIDefinitionContext
 	} from '$lib/store/layout-editor/layout-editor.svelte';
+	import {
+		createSnapshotComments,
+		setSnapshotCommentsContext
+	} from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import {
 		createPreviewTheme,
 		setPreviewThemeContext
@@ -29,14 +34,21 @@
 
 	setLayoutEditorConfigContext(data.layoutEditor);
 
+	const snapshotComments = createSnapshotComments();
+	setSnapshotCommentsContext(snapshotComments);
+
 	if (data.initialSnapshot) {
 		uiDefinition.loadSnapshot(
 			data.initialSnapshot,
 			data.initialUiDefinition ?? undefined
 		);
+		snapshotComments.loadFromYamlMap(
+			data.initialComments ?? {},
+			uiDefinition.components.map((component) => component.id)
+		);
 	}
 
-	attachIrAutoSave(uiDefinition, data.autoSave);
+	attachIrAutoSave(uiDefinition, snapshotComments, data.autoSave);
 </script>
 
 <div class="flex h-full min-h-0 flex-col overflow-hidden p-6">
@@ -46,4 +58,5 @@
 	<div class="min-h-0 flex-1 overflow-hidden">
 		{@render children()}
 	</div>
+	<MarkdownCommentModal />
 </div>

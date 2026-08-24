@@ -1,17 +1,18 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-12T21:38:00"
+updated: "2026-08-24T23:50:00"
 summary: "IR snapshot と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
   - ir-snapshot
   - ui-export
   - ui-import
+  - yaml-comments
 ---
 
 # HTTP API
 
-最終更新: 2026-08-12 21:38
+最終更新: 2026-08-24 23:50
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -19,7 +20,7 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 
 ### `POST /api/ir/snapshot`
 
-編集中メタ + components を YAML snapshot として保存する。
+編集中メタ + components + 任意の `comments`（YAML キーパス → Markdown）を YAML snapshot として保存する。
 
 - **403**: `ir.autoSave.enabled` が false
 - **400**: JSON 不正 / `components` 非配列 / メタ不正
@@ -28,7 +29,7 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 
 ### `GET /api/ir/snapshot?logicalId=<id>`
 
-指定 logicalId の最新 snapshot を JSON で返す。
+指定 logicalId の最新 snapshot を JSON で返す。`comments` は YAML から抽出したパスマップ（ファイル内の `#` コメント）。
 
 - **404**: 無し
 - **400**: logicalId 不正

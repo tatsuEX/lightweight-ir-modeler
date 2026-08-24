@@ -3,9 +3,13 @@
 	import { Accordion, AccordionItem, Input, Label, Textarea } from 'flowbite-svelte';
 	import Autocomplete from '$lib/components/Autocomplete.svelte';
 	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
+	import ExternalCommentTree from '$lib/components/ExternalCommentTree.svelte';
+	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
+	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
 	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
+	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import {
 		setSnapshotDirConfirmSkippedByUser,
 		shouldPromptNewSnapshotDir,
@@ -15,6 +19,7 @@
 	/** 画面定義の状態は Context API 経由でのみ参照する */
 	const uiDefinition = getUIDefinitionContext();
 	const layoutEditorConfig = getLayoutEditorConfigContext();
+	const snapshotComments = getSnapshotCommentsContext();
 
 	let metaOpen = $state(true);
 	let logicalIdOptions = $state<string[]>([]);
@@ -110,14 +115,20 @@
 					version: string;
 					createdAt?: string;
 					modifiedAt?: string;
+					external?: unknown;
 				};
 				components?: unknown[];
+				comments?: Record<string, string>;
 			};
 
 			editingLogicalId = false;
 			uiDefinition.loadSnapshot(
 				snapshot.components ?? [],
 				snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : undefined
+			);
+			snapshotComments.loadFromYamlMap(
+				snapshot.comments ?? {},
+				uiDefinition.components.map((component) => component.id)
 			);
 		} catch (error) {
 			console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', error);
@@ -210,7 +221,8 @@
 	});
 </script>
 
-<Accordion class="mb-4">
+<div class="relative mb-4">
+	<Accordion>
 	<AccordionItem
 		class="!m-0"
 		bind:open={metaOpen}
@@ -220,7 +232,7 @@
 		}}
 	>
 		{#snippet header()}
-			{accordionHeader}
+			<span class="pr-10">{accordionHeader}</span>
 		{/snippet}
 
 		<div class="grid gap-3 border-t border-gray-200 p-4 md:grid-cols-2 dark:border-gray-700">
@@ -279,9 +291,23 @@
 					bind:value={uiDefinition.version}
 				/>
 			</div>
+
+			{#if uiDefinition.external}
+				<div class="{fieldClass} md:col-span-2">
+					<ExternalCommentTree value={uiDefinition.external} scope="uiDefinition" />
+				</div>
+			{/if}
 		</div>
 	</AccordionItem>
-</Accordion>
+	</Accordion>
+	<div class="absolute top-2 right-3 z-20">
+		<YamlCommentButton
+			ownerKey={UI_DEFINITION_COMMENT_KEY}
+			title="uiDefinition"
+			ariaLabel="画面定義の運用コメント"
+		/>
+	</div>
+</div>
 
 <ConfirmNewSnapshotDirModal
 	bind:open={confirmOpen}

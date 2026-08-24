@@ -79,6 +79,7 @@ describe('ir-snapshot-io', () => {
 		expect(toEditorMeta(latest!.uiDefinition!)).toEqual(sampleEditorMeta);
 		expect(latest?.uiDefinition?.createdAt).toBeTruthy();
 		expect(latest?.uiDefinition?.modifiedAt).toBeTruthy();
+		expect(latest?.comments).toEqual({});
 	});
 
 	it('preserves createdAt and updates modifiedAt on subsequent writes', async () => {
@@ -105,6 +106,20 @@ describe('ir-snapshot-io', () => {
 
 		const filenames = await listSnapshotFilenames(join(tempDir, sampleEditorMeta.logicalId));
 		expect(filenames).toHaveLength(1);
+	});
+
+	it('writes a new generation when only comments change', async () => {
+		const components = [{ id: 'id-a', type: 'textbox', logicalId: 'userId' }];
+		const first = await writeSnapshot(sampleEditorMeta, components, {});
+		const second = await writeSnapshot(sampleEditorMeta, components, {
+			uiDefinition: '運用メモ'
+		});
+
+		expect(first.skipped).toBe(false);
+		expect(second.skipped).toBe(false);
+
+		const latest = await readLatestSnapshot(sampleEditorMeta.logicalId);
+		expect(latest?.comments.uiDefinition).toBe('運用メモ');
 	});
 
 	it('prunes snapshots beyond maxGenerations', async () => {

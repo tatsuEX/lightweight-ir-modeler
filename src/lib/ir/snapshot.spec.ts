@@ -4,6 +4,7 @@ import { createEmptyUiDefinitionMeta } from '$lib/ir/ui-definition-meta';
 import {
 	createIrSnapshot,
 	deserializeIrSnapshot,
+	deserializeIrSnapshotDocument,
 	normalizeComponentsForCompare,
 	restoreSnapshotComponents,
 	SNAPSHOT_COMPONENT_EXCLUDE_TREE,
@@ -126,4 +127,21 @@ describe('ir snapshot', () => {
 	});
 	it('documents current default exclude tree', () => {
 		expect(SNAPSHOT_COMPONENT_EXCLUDE_TREE).toEqual({ id: true });
-	});});
+	});
+	it('round-trips operational comments on uiDefinition and each component', () => {
+		const snapshot = createIrSnapshot(sampleSnapshotMeta, [
+			{ logicalId: 'userId', type: 'textbox' },
+			{ logicalId: 'userName', type: 'label' }
+		]);
+		const yamlText = serializeIrSnapshot(snapshot, {
+			uiDefinition: '画面メモ',
+			'components[0]': 'ユーザー ID',
+			'components[1]': '表示専用'
+		});
+		const loaded = deserializeIrSnapshotDocument(yamlText);
+		expect(loaded.comments.uiDefinition).toBe('画面メモ');
+		expect(loaded.comments['components[0]']).toBe('ユーザー ID');
+		expect(loaded.comments['components[1]']).toBe('表示専用');
+		expect(loaded.snapshot.uiDefinition).toEqual(sampleSnapshotMeta);
+	});
+});

@@ -14,6 +14,7 @@
 	import type { ImportedDefinition } from '$lib/transform/imported-definition';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
+	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import { getTransformTargetContext } from '$lib/store/layout-editor/transform-target.svelte';
 	import { resolveUiImportClient } from '$lib/store/layout-editor/ui-import-client';
 	import {
@@ -23,6 +24,7 @@
 	} from '$lib/store/layout-editor/snapshot-dir-confirm';
 
 	const uiDefinition = getUIDefinitionContext();
+	const snapshotComments = getSnapshotCommentsContext();
 	const transformTarget = getTransformTargetContext();
 	const layoutEditorConfig = getLayoutEditorConfigContext();
 
@@ -66,6 +68,7 @@
 		pendingImported = null;
 		try {
 			uiDefinition.loadImported(imported);
+			snapshotComments.clear();
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : '取り込み結果の反映に失敗しました';
 			open = true;
