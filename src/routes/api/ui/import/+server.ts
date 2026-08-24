@@ -3,7 +3,10 @@ import { RawValidationError } from '$lib/schema/raw-validation-error';
 import { DefinitionReadError } from '$lib/server/io/readers/definition-reader';
 import { importFromUploadedFile } from '$lib/server/ui/import-pipeline';
 import { resolveImportTargetBundle } from '$lib/server/ui/import-target-registry';
+import { getLogger } from '$lib/server/logging/logger';
 import type { RequestHandler } from './$types';
+
+const logger = getLogger(import.meta.url);
 
 /** 取り込み可能なアップロードサイズ上限 */
 const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
@@ -52,7 +55,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (error instanceof DefinitionReadError) {
 			return json({ error: error.message, target: error.targetId }, { status: 400 });
 		}
-		console.warn('[api/ui/import] import failed:', error);
+		logger.error('import failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: '外部 UI 定義の取り込みに失敗しました' }, { status: 500 });
 	}
 };

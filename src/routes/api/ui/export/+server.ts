@@ -8,7 +8,10 @@ import { RawValidationError } from '$lib/schema/raw-validation-error';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { exportFromEditorState } from '$lib/server/ui/export-pipeline';
 import { resolveExportTargetBundle } from '$lib/server/ui/export-target-registry';
+import { getLogger } from '$lib/server/logging/logger';
 import type { RequestHandler } from './$types';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * 編集中 UI 定義を外部形式として exportDir へ出力する
@@ -77,7 +80,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				{ status: 400 }
 			);
 		}
-		console.warn('[api/ui/export] write failed:', error);
+		logger.error('export failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: 'failed to export UI definition' }, { status: 500 });
 	}
 };

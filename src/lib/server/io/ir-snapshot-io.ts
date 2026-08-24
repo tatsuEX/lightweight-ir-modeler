@@ -21,6 +21,9 @@ import {
 	resolveApplicationPath,
 	type IrAutoSaveConfig
 } from '$lib/server/config/application-config';
+import { getLogger, runLogged } from '$lib/server/logging/logger';
+
+const logger = getLogger(import.meta.url);
 
 const SNAPSHOT_PREFIX = 'ir-snapshot-';
 const SNAPSHOT_SUFFIX = '.yml';
@@ -205,6 +208,21 @@ export async function writeSnapshot(
 	editorMeta: UiDefinitionEditorMeta,
 	components: unknown[]
 ): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
+	return runLogged(
+		logger,
+		'writeSnapshot',
+		{ logicalId: editorMeta.logicalId, componentCount: components.length },
+		() => writeSnapshotUnchecked(editorMeta, components)
+	);
+}
+
+/**
+ * components を logicalId 別ディレクトリへ YAML snapshot として書き込む（ログなし本体）
+ */
+async function writeSnapshotUnchecked(
+	editorMeta: UiDefinitionEditorMeta,
+	components: unknown[]
+): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
 	const autoSave = getAutoSaveConfig();
 	const dir = resolveSnapshotDirForLogicalId(autoSave, editorMeta.logicalId);
 
@@ -280,11 +298,13 @@ export async function readLatestSnapshot(logicalId: string): Promise<IrSnapshot 
  * autoSave が有効な場合のみ logicalId 別ディレクトリから最新 snapshot を読み込む
  */
 export async function readLatestSnapshotIfEnabled(logicalId: string): Promise<IrSnapshot | null> {
-	const config = loadApplicationConfig();
+	return runLogged(logger, 'readLatestSnapshotIfEnabled', { logicalId }, async () => {
+		const config = loadApplicationConfig();
 
-	if (!config.ir?.autoSave?.enabled) {
-		return null;
-	}
+		if (!config.ir?.autoSave?.enabled) {
+			return null;
+		}
 
-	return readLatestSnapshot(logicalId);
+		return readLatestSnapshot(logicalId);
+	});
 }

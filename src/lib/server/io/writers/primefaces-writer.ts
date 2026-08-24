@@ -6,7 +6,9 @@ import {
 	toHandlebarsSafeString
 } from '$lib/server/io/writers/serialize/serialize-handlebars';
 import { shapePrimeFaces } from '$lib/server/io/writers/shape/primefaces-shape';
+import { getLogger, runLogged } from '$lib/server/logging/logger';
 
+const logger = getLogger(import.meta.url);
 const PRIMEFACES_FORM_TEMPLATE = 'form.hbs';
 
 /**
@@ -30,30 +32,38 @@ export class PrimeFacesWriter implements DefinitionWriter {
 	 * Raw をコンポーネント別 Handlebars + form 合成で Facelet xhtml へ変換する
 	 */
 	toArtifact(raw: RawDefinition): DefinitionArtifact {
-		const shaped = shapePrimeFaces(raw);
-		const formId = assertSafeLogicalIdPathSegment(shaped.formId);
-		const identity = this.describeArtifact(formId);
-		const name = shaped.name.trim() !== '' ? shaped.name : identity.filename.replace(/\.xhtml$/, '');
-
-		const fields = shaped.fields.map((field) => {
-			const markup = serializeHandlebarsTemplate(
-				this.targetId,
-				field as unknown as Record<string, unknown>
+		return runLogged(logger, 'toArtifact', { targetId: this.targetId }, () => {
+			const shaped = runLogged(logger, 'shapePrimeFaces', { targetId: this.targetId }, () =>
+				shapePrimeFaces(raw)
 			);
+			const formId = assertSafeLogicalIdPathSegment(shaped.formId);
+			const identity = this.describeArtifact(formId);
+			const name = shaped.name.trim() !== '' ? shaped.name : identity.filename.replace(/\.xhtml$/, '');
+
+			const fields = shaped.fields.map((field) => {
+				const markup = serializeHandlebarsTemplate(
+					this.targetId,
+					field as unknown as Record<string, unknown>
+				);
+				return {
+					...field,
+					// WARN: markup は component hbs で既に escape 済み。form では {{{markup}}} で挿入する。
+					markup: toHandlebarsSafeString(markup)
+				};
+			});
+
+			const content = runLogged(
+				logger,
+				'serializeHandlebarsTemplate',
+				{ targetId: this.targetId, template: PRIMEFACES_FORM_TEMPLATE, fieldCount: fields.length },
+				() =>
+					serializeHandlebarsTemplate(this.targetId, { formId, name, fields }, PRIMEFACES_FORM_TEMPLATE)
+			);
+
 			return {
-				...field,
-				// WARN: markup は component hbs で既に escape 済み。form では {{{markup}}} で挿入する。
-				markup: toHandlebarsSafeString(markup)
+				...identity,
+				content
 			};
 		});
-
-		return {
-			...identity,
-			content: serializeHandlebarsTemplate(
-				this.targetId,
-				{ formId, name, fields },
-				PRIMEFACES_FORM_TEMPLATE
-			)
-		};
 	}
 }

@@ -2,7 +2,10 @@ import { json } from '@sveltejs/kit';
 import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
+import { getLogger } from '$lib/server/logging/logger';
 import type { RequestHandler } from './$types';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * logicalId 別ディレクトリの最新 snapshot を取得する
@@ -26,7 +29,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json(snapshot);
 	} catch (error) {
-		console.warn('[api/ir/snapshot] read failed:', error);
+		logger.error('snapshot read failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: 'failed to read snapshot' }, { status: 500 });
 	}
 };
@@ -77,7 +80,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const result = await writeSnapshot(editorMeta, components);
 		return json(result, { status: result.skipped ? 200 : 201 });
 	} catch (error) {
-		console.warn('[api/ir/snapshot] write failed:', error);
+		logger.error('snapshot write failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: 'failed to write snapshot' }, { status: 500 });
 	}
 };

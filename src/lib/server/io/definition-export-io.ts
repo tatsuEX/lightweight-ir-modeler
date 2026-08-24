@@ -6,6 +6,9 @@ import {
 	resolveApplicationPath
 } from '$lib/server/config/application-config';
 import type { DefinitionArtifact } from '$lib/server/io/writers/definition-writer';
+import { getLogger, runLogged } from '$lib/server/logging/logger';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * 外部 UI 定義の書き込み結果
@@ -78,6 +81,23 @@ export async function hasExportedDefinition(
  * Writer 成果物を exportDir へ書き込む
  */
 export async function writeExportedDefinition(
+	targetId: string,
+	logicalId: string,
+	artifact: DefinitionArtifact,
+	writtenAt: Date = new Date()
+): Promise<DefinitionExportWriteResult> {
+	return runLogged(
+		logger,
+		'writeExportedDefinition',
+		{ targetId, logicalId, filename: artifact.filename },
+		() => writeExportedDefinitionUnchecked(targetId, logicalId, artifact, writtenAt)
+	);
+}
+
+/**
+ * Writer 成果物を exportDir へ書き込む（ログなし本体）
+ */
+async function writeExportedDefinitionUnchecked(
 	targetId: string,
 	logicalId: string,
 	artifact: DefinitionArtifact,

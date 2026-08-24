@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-12T21:38:00"
+updated: "2026-08-24T08:11:00"
 summary: "モジュール境界・データフロー・shape/merge/serialize 概観"
 features:
   - architecture
@@ -12,11 +12,12 @@ features:
   - import
   - ir-snapshot
   - application-config
+  - logging
 ---
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-12 21:38
+最終更新: 2026-08-24 08:11
 
 ## 目的
 
@@ -35,6 +36,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `server/io/` | ファイル I/O | `ir-snapshot-io.ts`, `definition-export-io.ts`, `writers/`（shape / merge / serialize）, `readers/`（parse / unshape）, target 固有ヘルパ |
 | `server/ui/` | Import / Export オーケストレーション | `export-pipeline.ts`, `export-target-registry.ts`, `import-pipeline.ts`, `import-target-registry.ts` |
 | `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
+| `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
 | `store/layout-editor/` | 画面向け状態 | `layout-editor.svelte.ts` ほか |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
 
@@ -180,6 +182,7 @@ classDiagram
   - `app.io.importDir` — 予約（YAML ではコメントアウト、利用箇所なし。Import はアップロード方式）
   - `ir.autoSave.*` — snapshot 自動保存（主に `application-dev.yml`）
   - `preview.theme` / `preview.transformTarget` — Preview UI 用
+  - `logging.*` — サーバログ（コンソール / ファイル / rolling）。詳細は [サーバロギング](./logging.md)
 
 相対パスは `process.cwd()` 基準。`npm run` をリポジトリルートから実行する前提。
 
@@ -194,3 +197,4 @@ classDiagram
 - [PrimeFaces Import](../use-cases/primefaces-import.md)
 - [PrimeFaces Export](../use-cases/primefaces-export.md)
 - [HTTP API](../api/http-endpoints.md)
+- [ロギング](./logging.md)

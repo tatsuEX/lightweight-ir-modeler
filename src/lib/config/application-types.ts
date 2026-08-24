@@ -1,4 +1,5 @@
 import type { LayoutEditorConfig } from '$lib/config/layout-editor-config';
+import type { LoggingConfig } from '$lib/config/logging-config';
 import type { PreviewConfig } from '$lib/config/preview-config';
 
 /**
@@ -47,4 +48,5 @@ export type ApplicationConfig = {
 	};
 	layoutEditor: LayoutEditorConfig;
 	preview: PreviewConfig;
+	logging: LoggingConfig;
 };

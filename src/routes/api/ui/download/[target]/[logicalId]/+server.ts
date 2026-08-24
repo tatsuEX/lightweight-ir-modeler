@@ -8,7 +8,10 @@ import {
 } from '$lib/server/io/definition-export-io';
 import { exportFromLatestSnapshot } from '$lib/server/ui/export-pipeline';
 import { resolveExportTargetBundle } from '$lib/server/ui/export-target-registry';
+import { getLogger } from '$lib/server/logging/logger';
 import type { RequestHandler } from './$types';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * 外部 UI 定義ファイルをダウンロードする（未出力時は最新 snapshot から export）
@@ -67,7 +70,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			return json({ error: 'snapshot not found; export first or save a snapshot' }, { status: 404 });
 		}
 
-		console.warn('[api/ui/download] failed:', error);
+		logger.error('download failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: 'failed to download UI definition' }, { status: 500 });
 	}
 };

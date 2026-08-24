@@ -5,6 +5,9 @@ import type { DefinitionReader } from '$lib/server/io/readers/definition-reader'
 import type { ImportedDefinition } from '$lib/transform/imported-definition';
 import { transformFromImFormaRaw } from '$lib/transform/im-forma-transform';
 import { transformFromPrimeFacesRaw } from '$lib/transform/primefaces-transform';
+import { getLogger, runLogged } from '$lib/server/logging/logger';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * 取り込みターゲット一式（reader / transform）
@@ -21,12 +24,18 @@ const IMPORT_TARGET_REGISTRY: Record<string, ImportTargetBundle> = {
 	'im-forma': {
 		targetId: 'im-forma',
 		reader: new IMFormaReader(),
-		transform: transformFromImFormaRaw
+		transform: (raw) =>
+			runLogged(logger, 'transformFromImFormaRaw', { targetId: 'im-forma' }, () =>
+				transformFromImFormaRaw(raw)
+			)
 	},
 	primefaces: {
 		targetId: 'primefaces',
 		reader: new PrimeFacesReader(),
-		transform: transformFromPrimeFacesRaw
+		transform: (raw) =>
+			runLogged(logger, 'transformFromPrimeFacesRaw', { targetId: 'primefaces' }, () =>
+				transformFromPrimeFacesRaw(raw)
+			)
 	}
 };
 
