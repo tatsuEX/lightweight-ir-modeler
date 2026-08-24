@@ -38,6 +38,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
 | `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
 | `store/layout-editor/` | 画面向け状態 | `layout-editor.svelte.ts` ほか |
+| `utils/` | YAML key sort / Document stringify | `object-key-sort.ts`, `yaml-document.ts` (IR snapshot; application.yml still js-yaml) |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
 
 設定の可視性:

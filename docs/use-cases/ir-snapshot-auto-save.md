@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-12T09:30:00"
+updated: "2026-08-24T07:55:00"
 summary: "debounce 付き IR YAML snapshot の自動保存・未使用 ID 確認"
 features:
   - ir-snapshot
@@ -10,7 +10,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-12 09:30
+最終更新: 2026-08-24 07:55
 
 ## 概要
 
@@ -49,7 +49,7 @@ sequenceDiagram
   else 送信
     Auto->>API: uiDefinition + components
     API->>IO: writeSnapshot
-    IO->>Disk: 最新と比較（id 除外・キーソート YAML）
+    IO->>Disk: 最新と比較（id 除外・preferred+ASCII キーソート YAML）
     alt 内容同一
       IO-->>API: skipped=true → 200
     else 新規
@@ -65,7 +65,7 @@ sequenceDiagram
 | 層 | 比較単位 | 備考 |
 |---|---|---|
 | クライアント | `buildSaveHash`（`JSON.stringify`、component `id` 含む） | 連続入力の送信抑制 |
-| サーバ | `normalizeSnapshotForCompare`（`id` 除去 + `sortKeys` YAML） | 意味的に同じ内容の再書込を skip |
+| サーバ | `normalizeSnapshotForCompare`（`id` 除去 + preferred+ASCII キーソート YAML） | 意味的に同じ内容の再書込を skip |
 
 そのため、見た目上の reorder や id 再生成だけではサーバ側で skip されることがある。
 
@@ -83,13 +83,25 @@ sequenceDiagram
 - 世代のソート・prune は **ファイル名** 基準（mtime ではない）
 - 復元時: component `id` を除去して保存 → 読込時に再採番
 
-## YAML エンベロープ（version = 1）
+## YAML envelope (version = 1)
 
-- `version`, `savedAt`
-- `uiDefinition`: `logicalId`, `name`, `description`, `version`, `createdAt`, `modifiedAt`
-- `components[]`
+Output uses eemeli/yaml Document (not js-yaml). Comments are not emitted yet; createYamlDocument() is the hook for commentBefore.
 
-`createdAt` は初回作成を `buildSnapshotMetaForWrite` が維持する。
+Key order for every mapping:
+
+1. System meta: version, createdAt, modifiedAt, savedAt
+2. Snapshot preferred keys (SNAPSHOT_YAML_PREFERRED_KEYS)
+3. Remaining keys in ASCII (UTF-16 code unit) order. This is not natural numeric order.
+
+Envelope shape:
+
+- root: version, savedAt, uiDefinition, components
+- uiDefinition: version, createdAt, modifiedAt, logicalId, name, description (external last if present)
+- components[]: logicalId, type, label, then type-specific keys, then external
+
+createdAt is preserved by buildSnapshotMetaForWrite on first save.
+
+application.yml still loads with js-yaml for now; unify onto eemeli/yaml later.
 
 ## 関連 API
 
@@ -106,3 +118,4 @@ sequenceDiagram
 | クライアント | `src/lib/store/layout-editor/ir-auto-save.svelte.ts` |
 | IO | `src/lib/server/io/ir-snapshot-io.ts` |
 | メタ / snapshot 型 | `src/lib/ir/ui-definition-meta.ts`, `src/lib/ir/snapshot.ts` |
+| YAML key sort | `src/lib/utils/object-key-sort.ts`, `src/lib/utils/yaml-document.ts` |

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isMap, isScalar, parseDocument } from 'yaml';
 import { createEmptyUiDefinitionMeta } from '$lib/ir/ui-definition-meta';
 import {
 	createIrSnapshot,
@@ -10,6 +11,16 @@ import {
 	stripByExcludeTree,
 	stripSnapshotComponents
 } from '$lib/ir/snapshot';
+
+/**
+ * YAML Map ノードのキー順を取り出す
+ */
+function yamlMapKeys(node: unknown): string[] {
+	if (!isMap(node)) {
+		return [];
+	}
+	return node.items.map((pair) => (isScalar(pair.key) ? String(pair.key.value) : String(pair.key)));
+}
 
 const sampleEditorMeta = {
 	...createEmptyUiDefinitionMeta(),
@@ -95,7 +106,24 @@ describe('ir snapshot', () => {
 		});
 	});
 
+
+	it('serializes YAML with system meta first then preferred keys', () => {
+		const snapshot = createIrSnapshot(sampleSnapshotMeta, [
+			{ zebra: 1, type: 'textbox', label: 'A', logicalId: 'userName' }
+		]);
+		const doc = parseDocument(serializeIrSnapshot(snapshot));
+		expect(yamlMapKeys(doc.contents)).toEqual(['version', 'savedAt', 'uiDefinition', 'components']);
+		expect(yamlMapKeys(doc.get('uiDefinition'))).toEqual([
+			'version',
+			'createdAt',
+			'modifiedAt',
+			'logicalId',
+			'name',
+			'description'
+		]);
+		const components = doc.get('components');
+		expect(yamlMapKeys(components.get(0))).toEqual(['logicalId', 'type', 'label', 'zebra']);
+	});
 	it('documents current default exclude tree', () => {
 		expect(SNAPSHOT_COMPONENT_EXCLUDE_TREE).toEqual({ id: true });
-	});
-});
+	});});

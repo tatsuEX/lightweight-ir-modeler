@@ -1,10 +1,64 @@
-import { dump, load } from 'js-yaml';
+import { parseYaml, stringifyYaml } from '$lib/utils/yaml-document';
 import { nanoid } from 'nanoid';
 import {
 	toEditorMeta,
 	type UiDefinitionEditorMeta,
 	type UiDefinitionSnapshotMeta
 } from '$lib/ir/ui-definition-meta';
+
+/**
+ * IR snapshot YAML でシステムメタの次に置くドメインキー
+ */
+export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
+	'uiDefinition',
+	'components',
+	'logicalId',
+	'name',
+	'description',
+	'type',
+	'label',
+	'hint',
+	'defaultValue',
+	'defaultValueFrom',
+	'defaultValueTo',
+	'disabled',
+	'readonly',
+	'hidden',
+	'tooltip',
+	'validation',
+	'required',
+	'requiredFrom',
+	'requiredTo',
+	'pattern',
+	'minlength',
+	'maxlength',
+	'min',
+	'max',
+	'step',
+	'minDate',
+	'maxDate',
+	'minDateTime',
+	'maxDateTime',
+	'minTime',
+	'maxTime',
+	'customErrorMessages',
+	'items',
+	'format',
+	'clearable',
+	'rows',
+	'cols',
+	'multiple',
+	'autosize',
+	'external'
+];
+
+/**
+ * IR snapshot 向け YAML 文字列を作る
+ */
+function stringifySnapshotYaml(value: unknown): string {
+	return stringifyYaml(value, SNAPSHOT_YAML_PREFERRED_KEYS);
+}
+
 
 /** snapshot ファイル形式のバージョン */
 export const IR_SNAPSHOT_VERSION = 1;
@@ -214,7 +268,7 @@ export function parseIrSnapshot(value: unknown): IrSnapshot {
  * components の内容を比較用に正規化する（永続化除外属性は含めない）
  */
 export function normalizeComponentsForCompare(components: unknown[]): string {
-	return dump({ components: stripSnapshotComponents(components) }, { sortKeys: true, lineWidth: -1 });
+	return stringifySnapshotYaml({ components: stripSnapshotComponents(components) });
 }
 
 /**
@@ -224,25 +278,22 @@ export function normalizeSnapshotForCompare(
 	uiDefinition: UiDefinitionEditorMeta | UiDefinitionSnapshotMeta,
 	components: unknown[]
 ): string {
-	return dump(
-		{
-			uiDefinition: toEditorMeta(uiDefinition),
-			components: stripSnapshotComponents(components)
-		},
-		{ sortKeys: true, lineWidth: -1 }
-	);
+	return stringifySnapshotYaml({
+		uiDefinition: toEditorMeta(uiDefinition),
+		components: stripSnapshotComponents(components)
+	});
 }
 
 /**
  * IrSnapshot を YAML 文字列へシリアライズする
  */
 export function serializeIrSnapshot(snapshot: IrSnapshot): string {
-	return dump(snapshot, { sortKeys: true, lineWidth: -1 });
+	return stringifySnapshotYaml(snapshot);
 }
 
 /**
  * YAML 文字列から IrSnapshot をデシリアライズする
  */
 export function deserializeIrSnapshot(yamlText: string): IrSnapshot {
-	return parseIrSnapshot(load(yamlText));
+	return parseIrSnapshot(parseYaml(yamlText));
 }
