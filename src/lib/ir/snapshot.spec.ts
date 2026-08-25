@@ -6,6 +6,7 @@ import {
 	deserializeIrSnapshot,
 	deserializeIrSnapshotDocument,
 	normalizeComponentsForCompare,
+	restoreIrSnapshotFromYaml,
 	restoreSnapshotComponents,
 	SNAPSHOT_COMPONENT_EXCLUDE_TREE,
 	serializeIrSnapshot,
@@ -143,5 +144,52 @@ describe('ir snapshot', () => {
 		expect(loaded.comments['components[0]']).toBe('ユーザー ID');
 		expect(loaded.comments['components[1]']).toBe('表示専用');
 		expect(loaded.snapshot.uiDefinition).toEqual(sampleSnapshotMeta);
+	});
+
+	it('restoreIrSnapshotFromYaml assigns ids and keeps full external bags', () => {
+		const yamlText = serializeIrSnapshot({
+			version: 1,
+			savedAt: '2026-08-25T00:00:00.000Z',
+			uiDefinition: {
+				...sampleSnapshotMeta,
+				external: {
+					primefaces: { prependId: false },
+					'im-forma': { formSystemId: 'SYS-1' }
+				}
+			},
+			components: [
+				{
+					type: 'textbox',
+					label: '名前',
+					external: { primefaces: { widgetVar: 'nameWv' } }
+				}
+			]
+		});
+
+		const restored = restoreIrSnapshotFromYaml(yamlText);
+		const component = restored.components[0] as Record<string, unknown>;
+
+		expect(restored.uiDefinition.logicalId).toBe('userRegistration');
+		expect(restored.uiDefinition.external).toEqual({
+			primefaces: { prependId: false },
+			'im-forma': { formSystemId: 'SYS-1' }
+		});
+		expect(component.type).toBe('textbox');
+		expect(component.external).toEqual({ primefaces: { widgetVar: 'nameWv' } });
+		expect(typeof component.id).toBe('string');
+		expect((component.id as string).length).toBe(16);
+	});
+
+	it('restoreIrSnapshotFromYaml fills uiDefinition when omitted', () => {
+		const yamlText = serializeIrSnapshot({
+			version: 1,
+			savedAt: '2026-08-25T00:00:00.000Z',
+			components: [{ type: 'textbox' }]
+		});
+
+		const restored = restoreIrSnapshotFromYaml(yamlText);
+		expect(restored.uiDefinition.logicalId).toBe('');
+		expect(restored.uiDefinition.createdAt).toBe('2026-08-25T00:00:00.000Z');
+		expect(restored.uiDefinition.modifiedAt).toBe('2026-08-25T00:00:00.000Z');
 	});
 });

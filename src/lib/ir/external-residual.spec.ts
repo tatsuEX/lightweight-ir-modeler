@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	buildTargetResidual,
+	hasTargetResidual,
 	normalizeExternalResidual,
 	readTargetResidual
 } from '$lib/ir/external-residual';
@@ -33,6 +34,15 @@ describe('readTargetResidual', () => {
 		expect(readTargetResidual(residual, 'im-forma')).toEqual({ a: 1 });
 		expect(readTargetResidual(residual, 'unknown-target')).toEqual({});
 		expect(readTargetResidual(null, 'im-forma')).toEqual({});
+	});
+});
+
+describe('hasTargetResidual', () => {
+	it('is true only when the target bag has at least one key', () => {
+		expect(hasTargetResidual({ primefaces: { widgetVar: 'x' } }, 'primefaces')).toBe(true);
+		expect(hasTargetResidual({ primefaces: {} }, 'primefaces')).toBe(false);
+		expect(hasTargetResidual({ primefaces: { widgetVar: 'x' } }, 'im-forma')).toBe(false);
+		expect(hasTargetResidual(undefined, 'primefaces')).toBe(false);
 	});
 });
 

@@ -29,6 +29,13 @@ export function readTargetResidual(container: unknown, targetId: string): Record
 }
 
 /**
+ * 残余バッグに target 名前空間のエントリ（1 キー以上）があるか判定する
+ */
+export function hasTargetResidual(container: unknown, targetId: string): boolean {
+	return Object.keys(readTargetResidual(container, targetId)).length > 0;
+}
+
+/**
  * 既知キーを除いた残りを target 名前空間付きの残余バッグとして組み立てる
  * 残余が無い場合は undefined を返す（空 object を IR に残さない）
  */

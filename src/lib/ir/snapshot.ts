@@ -2,6 +2,7 @@ import { parseYamlDocument, stringifyYamlDocument, createYamlDocument } from '$l
 import { attachYamlComments, extractYamlComments, type YamlCommentMap } from '$lib/utils/yaml-comments';
 import { nanoid } from 'nanoid';
 import {
+	createEmptyUiDefinitionMeta,
 	toEditorMeta,
 	type UiDefinitionEditorMeta,
 	type UiDefinitionSnapshotMeta
@@ -97,6 +98,19 @@ export type IrSnapshot = {
 	version: typeof IR_SNAPSHOT_VERSION;
 	savedAt: string;
 	uiDefinition?: UiDefinitionSnapshotMeta;
+	components: unknown[];
+};
+
+/**
+ * YAML から復元したドメインモデル（運用コメントは含めない）
+ *
+ * WARN: CLI（summon / 将来の diff・grep・inspect）もこの形を入力にする。
+ * target 投影やテンプレ描画は各コマンド側で行う。
+ */
+export type RestoredIrSnapshot = {
+	version: number;
+	savedAt: string;
+	uiDefinition: UiDefinitionSnapshotMeta;
 	components: unknown[];
 };
 
@@ -313,4 +327,23 @@ export function deserializeIrSnapshotDocument(yamlText: string): {
  */
 export function deserializeIrSnapshot(yamlText: string): IrSnapshot {
 	return deserializeIrSnapshotDocument(yamlText).snapshot;
+}
+
+/**
+ * YAML 文字列からドメインモデルを復元する（envelope 検証 + id 再採番）
+ */
+export function restoreIrSnapshotFromYaml(yamlText: string): RestoredIrSnapshot {
+	const snapshot = deserializeIrSnapshot(yamlText);
+	const editorDefaults = createEmptyUiDefinitionMeta();
+
+	return {
+		version: snapshot.version,
+		savedAt: snapshot.savedAt,
+		uiDefinition: snapshot.uiDefinition ?? {
+			...editorDefaults,
+			createdAt: snapshot.savedAt,
+			modifiedAt: snapshot.savedAt
+		},
+		components: restoreSnapshotComponents(snapshot.components)
+	};
 }
