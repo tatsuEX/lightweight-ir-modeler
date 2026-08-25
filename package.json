@@ -15,7 +15,8 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
 		"schema:infer": "node ./scripts/schema-infer.mjs",
-		"schema:convert": "node ./scripts/schema-convert.mjs"
+		"schema:convert": "node ./scripts/schema-convert.mjs",
+		"arcane:summon": "tsx --tsconfig ./scripts/tsconfig.json ./scripts/arcane-summon.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -44,6 +45,7 @@
 		"svelte-check": "^4.6.0",
 		"svelte-dnd-action": "^0.9.74",
 		"tailwindcss": "^4.3.0",
+		"tsx": "^4.20.3",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1",
 		"vite": "^8.0.16",
