@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T23:50:00"
-summary: "モジュール境界・データフロー・shape/merge/serialize 概観・snapshot 運用コメント"
+updated: "2026-08-26T07:39:00"
+summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置"
 features:
   - architecture
   - ir
@@ -11,6 +11,7 @@ features:
   - export
   - import
   - ir-snapshot
+  - arcane
   - yaml-comments
   - application-config
   - logging
@@ -18,7 +19,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-24 23:50
+最終更新: 2026-08-26 07:39
 
 ## 目的
 
@@ -29,12 +30,12 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 
 | Path | 役割 | 現状の主な成果物 |
 |---|---|---|
-| `ir/` | ドメイン SSOT 周辺 | `ui-definition-meta.ts`, `snapshot.ts`, `snapshot-comment-map.ts`, `external-residual.ts`（`IRDefinition` / `Component` クラス階層は今後） |
+| `ir/` | ドメイン SSOT 周辺 | `ui-definition-meta.ts`, `snapshot.ts`（`RestoredIrSnapshot` / `restoreIrSnapshotFromYaml` 含む）, `snapshot-comment-map.ts`, `external-residual.ts`（`IRDefinition` / `Component` クラス階層は今後） |
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
 | `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | 共有フィールド変換 + target 固有 `*-transform.ts` |
 | `config/` | クライアント安全な設定 type・既定値・純関数 | `application-types.ts`, `layout-editor-config.ts`, `preview-config.ts` |
-| `server/io/` | ファイル I/O | `ir-snapshot-io.ts`, `definition-export-io.ts`, `writers/`（shape / merge / serialize）, `readers/`（parse / unshape）, target 固有ヘルパ |
+| `server/io/` | ファイル I/O | `ir-snapshot-io.ts`（autoSave）, `ir-snapshot-file.ts`（任意パス読込）, `definition-export-io.ts`, `writers/`（shape / merge / serialize）, `readers/`（parse / unshape）, target 固有ヘルパ |
 | `server/ui/` | Import / Export オーケストレーション | `export-pipeline.ts`, `export-target-registry.ts`, `import-pipeline.ts`, `import-target-registry.ts` |
 | `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
 | `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
@@ -84,6 +85,19 @@ GUI 編集（IR 相当の store 状態）
 
 Shape 後ペイロードは再検証しない（Raw が target Schema を満たし、shape が信頼できる前提）。  
 merge / serialize の方言は [UI Export](../use-cases/ui-export.md) および各 target の Export 文書。
+
+### CLI toolchain（`npm run arcane:*`）
+
+`arcane` は npm script の alias。ソースパスには使わない。
+
+```text
+IR snapshot YAML ファイル
+  → restoreIrSnapshotFromYaml（ir/） / loadRestoredIrSnapshotFile（server/io、任意パス）
+  → scripts/lib（target 投影・Handlebars・argv）
+  → scripts/arcane-summon.ts（stdout / --out）
+```
+
+Writer / Raw 検証 / `application.yml` は使わない。詳細は [arcane:summon](../use-cases/arcane-summon.md)。
 
 ## 主要型・クラス関係
 
@@ -192,6 +206,7 @@ classDiagram
 
 - [レイアウトエディタ](../use-cases/layout-editor.md)
 - [IR snapshot](../use-cases/ir-snapshot-auto-save.md)
+- [arcane:summon](../use-cases/arcane-summon.md)
 - [UI Export](../use-cases/ui-export.md)
 - [UI Import](../use-cases/ui-import.md)
 - [im-forma Import](../use-cases/im-forma-import.md)

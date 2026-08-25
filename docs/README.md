@@ -1,12 +1,13 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T08:11:00"
+updated: "2026-08-25T08:32:00"
 summary: "docs 索引と現行スコープ、core / adapter target 分離方針"
 features:
   - docs
   - architecture
   - layout-editor
   - ir-snapshot
+  - arcane
   - ui-export
   - ui-import
   - primefaces
@@ -17,7 +18,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-08-24 08:11
+最終更新: 2026-08-25 08:32
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -29,17 +30,18 @@ features:
 1. [アーキテクチャ概要](./architecture/overview.md) — モジュール境界・データフロー・クラス関係
 2. [レイアウトエディタ編集](./use-cases/layout-editor.md) — property / layout / preview
 3. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
-4. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
-5. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
-6. [HTTP API](./api/http-endpoints.md)
-7. [ロギング](./architecture/logging.md)
+4. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
+5. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
+6. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
+7. [HTTP API](./api/http-endpoints.md)
+8. [ロギング](./architecture/logging.md)
 
 ### Adapter target（ベンダー固有）
 
-8. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
-9. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
-10. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
-11. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
+9. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
+10. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
+11. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
+12. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
 
 ## ドキュメントの層
 
@@ -61,6 +63,7 @@ features:
 |---|---|
 | Layout Editor（属性・配置・プレビュー） | 実装済み |
 | IR snapshot 自動保存 | 実装済み（プロファイル設定依存） |
+| `arcane:summon`（snapshot → Handlebars） | 実装済み（CLI。Export とは別経路） |
 | Export（IR → Raw → validate → Writer） | 実装済み（複数 adapter target） |
 | Import（Reader → Raw → validate → IR） | 実装済み（ファイルアップロード。`importDir` は未使用のまま） |
 | サーバロギング（Winston） | 実装済み（`logging` YAML、HTTP hook + パイプライン追跡） |
