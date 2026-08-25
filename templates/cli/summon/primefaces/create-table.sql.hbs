@@ -1,0 +1,18 @@
+{{!--
+  arcane:summon サンプル（target: primefaces）
+  uiDefinition.logicalId を表名、各 component.logicalId を列名にした CREATE TABLE。
+  label 型は表示専用のため列にしない。カンマは先頭置き（末尾カンマ回避）。
+
+  npm run arcane:summon -- --target primefaces --template ./templates/cli/summon/primefaces/create-table.sql.hbs --source ./path/to/ir-snapshot.yaml
+--}}
+-- {{target}} / {{uiDefinition.name}} ({{uiDefinition.logicalId}})
+-- snapshot version={{version}} savedAt={{savedAt}}
+
+CREATE TABLE {{uiDefinition.logicalId}} (
+	id VARCHAR(32) NOT NULL PRIMARY KEY
+{{#each components}}
+{{#unless (eq type "label")}}
+	, {{logicalId}} {{#if (eq type "number")}}INTEGER{{else if (eq type "checkbox")}}BOOLEAN{{else if (eq type "datepicker")}}DATE{{else if (eq type "date-span")}}DATE{{else if (eq type "datetimepicker")}}TIMESTAMP{{else if (eq type "timepicker")}}TIME{{else if maxlength}}VARCHAR({{maxlength}}){{else}}VARCHAR(255){{/if}}{{#if required}} NOT NULL{{/if}} -- {{label}}
+{{/unless}}
+{{/each}}
+);

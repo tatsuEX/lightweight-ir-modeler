@@ -1,0 +1,9 @@
+{{!--
+  arcane:summon サンプル（target: primefaces）
+  components の logicalId / type / label を TSV にする。
+
+  npm run arcane:summon -- --target primefaces --template ./templates/cli/summon/primefaces/logical-id-type-label.tsv.hbs --source ./path/to/ir-snapshot.yaml
+--}}
+logicalId	type	label
+{{#each components}}{{logicalId}}	{{type}}	{{label}}
+{{/each}}

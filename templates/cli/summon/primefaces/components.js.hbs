@@ -1,0 +1,26 @@
+{{!--
+  arcane:summon サンプル（target: primefaces）
+  画面定義と components を JS オブジェクトにし、forEach で console.log する。
+
+  npm run arcane:summon -- --target primefaces --template ./templates/cli/summon/primefaces/components.js.hbs --source ./path/to/ir-snapshot.yaml
+--}}
+const {{uiDefinition.logicalId}} = {
+	target: '{{target}}',
+	logicalId: '{{uiDefinition.logicalId}}',
+	name: '{{uiDefinition.name}}',
+	components: [
+{{#each components}}
+		{
+			id: '{{id}}',
+			logicalId: '{{logicalId}}',
+			type: '{{type}}',
+			label: '{{label}}'{{#if external.widgetVar}},
+			widgetVar: '{{external.widgetVar}}'{{/if}}
+		}{{#unless @last}},{{/unless}}
+{{/each}}
+	]
+};
+
+{{uiDefinition.logicalId}}.components.forEach((component) => {
+	console.log(component.logicalId, component.type, component.label);
+});
