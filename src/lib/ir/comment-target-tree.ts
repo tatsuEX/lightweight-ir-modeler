@@ -110,3 +110,37 @@ export function buildComponentCommentTree(component: Record<string, unknown> & {
 		}, new Set(['id']))
 	};
 }
+
+/**
+ * モーダル open 時に展開するオーナキーを返す（ルートのみ）
+ *
+ * WARN: 第一階層のドメインキーを見せ、external / item details は閉じたままにする。
+ */
+export function defaultExpandedOwnerKeys(root: CommentTreeNode): Set<string> {
+	return new Set([root.ownerKey]);
+}
+
+/**
+ * ルートから対象までの祖先オーナキーを返す
+ *
+ * 対象がルート、または見つからないときはルートだけを返す。対象自身は含めない。
+ */
+export function collectAncestorOwnerKeys(root: CommentTreeNode, ownerKey: string): string[] {
+	/**
+	 * 対象ノードまで歩き、見つかれば祖先キーを返す
+	 */
+	function find(node: CommentTreeNode, ancestors: string[]): string[] | null {
+		if (node.ownerKey === ownerKey) {
+			return ancestors.length > 0 ? ancestors : [root.ownerKey];
+		}
+		for (const child of node.children) {
+			const found = find(child, [...ancestors, node.ownerKey]);
+			if (found) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	return find(root, []) ?? [root.ownerKey];
+}

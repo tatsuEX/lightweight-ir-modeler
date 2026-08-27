@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildComponentCommentTree, buildUiDefinitionCommentTree } from '$lib/ir/comment-target-tree';
+import {
+	buildComponentCommentTree,
+	buildUiDefinitionCommentTree,
+	collectAncestorOwnerKeys,
+	defaultExpandedOwnerKeys
+} from '$lib/ir/comment-target-tree';
 import { UI_DEFINITION_COMMENT_KEY, componentCommentKey, componentRelCommentKey } from '$lib/ir/snapshot-comment-map';
 
 describe('comment-target-tree', () => {
@@ -34,5 +39,49 @@ describe('comment-target-tree', () => {
 		const external = tree.children.find((node) => node.label === 'external');
 		expect(external?.ownerKey).toBe(componentRelCommentKey('cid', 'external'));
 		expect(external?.children[0].ownerKey).toBe(componentRelCommentKey('cid', "external['im-forma']"));
+	});
+
+	it('defaults expanded keys to the root only for uiDefinition trees', () => {
+		const tree = buildUiDefinitionCommentTree({
+			logicalId: 'screen',
+			external: { 'im-forma': { importBase: { ja: 'x' } } }
+		});
+		const expanded = defaultExpandedOwnerKeys(tree);
+		const external = tree.children.find((node) => node.label === 'external');
+
+		expect([...expanded]).toEqual([tree.ownerKey]);
+		expect(external && expanded.has(external.ownerKey)).toBe(false);
+	});
+
+	it('defaults expanded keys to the root only for component trees', () => {
+		const tree = buildComponentCommentTree({
+			id: 'cid',
+			logicalId: 'userId',
+			type: 'textbox',
+			validation: { required: true, minlength: 1 },
+			items: [{ value: 'a', label: 'A' }],
+			external: { 'im-forma': { item_id: 'a' } }
+		});
+		const expanded = defaultExpandedOwnerKeys(tree);
+
+		expect([...expanded]).toEqual([tree.ownerKey]);
+		expect(expanded.has(componentRelCommentKey('cid', 'validation'))).toBe(false);
+		expect(expanded.has(componentRelCommentKey('cid', 'items'))).toBe(false);
+		expect(expanded.has(componentRelCommentKey('cid', 'external'))).toBe(false);
+	});
+
+	it('collects ancestor owner keys for a nested external node', () => {
+		const tree = buildUiDefinitionCommentTree({
+			logicalId: 'screen',
+			external: { 'im-forma': { importBase: { ja: 'x' } } }
+		});
+		const external = tree.children.find((node) => node.label === 'external');
+		const forma = external?.children[0];
+
+		expect(collectAncestorOwnerKeys(tree, tree.ownerKey)).toEqual([UI_DEFINITION_COMMENT_KEY]);
+		expect(forma && collectAncestorOwnerKeys(tree, forma.ownerKey)).toEqual([
+			UI_DEFINITION_COMMENT_KEY,
+			'uiDefinition.external'
+		]);
 	});
 });
