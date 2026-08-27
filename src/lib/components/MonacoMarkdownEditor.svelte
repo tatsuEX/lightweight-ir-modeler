@@ -3,11 +3,11 @@
 
 	type Props = {
 		value?: string;
-		/** エディタの高さ（px） */
+		/** エディタの高さ（px）。省略時は親の高さいっぱい */
 		heightPx?: number;
 	};
 
-	let { value = $bindable(''), heightPx = 280 }: Props = $props();
+	let { value = $bindable(''), heightPx }: Props = $props();
 
 	let host = $state<HTMLDivElement | undefined>();
 	let editor: { getValue(): string; setValue(next: string); dispose(): void; layout(): void } | undefined;
@@ -76,8 +76,9 @@
 	});
 </script>
 
+<!-- WARN: heightPx 省略時は親が拘束高（flex-1 min-h-0 等）を持つこと。無いと h-full が効かない。 -->
 <div
 	bind:this={host}
-	class="overflow-hidden rounded-md border border-gray-200 dark:border-gray-600"
-	style="height: {heightPx}px;"
+	class="h-full min-h-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-600"
+	style={heightPx != null ? `height: ${heightPx}px;` : undefined}
 ></div>

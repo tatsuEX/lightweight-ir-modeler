@@ -20,7 +20,7 @@
 	}
 </script>
 
-<nav class="h-full overflow-auto text-sm" aria-label="コメント対象">
+<nav class="h-full min-h-0 overflow-auto text-sm" aria-label="コメント対象">
 	<ul class="flex flex-col gap-0.5">
 		{@render treeItem(root, 0)}
 	</ul>

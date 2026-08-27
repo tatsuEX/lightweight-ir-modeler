@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-25T07:54:00"
-summary: "Property 属性テーブルの列ヘッダフィルタと snapshot 運用コメント（モーダル内ツリー）"
+updated: "2026-08-28T07:12:00"
+summary: "Property 属性テーブルと snapshot 運用コメント（モーダルは固定フッタ、左右独立スクロール）"
 features:
   - layout-editor
   - ui-definition
@@ -15,7 +15,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-25 07:54
+最終更新: 2026-08-28 07:12
 
 ## 概要
 
@@ -172,6 +172,8 @@ snapshot YAML の `#` コメントを Property から編集する。IR フィー
 
 入力は Monaco Modal（`language: markdown`）。左ペインは VS Code のエクスプローラ相当で、開いた対象（画面メタまたはその行）のドメインキーと `external` を選び、右ペインで本文を編集する。Property 上に `external` ツリーは置かない。
 
+モーダルはヘッダとキャンセル/保存を固定し、残り高（最大 `min(90vh, 42rem)`）を左右ペインが分け合う。ツリーと Monaco はそれぞれ独立スクロールする。モーダル全体はスクロールしない。
+
 ## コンポーネント種別（現状）
 
 Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` / `createRadio` / `createDropdown` / `createDropdownMulti` / `createDatepicker` / `createDateSpan` / `createDatetimepicker` / `createTimepicker` / `createLabel` など。  
@@ -191,6 +193,7 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | コメント `#` | `src/lib/components/YamlCommentButton.svelte` |
 | コメントモーダル | `src/lib/components/MarkdownCommentModal.svelte` |
 | コメント対象ツリー | `src/lib/components/CommentTargetTree.svelte` |
+| コメント Markdown 編集 | `src/lib/components/MonacoMarkdownEditor.svelte` |
 | テキスト列マッチ | `src/lib/utils/text-match.ts` |
 | Details セル | `src/lib/components/ComponentDetailsCell.svelte` |
 | Validation セル | `src/lib/components/ComponentValidationCell.svelte` |

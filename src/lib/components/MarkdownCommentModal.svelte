@@ -48,6 +48,8 @@
 	const tree = $derived(buildEditorTree());
 </script>
 
+<!-- WARN: ボタンは footer snippet。body に置くとツリーと一緒にスクロールする。 -->
+<!-- WARN: 既定 body の overflow-y-auto を hidden に上書きし、左右ペインだけスクロールさせる。 -->
 <Modal
 	title={comments.editor?.title ?? '運用コメント'}
 	bind:open={() => comments.editor !== null, (next) => {
@@ -57,12 +59,16 @@
 	}}
 	size="xl"
 	outsideclose
-	class="w-full max-w-5xl"
+	class="h-[min(90vh,42rem)] max-h-[90vh] w-full max-w-5xl overflow-hidden"
+	bodyClass="flex min-h-0 flex-1 flex-col overflow-hidden"
+	footerClass="justify-end"
 >
 	{#if comments.editor}
-		<div class="flex min-h-[20rem] gap-3">
+		<div class="flex h-full min-h-0 flex-1 gap-3">
 			{#if tree}
-				<div class="w-56 shrink-0 border-r border-gray-200 pr-2 dark:border-gray-600">
+				<div
+					class="flex h-full min-h-0 w-56 shrink-0 flex-col overflow-hidden border-r border-gray-200 pr-2 dark:border-gray-600"
+				>
 					<CommentTargetTree
 						root={tree}
 						selectedOwnerKey={comments.editor.ownerKey}
@@ -70,19 +76,23 @@
 					/>
 				</div>
 			{/if}
-			<div class="min-w-0 flex-1">
-				<p class="mb-2 font-mono text-xs break-all text-gray-500 dark:text-gray-400">
+			<div class="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+			<!-- ヘッダにオーナキーを表示しているため、Editor上部には表示しない
+				<p class="mb-2 shrink-0 font-mono text-xs break-all text-gray-500 dark:text-gray-400">
 					{comments.editor.title}
 				</p>
-				<MonacoMarkdownEditor
-					bind:value={() => comments.editor?.draft ?? '', (next) => comments.setEditorDraft(next)}
-				/>
+				-->
+				<div class="min-h-0 flex-1">
+					<MonacoMarkdownEditor
+						bind:value={() => comments.editor?.draft ?? '', (next) => comments.setEditorDraft(next)}
+					/>
+				</div>
 			</div>
 		</div>
 	{/if}
 
-	<div class="mt-4 flex justify-end gap-2">
+	{#snippet footer()}
 		<Button color="alternative" onclick={() => comments.cancelEditor()}>キャンセル</Button>
 		<Button color="primary" onclick={() => comments.commitEditor()}>保存</Button>
-	</div>
+	{/snippet}
 </Modal>
