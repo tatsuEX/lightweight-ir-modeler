@@ -15,6 +15,7 @@
 		TableHead,
 		TableHeadCell,
 		Toggle,
+		Tooltip,
 		type SelectOptionType
 	} from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
@@ -399,7 +400,7 @@
 							type="button"
 							size="xs"
 							color="alternative"
-							class="shrink-0 px-2"
+							class="shrink-0 px-2 h-[2em]"
 							aria-label="ID の一致モード"
 							aria-haspopup="menu"
 							aria-expanded={idModeOpen}
@@ -442,11 +443,14 @@
 						size="xs"
 						color={selectedTypes.size > 0 ? 'primary' : 'alternative'}
 						outline={selectedTypes.size === 0}
-						class="w-full px-2"
+						class="w-full px-2 h-[2em]"
 						aria-label="type で絞り込み"
 						aria-haspopup="true"
 						aria-expanded={typeFilterOpen}
 					>
+						<Tooltip>
+							<pre>{[...selectedTypes].join('\n')}</pre>	
+						</Tooltip>
 						{#if selectedTypes.size > 0}
 							type · {selectedTypes.size}
 						{:else}
@@ -523,7 +527,8 @@
 							items={BOOLEAN_FILTER_ITEMS}
 							bind:value={requiredFilter}
 							aria-label="required で絞り込み"
-							class={requiredFilter !== 'all' ? activeFilterClass : ''}
+							class="{requiredFilter !== 'all' ? activeFilterClass : ''}"
+							selectClass="px-1 py-1"
 						/>
 					</div>
 				</TableHeadCell>
@@ -537,6 +542,7 @@
 							bind:value={readonlyFilter}
 							aria-label="readonly で絞り込み"
 							class={readonlyFilter !== 'all' ? activeFilterClass : ''}
+							selectClass="px-1 py-1"
 						/>
 					</div>
 				</TableHeadCell>
@@ -550,6 +556,7 @@
 							bind:value={disabledFilter}
 							aria-label="disabled で絞り込み"
 							class={disabledFilter !== 'all' ? activeFilterClass : ''}
+							selectClass="px-1 py-1"
 						/>
 					</div>
 				</TableHeadCell>
