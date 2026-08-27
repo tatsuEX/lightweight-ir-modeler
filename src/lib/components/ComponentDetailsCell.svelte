@@ -457,7 +457,7 @@
 		>
 			<TagsInput
 				size="sm"
-				placeholder="value または value{resolvedDelimiter}label"
+				placeholder="value または value{resolvedDelimiter}label (or paste CSV/TSV)"
 				aria-label="{component.type} の選択肢"
 				class="w-full"
 				bind:value={
