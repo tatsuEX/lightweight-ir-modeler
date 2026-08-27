@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-12T21:38:00"
+updated: "2026-08-28T07:36:00"
 summary: "Export 横断パイプライン・API・shape/merge/serialize・Raw 検証"
 features:
   - ui-export
@@ -9,15 +9,17 @@ features:
   - im-forma
   - preview
   - handlebars
+  - global-toast
 ---
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-08-12 21:38
+最終更新: 2026-08-28 07:36
 
 ## 概要
 
-Preview の「出力」「ダウンロード」から、編集中 IR（store）を target 固有の外部定義ファイルへ書き出す。
+Preview の「出力」「ダウンロード」から、編集中 IR（store）を target 固有の外部定義ファイルへ書き出す。  
+成否は Global Toast で知らせる（成功 `info`、失敗 `error`）。
 
 対応 target（現状）:
 
@@ -197,4 +199,5 @@ classDiagram
 - [im-forma Export](./im-forma-export.md)
 - [PrimeFaces Export](./primefaces-export.md)
 - [UI Import](./ui-import.md)
+- [Global Toast](./global-toast.md)
 - [HTTP API](../api/http-endpoints.md)

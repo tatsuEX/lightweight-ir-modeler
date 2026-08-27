@@ -1,6 +1,6 @@
 ---
 created: "2026-08-10T05:10:00"
-updated: "2026-08-12T21:38:00"
+updated: "2026-08-28T07:36:00"
 summary: "外部 UI 定義 Import の横断パイプライン・層責務・エディタ反映"
 features:
   - ui-import
@@ -8,11 +8,12 @@ features:
   - im-forma
   - raw-validation
   - external-residual
+  - global-toast
 ---
 
 # 外部 UI 定義の取り込み（Import）
 
-最終更新: 2026-08-12 21:38
+最終更新: 2026-08-28 07:36
 
 外部 UI 定義ファイルをアップロードし、IR へ変換してエディタの編集状態を丸ごと置き換える。
 出力側は [UI Export](./ui-export.md) を参照。
@@ -94,7 +95,8 @@ sequenceDiagram
 を行う。未登録 type は `id` だけ付けて素通しする。
 
 取り込み後は `logicalId` が変わるため、debounce 後に **新しい logicalId のディレクトリへ
-snapshot が自動保存される**（既存世代は削除されない）。UI 側でその旨を警告する。
+snapshot が自動保存される**（既存世代は削除されない）。UI 側でその旨を警告する。  
+反映に成功するとモーダルを閉じ、Global Toast（`info`）を出す。失敗はモーダル内の `Alert` に留め、Toast には出さない。
 
 ## 失敗時の扱い
 
@@ -111,6 +113,7 @@ snapshot が自動保存される**（既存世代は削除されない）。UI 
 ## 関連ドキュメント
 
 - [UI Export](./ui-export.md)
+- [Global Toast](./global-toast.md)
 - [im-forma Import](./im-forma-import.md)
 - [PrimeFaces Import](./primefaces-import.md)
 - [HTTP API](../api/http-endpoints.md)

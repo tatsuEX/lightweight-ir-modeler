@@ -13,8 +13,10 @@
 		resolveUiExportClient,
 		saveBlobAsFile
 	} from '$lib/store/layout-editor/ui-export-client';
+	import { getToastContext } from '$lib/store/toast/toast.svelte';
 
 	const uiDefinition = getUIDefinitionContext();
+	const toast = getToastContext();
 
 	/**
 	 * テーマのリストを取得する
@@ -34,7 +36,6 @@
 	const metaReady = $derived(isUiDefinitionMetaReady(uiDefinition));
 	const exportClient = $derived(resolveUiExportClient(selectedTarget));
 
-	let statusMessage = $state('');
 	let busy = $state(false);
 
 	$effect(() => {
@@ -53,12 +54,12 @@
 		}
 
 		busy = true;
-		statusMessage = '';
 		try {
 			const result = await exportClient.export(uiDefinition);
-			statusMessage = `出力しました: ${result.relativePath}`;
+			toast.info('出力しました', result.relativePath);
 		} catch (error) {
-			statusMessage = error instanceof Error ? error.message : '出力に失敗しました';
+			const detail = error instanceof Error ? error.message : '出力に失敗しました';
+			toast.error('出力に失敗しました', detail);
 		} finally {
 			busy = false;
 		}
@@ -73,15 +74,20 @@
 		}
 
 		busy = true;
-		statusMessage = '';
 		try {
 			const result = await exportClient.download(uiDefinition.logicalId);
 			saveBlobAsFile(result.blob, result.filename);
-			statusMessage = result.autoExported
-				? `未出力のため snapshot から出力してダウンロードしました: ${result.filename}`
-				: `ダウンロードしました: ${result.filename}`;
+			if (result.autoExported) {
+				toast.info(
+					'未出力のため snapshot から出力してダウンロードしました',
+					result.filename
+				);
+			} else {
+				toast.info('ダウンロードしました', result.filename);
+			}
 		} catch (error) {
-			statusMessage = error instanceof Error ? error.message : 'ダウンロードに失敗しました';
+			const detail = error instanceof Error ? error.message : 'ダウンロードに失敗しました';
+			toast.error('ダウンロードに失敗しました', detail);
 		} finally {
 			busy = false;
 		}
@@ -125,10 +131,6 @@
 		出力先
 		<Select class="mt-2" items={targetItems} bind:value={selectedTarget} />
 	</Label>
-
-	{#if statusMessage}
-		<p class="w-full text-sm text-gray-600 dark:text-gray-300" role="status">{statusMessage}</p>
-	{/if}
 
 	<div class="flex w-full flex-row flex-wrap items-center justify-end gap-2">
 		<Button color="blue" disabled={!metaReady || !exportClient || busy} onclick={handleExport}>

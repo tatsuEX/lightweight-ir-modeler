@@ -9,6 +9,7 @@
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
+	import { getToastContext } from '$lib/store/toast/toast.svelte';
 	import {
 		setSnapshotDirConfirmSkippedByUser,
 		shouldPromptNewSnapshotDir,
@@ -19,6 +20,7 @@
 	const uiDefinition = getUIDefinitionContext();
 	const layoutEditorConfig = getLayoutEditorConfigContext();
 	const snapshotComments = getSnapshotCommentsContext();
+	const toast = getToastContext();
 
 	let metaOpen = $state(true);
 	let logicalIdOptions = $state<string[]>([]);
@@ -53,6 +55,7 @@
 		try {
 			const response = await fetch('/api/ir/snapshot/logical-ids');
 			if (!response.ok) {
+				toast.warn('画面 ID 一覧を取得できませんでした', `HTTP ${response.status}`);
 				return;
 			}
 
@@ -60,6 +63,8 @@
 			logicalIdOptions = payload.logicalIds ?? [];
 		} catch (error) {
 			console.warn('[UiDefinitionMetaAccordion] failed to load logicalId options:', error);
+			const detail = error instanceof Error ? error.message : String(error);
+			toast.warn('画面 ID 一覧を取得できませんでした', detail);
 		}
 	}
 
@@ -103,6 +108,7 @@
 			}
 			if (!response.ok) {
 				console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', response.status);
+				toast.error('snapshot の復元に失敗しました', `HTTP ${response.status}`);
 				return;
 			}
 
@@ -131,6 +137,8 @@
 			);
 		} catch (error) {
 			console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', error);
+			const detail = error instanceof Error ? error.message : String(error);
+			toast.error('snapshot の復元に失敗しました', detail);
 		}
 	}
 
@@ -188,6 +196,8 @@
 			confirmOpen = true;
 		} catch (error) {
 			console.warn('[UiDefinitionMetaAccordion] snapshot check failed:', error);
+			const detail = error instanceof Error ? error.message : String(error);
+			toast.warn('snapshot の確認に失敗しました', detail);
 			await applyLogicalIdChange(trimmed, previousId);
 		} finally {
 			confirmBusy = false;

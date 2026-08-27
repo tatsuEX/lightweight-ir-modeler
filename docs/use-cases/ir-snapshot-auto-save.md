@@ -1,17 +1,18 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-25T07:54:00"
+updated: "2026-08-28T07:36:00"
 summary: "debounce 付き IR YAML snapshot の自動保存・運用コメント"
 features:
   - ir-snapshot
   - auto-save
   - layout-editor
   - yaml-comments
+  - global-toast
 ---
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-25 07:54
+最終更新: 2026-08-28 07:36
 
 ## 概要
 
@@ -69,6 +70,8 @@ sequenceDiagram
 | サーバ | `normalizeSnapshotForCompare` + `normalizeCommentsForCompare` | 意味的に同じ内容の再書込を skip |
 
 そのため、見た目上の reorder や id 再生成だけではサーバ側で skip されることがある。
+
+保存 API が失敗したときは `console.warn` に加え、Global Toast で `error` を出す（sticky にはしない）。
 
 ## ファイル配置
 

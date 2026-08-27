@@ -1,6 +1,7 @@
 import { untrack } from 'svelte';
 import { debounce } from '$lib/utils/debounce';
 import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
+import { getToastContext } from '$lib/store/toast/toast.svelte';
 import type { UIDefinition } from './layout-editor.svelte';
 import type { SnapshotComments } from './snapshot-comments.svelte';
 
@@ -50,6 +51,8 @@ export function attachIrAutoSave(
 		return;
 	}
 
+	// WARN: getToastContext は debounce コールバック内ではなく、コンポーネント初期化中に取る。
+	const toast = getToastContext();
 	let lastSavedHash = buildSaveHash(uiDefinition, comments);
 
 	const saveSnapshot = debounce(
@@ -83,8 +86,11 @@ export function attachIrAutoSave(
 					}
 
 					console.warn('[ir-auto-save] save failed:', response.status);
+					toast.error('自動保存に失敗しました', `HTTP ${response.status}`);
 				} catch (error) {
 					console.warn('[ir-auto-save] save error:', error);
+					const detail = error instanceof Error ? error.message : String(error);
+					toast.error('自動保存に失敗しました', detail);
 				}
 			})();
 		},

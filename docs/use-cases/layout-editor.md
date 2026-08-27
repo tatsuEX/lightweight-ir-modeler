@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:12:00"
-summary: "Property 属性テーブルと snapshot 運用コメント（モーダルは固定フッタ、左右独立スクロール）"
+updated: "2026-08-28T07:36:00"
+summary: "Property 属性テーブルと snapshot 運用コメント（モーダルは固定フッタ、左ペインは開閉可能）"
 features:
   - layout-editor
   - ui-definition
@@ -11,11 +11,12 @@ features:
   - property-column-filters
   - yaml-comments
   - arrow-navigation
+  - global-toast
 ---
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-28 07:12
+最終更新: 2026-08-28 07:36
 
 ## 概要
 
@@ -65,6 +66,7 @@ flowchart LR
 1. `GET /api/ir/snapshot?logicalId=…` を呼ぶ
 2. 見つかれば store をその snapshot で置換
 3. **404（未使用 ID）** のとき、設定に応じて確認ダイアログを出し、続行後に現在の components を維持したまま ID だけ切り替える（「既存画面をコピーして別名保存」用途）
+4. 復元や存在確認が失敗したときは `console.warn` に加え Global Toast（復元失敗は `error`、一覧・存在確認失敗は `warn`）
 
 定義インポート後も、取り込み結果の画面 ID が未使用なら **同じ確認ダイアログ** を出す（手動変更と共通）。
 
@@ -104,7 +106,7 @@ flowchart TB
 ```
 
 - テーマは `preview-theme--{value}` クラス + `preview-theme-styles.ts`
-- Export / Download ボタンは `isUiDefinitionMetaReady` かつ非 busy のときのみ有効
+- Export / Download ボタンは `isUiDefinitionMetaReady` かつ非 busy のときのみ有効。結果は Global Toast（成功 `info` / 失敗 `error`）
 
 ## Property 属性テーブル
 
@@ -172,6 +174,8 @@ snapshot YAML の `#` コメントを Property から編集する。IR フィー
 
 入力は Monaco Modal（`language: markdown`）。左ペインは VS Code のエクスプローラ相当で、開いた対象（画面メタまたはその行）のドメインキーと `external` を選び、右ペインで本文を編集する。Property 上に `external` ツリーは置かない。
 
+左ペインは開閉できる。シェブロンが開閉、ラベルがコメント対象の選択。モーダルを開いた直後はルートだけ開き、第一階層のドメインキー（と閉じた `external` 行）が見える。`validation` / `items` などの item details と `external` 配下は閉じる。深いキーを選ぶとその祖先だけ追加で開く。
+
 モーダルはヘッダとキャンセル/保存を固定し、残り高（最大 `min(90vh, 42rem)`）を左右ペインが分け合う。ツリーと Monaco はそれぞれ独立スクロールする。モーダル全体はスクロールしない。
 
 ## コンポーネント種別（現状）
@@ -185,6 +189,7 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | 領域 | パス |
 |---|---|
 | App shell | `src/routes/+layout.svelte` |
+| Global Toast | `src/lib/store/toast/toast.svelte.ts` / `GlobalToast.svelte`（[Global Toast](./global-toast.md)） |
 | Store | `src/lib/store/layout-editor/layout-editor.svelte.ts` |
 | Layout shell | `src/routes/layout-editor/+layout.svelte` |
 | Property 画面 | `src/routes/layout-editor/property/+page.svelte` |

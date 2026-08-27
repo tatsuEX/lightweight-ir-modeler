@@ -22,11 +22,13 @@
 		shouldPromptNewSnapshotDir,
 		snapshotDirectoryExists
 	} from '$lib/store/layout-editor/snapshot-dir-confirm';
+	import { getToastContext } from '$lib/store/toast/toast.svelte';
 
 	const uiDefinition = getUIDefinitionContext();
 	const snapshotComments = getSnapshotCommentsContext();
 	const transformTarget = getTransformTargetContext();
 	const layoutEditorConfig = getLayoutEditorConfigContext();
+	const toast = getToastContext();
 
 	// WARN: Reader 未実装の target は選ばせない。選択肢は import クライアント registry で絞り込む。
 	const targetItems: SelectOptionType<string>[] = transformTarget.target.filter((item) =>
@@ -69,6 +71,7 @@
 		try {
 			uiDefinition.loadImported(imported);
 			snapshotComments.clear();
+			toast.info('定義を取り込みました', imported.uiDefinition.logicalId);
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : '取り込み結果の反映に失敗しました';
 			open = true;

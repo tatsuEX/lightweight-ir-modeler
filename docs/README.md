@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-25T08:32:00"
+updated: "2026-08-28T07:36:00"
 summary: "docs 索引と現行スコープ、core / adapter target 分離方針"
 features:
   - docs
@@ -14,11 +14,12 @@ features:
   - im-forma
   - http-api
   - logging
+  - global-toast
 ---
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-08-25 08:32
+最終更新: 2026-08-28 07:36
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -29,19 +30,20 @@ features:
 
 1. [アーキテクチャ概要](./architecture/overview.md) — モジュール境界・データフロー・クラス関係
 2. [レイアウトエディタ編集](./use-cases/layout-editor.md) — property / layout / preview
-3. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
-4. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
-5. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
-6. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
-7. [HTTP API](./api/http-endpoints.md)
-8. [ロギング](./architecture/logging.md)
+3. [Global Toast](./use-cases/global-toast.md) — アプリ全体の Growl 相当通知
+4. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
+5. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
+6. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
+7. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
+8. [HTTP API](./api/http-endpoints.md)
+9. [ロギング](./architecture/logging.md)
 
 ### Adapter target（ベンダー固有）
 
-9. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
-10. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
-11. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
-12. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
+10. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
+11. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
+12. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
+13. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
 
 ## ドキュメントの層
 
@@ -67,4 +69,5 @@ features:
 | Export（IR → Raw → validate → Writer） | 実装済み（複数 adapter target） |
 | Import（Reader → Raw → validate → IR） | 実装済み（ファイルアップロード。`importDir` は未使用のまま） |
 | サーバロギング（Winston） | 実装済み（`logging` YAML、HTTP hook + パイプライン追跡） |
+| Global Toast | 実装済み（Preview / Import 成功 / 自動保存失敗 / snapshot 復元） |
 | ドメイン検証 / Undo / プラグイン等 | 初期スコープ外（`.cursor/rules/03-out-of-scope.mdc`） |

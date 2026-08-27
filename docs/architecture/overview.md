@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-26T07:39:00"
-summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置"
+updated: "2026-08-28T07:25:00"
+summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置・Global Toast"
 features:
   - architecture
   - ir
@@ -15,11 +15,12 @@ features:
   - yaml-comments
   - application-config
   - logging
+  - global-toast
 ---
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-26 07:39
+最終更新: 2026-08-28 07:25
 
 ## 目的
 
@@ -40,6 +41,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
 | `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
 | `store/layout-editor/` | 画面向け状態 | `layout-editor.svelte.ts` ほか |
+| `store/toast/` | アプリ全体の Toast メッセージ | `toast.svelte.ts`（`ToastMessages` / Context） |
 | `utils/` | YAML key sort / Document / comments | `object-key-sort.ts`, `yaml-document.ts`, `yaml-comments.ts` (IR snapshot; application.yml still js-yaml) |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
 
@@ -183,7 +185,7 @@ classDiagram
 補足:
 
 - クラス図の具象 Writer / Reader は **登録済み adapter の存在示し**。語彙・merge・serialize の詳細は各 target 文書
-- 画面間の store 共有は **Svelte Context のみ**（`setUIDefinitionContext` / `getUIDefinitionContext`）
+- 画面間の store 共有は **Svelte Context のみ**（`setUIDefinitionContext` / `getUIDefinitionContext`）。Toast も同様（`setToastContext` はルート `+layout.svelte`）
 - Export の target 解決はサーバ側 `EXPORT_TARGET_REGISTRY` とクライアント側 `UI_EXPORT_CLIENT_REGISTRY` の二系統（薄い HTTP アダプタ）
 - Import も同様に `IMPORT_TARGET_REGISTRY` / `UI_IMPORT_CLIENT_REGISTRY` の二系統。Reader 未実装 target は UI に出さない
 
@@ -205,6 +207,7 @@ classDiagram
 ## 関連ドキュメント
 
 - [レイアウトエディタ](../use-cases/layout-editor.md)
+- [Global Toast](../use-cases/global-toast.md)
 - [IR snapshot](../use-cases/ir-snapshot-auto-save.md)
 - [arcane:summon](../use-cases/arcane-summon.md)
 - [UI Export](../use-cases/ui-export.md)
