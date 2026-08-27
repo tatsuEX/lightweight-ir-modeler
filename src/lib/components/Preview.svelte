@@ -101,13 +101,15 @@
 	}
 </script>
 
-<!-- styleを選択し、表示確認 -->
-<div class="w-1/2 p-2 m-2 mx-auto flex flex-col gap-2 items-center justify-center">
-	<Label class="w-full m-2">
-		プレビューテーマ
-		<Select class="mt-2" items={themeItems} bind:value={selectedTheme} />
-	</Label>
-	<div class="{previewRootClass} w-full mt-4 mb-4">
+<!-- WARN: .preview-root に min-h-0 が無いと overflow が発火せず、出力 chrome が画面外へ押し出される。 -->
+<div class="mx-auto flex h-full min-h-0 w-1/2 flex-col">
+	<div class="shrink-0 py-2">
+		<Label class="w-full">
+			プレビューテーマ
+			<Select class="mt-2" items={themeItems} bind:value={selectedTheme} />
+		</Label>
+	</div>
+	<div class="{previewRootClass} min-h-0 w-full flex-1 overflow-y-auto">
 		<table class="w-full table-fixed border-collapse border border-gray-300">
 			<tbody class="border-collapse border border-gray-300 divide-y divide-gray-300">
 				{#each uiDefinition.components as component (component.id)}
@@ -127,22 +129,23 @@
 		</table>
 	</div>
 
-	<Label class="w-full m-2">
-		出力先
-		<Select class="mt-2" items={targetItems} bind:value={selectedTarget} />
-	</Label>
-
-	<div class="flex w-full flex-row flex-wrap items-center justify-end gap-2">
-		<Button color="blue" disabled={!metaReady || !exportClient || busy} onclick={handleExport}>
-			出力
-		</Button>
-		<Button
-			color="alternative"
-			disabled={!metaReady || !exportClient || busy}
-			onclick={handleDownload}
-		>
-			ダウンロード
-		</Button>
-		<Button color="red" disabled={busy} onclick={handleCancel}>キャンセル</Button>
+	<div class="shrink-0 space-y-2 py-2">
+		<Label class="w-full">
+			出力先
+			<Select class="mt-2" items={targetItems} bind:value={selectedTarget} />
+		</Label>
+		<div class="flex w-full flex-row flex-wrap items-center justify-end gap-2">
+			<Button color="blue" disabled={!metaReady || !exportClient || busy} onclick={handleExport}>
+				出力
+			</Button>
+			<Button
+				color="alternative"
+				disabled={!metaReady || !exportClient || busy}
+				onclick={handleDownload}
+			>
+				ダウンロード
+			</Button>
+			<Button color="red" disabled={busy} onclick={handleCancel}>キャンセル</Button>
+		</div>
 	</div>
 </div>

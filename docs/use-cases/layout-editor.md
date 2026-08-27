@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:36:00"
-summary: "Property 属性テーブルと snapshot 運用コメント（モーダルは固定フッタ、左ペインは開閉可能）"
+updated: "2026-08-28T07:56:00"
+summary: "Property 属性テーブルと Preview の chrome 固定スクロール、snapshot 運用コメント"
 features:
   - layout-editor
   - ui-definition
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-28 07:36
+最終更新: 2026-08-28 07:56
 
 ## 概要
 
@@ -107,6 +107,7 @@ flowchart TB
 
 - テーマは `preview-theme--{value}` クラス + `preview-theme-styles.ts`
 - Export / Download ボタンは `isUiDefinitionMetaReady` かつ非 busy のときのみ有効。結果は Global Toast（成功 `info` / 失敗 `error`）
+- **chrome 固定 + table 内スクロール**: ページ見出し・テーマ選択は上部固定、出力先選択と出力ボタンは下部固定。残り高を `.preview-root` に渡し、プレビュー table だけ `overflow-y-auto` する。ページ全体はスクロールしない。Datepicker ポップオーバーが table の overflow で切れる場合がある。
 
 ## Property 属性テーブル
 
