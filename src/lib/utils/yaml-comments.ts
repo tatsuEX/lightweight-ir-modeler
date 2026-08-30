@@ -263,11 +263,14 @@ export function parseYamlCommentMap(value: unknown): YamlCommentMap {
 
 	const result: YamlCommentMap = {};
 
+	// comment対象のパスをループして、コメント本文を取り出す
 	for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
 		if (typeof item !== 'string') {
 			continue;
 		}
+		// コメント本文を正規化する
 		const normalized = normalizeCommentText(item);
+		// 正規化されたコメント本文をマップに追加する
 		if (normalized != null) {
 			result[key] = normalized;
 		}

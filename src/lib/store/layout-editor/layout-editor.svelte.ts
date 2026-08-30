@@ -27,6 +27,9 @@ export type UIDefinitionState = {
     external?: ExternalResidual;
 }
 
+/**
+ * 画面定義を管理するクラス
+ */
 export class UIDefinition {
     #state = $state<UIDefinitionState>({
         id: '',

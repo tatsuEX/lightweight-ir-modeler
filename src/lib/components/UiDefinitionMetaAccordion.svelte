@@ -171,6 +171,9 @@
 			return;
 		}
 
+		// ▽▽▽ メタlogicalIdが入力変更された ▽▽▽
+
+		// 入力中のlogicalIdが有効でない場合はメモリ上のUIDefinitionにのみ反映し、snapshot API へは反映しない
 		if (!isValidLogicalId(trimmed)) {
 			uiDefinition.logicalId = trimmed;
 			return;

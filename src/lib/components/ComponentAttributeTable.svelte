@@ -560,7 +560,7 @@
 							bind:value={requiredFilter}
 							aria-label="required で絞り込み"
 							class="{requiredFilter !== 'all' ? activeFilterClass : ''}"
-							selectClass="px-1 py-1"
+							classes={{ select: "px-1 py-1" }}
 						/>
 					</div>
 				</TableHeadCell>
@@ -575,7 +575,7 @@
 							bind:value={readonlyFilter}
 							aria-label="readonly で絞り込み"
 							class={readonlyFilter !== 'all' ? activeFilterClass : ''}
-							selectClass="px-1 py-1"
+							classes={{ select: "px-1 py-1" }}
 						/>
 					</div>
 				</TableHeadCell>
@@ -590,7 +590,7 @@
 							bind:value={disabledFilter}
 							aria-label="disabled で絞り込み"
 							class={disabledFilter !== 'all' ? activeFilterClass : ''}
-							selectClass="px-1 py-1"
+							classes={{ select: "px-1 py-1" }}
 						/>
 					</div>
 				</TableHeadCell>

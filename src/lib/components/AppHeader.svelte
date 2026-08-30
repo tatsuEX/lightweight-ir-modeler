@@ -18,7 +18,7 @@
 		>
 	</NavBrand>
 	<NavHamburger />
-	<NavUl {activeUrl} class="items-start" ulClass="py-0">
+	<NavUl {activeUrl} class="items-start" classes={{ ul: "py-0" }}>
 		<NavLi href="/">TOP</NavLi>
 		<NavLi href="/layout-editor">Layout Editor</NavLi>
 	</NavUl>

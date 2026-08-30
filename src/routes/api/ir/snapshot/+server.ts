@@ -42,8 +42,18 @@ export const GET: RequestHandler = async ({ url }) => {
 };
 
 /**
- * 編集中 UI 定義の snapshot を保存する
- * POST /api/ir/snapshot
+ * 編集中 UI 定義の snapshot を保存する  
+ * POST /api/ir/snapshot  
+ * payload: {  
+ *   uiDefinition: {  
+ *     logicalId: string;  
+ *     name: string; 
+ *     description: string; 
+ *     version: string; 
+ *   }; 
+ *   components: unknown[]; 
+ *   comments: Record<string, string>; 
+ * }  
  */
 export const POST: RequestHandler = async ({ request }) => {
 	const config = loadApplicationConfig();
