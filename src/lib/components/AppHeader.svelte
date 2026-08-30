@@ -11,15 +11,17 @@
 	);
 </script>
 
-<Navbar>
+<Navbar class="py-0" navContainerClass="py-0 pt-[0.5em] h-[3em] items-start">
 	<NavBrand href="/">
 		<span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white"
 			>Lightweight IR Modeler</span
 		>
 	</NavBrand>
 	<NavHamburger />
-	<NavUl {activeUrl}>
+	<NavUl {activeUrl} class="items-start" ulClass="py-0">
 		<NavLi href="/">TOP</NavLi>
 		<NavLi href="/layout-editor">Layout Editor</NavLi>
 	</NavUl>
 </Navbar>
+
+<hr class="mt-[0.5em] border-gray-200 dark:border-gray-600">

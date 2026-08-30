@@ -51,7 +51,12 @@
 <!-- WARN: ボタンは footer snippet。body に置くとツリーと一緒にスクロールする。 -->
 <!-- WARN: 既定 body の overflow-y-auto を hidden に上書きし、左右ペインだけスクロールさせる。 -->
 <Modal
-	title={comments.editor?.title ?? '運用コメント'}
+	title={'運用コメント'}
+	classes={{ 
+		header: 'flex justify-between items-center h-[2em]', 
+		body: 'flex min-h-0 flex-1 flex-col overflow-hidden', 
+		footer: 'justify-end p-2 md:p-2' 
+	}}
 	bind:open={() => comments.editor !== null, (next) => {
 		if (!next) {
 			comments.cancelEditor();
@@ -60,10 +65,9 @@
 	size="xl"
 	outsideclose
 	class="h-[min(90vh,42rem)] max-h-[90vh] w-full max-w-5xl overflow-hidden"
-	bodyClass="flex min-h-0 flex-1 flex-col overflow-hidden"
-	footerClass="justify-end"
 >
 	{#if comments.editor}
+		<div class="text-sm font-bold">{comments.editor.title}</div>
 		<div class="flex h-full min-h-0 flex-1 gap-3">
 			{#if tree}
 				<div
@@ -92,7 +96,7 @@
 	{/if}
 
 	{#snippet footer()}
-		<Button color="alternative" onclick={() => comments.cancelEditor()}>キャンセル</Button>
-		<Button color="primary" onclick={() => comments.commitEditor()}>保存</Button>
+		<Button size="xs" color="alternative" onclick={() => comments.cancelEditor()}>キャンセル</Button>
+		<Button size="xs" color="primary" onclick={() => comments.commitEditor()}>保存</Button>
 	{/snippet}
 </Modal>

@@ -1,15 +1,21 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 
+	/**
+	 * Monaco Markdown エディタコンポーネント
+	 */
 	type Props = {
 		value?: string;
 		/** エディタの高さ（px）。省略時は親の高さいっぱい */
 		heightPx?: number;
 	};
 
+	// 親コンポーネントから、value と heightPx を受け取る
 	let { value = $bindable(''), heightPx }: Props = $props();
 
+	// エディタを描画するDOM要素
 	let host = $state<HTMLDivElement | undefined>();
+	// Monaco エディタインスタンス
 	let editor: { getValue(): string; setValue(next: string); dispose(): void; layout(): void } | undefined;
 	let applyingExternal = false;
 
@@ -21,18 +27,22 @@
 			return;
 		}
 
+		// Monaco エディタを動的インポート
 		const monaco = await import('monaco-editor');
 		// WARN: ESM エントリは `esm/vs/editor/editor.main.js`。CSS は JS 側が `./editor.css` 等を import する。
 		// `esm/vs/editor/editor.main.css` は存在しない（バンドル CSS は min/vs/editor/editor.main.css）。
 		const editorWorker = await import('monaco-editor/esm/vs/editor/editor.worker?worker');
 
+		// Monaco エディタの環境設定
 		self.MonacoEnvironment = {
 			getWorker() {
 				return new editorWorker.default();
 			}
 		};
 
+		// ダークモードかどうかを判定
 		const dark = document.documentElement.classList.contains('dark');
+		// Monaco エディタを作成
 		const instance = monaco.editor.create(host, {
 			value,
 			language: 'markdown',
@@ -46,6 +56,7 @@
 			tabSize: 2
 		});
 
+		// エディタの内容が変更されたときのイベント処理
 		instance.onDidChangeModelContent(() => {
 			if (applyingExternal) {
 				return;
@@ -56,6 +67,7 @@
 		editor = instance;
 	}
 
+	// エディタの文字列変更を監視し、外部から変更されたときの処理
 	$effect(() => {
 		const next = value;
 		if (!editor || editor.getValue() === next) {

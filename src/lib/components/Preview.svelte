@@ -106,7 +106,7 @@
 	<div class="shrink-0 py-2">
 		<Label class="w-full">
 			プレビューテーマ
-			<Select class="mt-2" items={themeItems} bind:value={selectedTheme} />
+			<Select class="mt-2" classes={{ select: 'p-2' }} items={themeItems} bind:value={selectedTheme} />
 		</Label>
 	</div>
 	<div class="{previewRootClass} min-h-0 w-full flex-1 overflow-y-auto">
@@ -132,20 +132,21 @@
 	<div class="shrink-0 space-y-2 py-2">
 		<Label class="w-full">
 			出力先
-			<Select class="mt-2" items={targetItems} bind:value={selectedTarget} />
+			<Select class="mt-2" classes={{ select: 'p-2' }} items={targetItems} bind:value={selectedTarget} />
 		</Label>
 		<div class="flex w-full flex-row flex-wrap items-center justify-end gap-2">
-			<Button color="blue" disabled={!metaReady || !exportClient || busy} onclick={handleExport}>
+			<Button size="xs" color="blue" disabled={!metaReady || !exportClient || busy} onclick={handleExport}>
 				出力
 			</Button>
 			<Button
+				size="xs"
 				color="alternative"
 				disabled={!metaReady || !exportClient || busy}
 				onclick={handleDownload}
 			>
 				ダウンロード
 			</Button>
-			<Button color="red" disabled={busy} onclick={handleCancel}>キャンセル</Button>
+			<Button size="xs" color="red" disabled={busy} onclick={handleCancel}>キャンセル</Button>
 		</div>
 	</div>
 </div>
