@@ -49,7 +49,8 @@
 			: '画面の基本情報を入力'
 	);
 
-	const fieldClass = 'flex flex-col gap-1';
+	const fieldClass = 'flex min-w-0 flex-col gap-1';
+	const compactDateClass = `${fieldClass} md:max-w-[11rem]`;
 
 	/**
 	 * autocomplete 用 logicalId 一覧を取得する
@@ -252,7 +253,7 @@
 			<span class="pl-12 pr-10">{accordionHeader}</span>
 		{/snippet}
 
-		<div class="grid gap-3 border-t border-gray-200 p-4 md:grid-cols-2 dark:border-gray-700">
+		<div class="grid grid-cols-1 gap-3 border-t border-gray-200 p-4 md:grid-cols-4 dark:border-gray-700">
 			<div class={fieldClass}>
 				<Label for="ui-definition-logical-id">
 					ID <span class="text-red-600 dark:text-red-400">*</span>
@@ -272,7 +273,7 @@
 				/>
 			</div>
 
-			<div class={fieldClass}>
+			<div class="{fieldClass} md:col-span-3">
 				<Label for="ui-definition-name">
 					画面名 <span class="text-red-600 dark:text-red-400">*</span>
 				</Label>
@@ -286,28 +287,34 @@
 				/>
 			</div>
 
-			<div class="{fieldClass} md:col-span-2">
-				<Label for="ui-definition-version">確定版 (version)</Label>
-				<p id="ui-definition-version" class="text-sm text-gray-900 dark:text-gray-100">
+			<div class={fieldClass}>
+				<Label for="ui-definition-version">確定版</Label>
+				<p
+					id="ui-definition-version"
+					class="truncate text-sm text-gray-900 dark:text-gray-100"
+					title={formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}
+				>
 					{formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}
 				</p>
-				<SnapshotVersionControls />
 			</div>
 
 			<div class="{fieldClass} md:col-span-2">
-				<Label for="ui-definition-change-reason">変更概要 (changeReason)</Label>
-				<Textarea
+				<Label for="ui-definition-change-reason">変更概要</Label>
+				<Input
 					id="ui-definition-change-reason"
-					class="w-full"
-					rows={2}
+					size="sm"
 					placeholder="版の識別名・変更点"
 					aria-label="変更概要"
 					bind:value={uiDefinition.changeReason}
 				/>
 			</div>
 
-			<div class={fieldClass}>
-				<Label for="ui-definition-released-at">リリース日 (releasedAt)</Label>
+			<div class="{fieldClass} md:col-span-4">
+				<SnapshotVersionControls />
+			</div>
+
+			<div class={compactDateClass}>
+				<Label for="ui-definition-released-at">リリース日</Label>
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div onfocusout={closeDatepickerOnFocusOut}>
 					<Datepicker
@@ -329,8 +336,8 @@
 				</div>
 			</div>
 
-			<div class={fieldClass}>
-				<Label for="ui-definition-closed-at">廃止日 (closedAt)</Label>
+			<div class={compactDateClass}>
+				<Label for="ui-definition-closed-at">廃止日</Label>
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div onfocusout={closeDatepickerOnFocusOut}>
 					<Datepicker
@@ -353,18 +360,17 @@
 			</div>
 
 			<div class="{fieldClass} md:col-span-2">
-				<Label for="ui-definition-closed-reason">廃止理由 (closedReason)</Label>
-				<Textarea
+				<Label for="ui-definition-closed-reason">廃止理由</Label>
+				<Input
 					id="ui-definition-closed-reason"
-					class="w-full"
-					rows={2}
+					size="sm"
 					placeholder="廃止理由"
 					aria-label="廃止理由"
 					bind:value={uiDefinition.closedReason}
 				/>
 			</div>
 
-			<div class="{fieldClass} md:col-span-2">
+			<div class="{fieldClass} md:col-span-4">
 				<Label for="ui-definition-description">説明</Label>
 				<Textarea
 					id="ui-definition-description"

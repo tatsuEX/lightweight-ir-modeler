@@ -185,17 +185,15 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-1">
 	<div class="flex flex-wrap items-end gap-2">
 		<Button size="sm" color="primary" disabled={!canMutate || busy} onclick={handlePublish}>
 			{publishContext === 'first' && revisionVersion
 				? `確定（→ ${formatPublishedVersionLabel(revisionVersion, workingChangeReason)}）`
 				: '確定'}
 		</Button>
-	</div>
-	<div class="flex flex-wrap items-end gap-2">
-		<div class="min-w-40 flex-1">
-			<Label for="published-version-select">過去版を読み込む</Label>
+		<div class="w-44 min-w-0">
+			<Label for="published-version-select">過去版</Label>
 			<Select
 				id="published-version-select"
 				size="sm"
@@ -218,7 +216,7 @@
 		<p class="text-xs text-gray-500 dark:text-gray-400">HEAD: {headLabel}</p>
 	{/if}
 	{#if uiDefinition.basedOn}
-		<p class="text-xs text-gray-500 dark:text-gray-400">basedOn: {basedOnLabel}</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">読込元: {basedOnLabel}</p>
 	{/if}
 </div>
 
