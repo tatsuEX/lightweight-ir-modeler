@@ -3,9 +3,10 @@
 	import { Accordion, AccordionItem, Input, Label, Textarea } from 'flowbite-svelte';
 	import Autocomplete from '$lib/components/Autocomplete.svelte';
 	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
+	import SnapshotVersionControls from '$lib/components/SnapshotVersionControls.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
-	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
+	import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
@@ -129,7 +130,9 @@
 			editingLogicalId = false;
 			uiDefinition.loadSnapshot(
 				snapshot.components ?? [],
-				snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : undefined
+				snapshot.uiDefinition
+					? parseEditorMetaFromRecord(snapshot.uiDefinition as Record<string, unknown>)
+					: undefined
 			);
 			snapshotComments.loadFromYamlMap(
 				snapshot.comments ?? {},
@@ -298,10 +301,14 @@
 				<Input
 					id="ui-definition-version"
 					size="sm"
-					placeholder="1.0.0"
+					placeholder="1.0"
 					aria-label="画面定義 version"
 					bind:value={uiDefinition.version}
 				/>
+			</div>
+
+			<div class="{fieldClass} md:col-span-2">
+				<SnapshotVersionControls />
 			</div>
 		</div>
 	</AccordionItem>

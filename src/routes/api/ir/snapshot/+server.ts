@@ -9,7 +9,7 @@
 const logger = getLogger(import.meta.url);
 
 /**
- * logicalId 別ディレクトリの最新 snapshot を取得する
+ * logicalId 別ディレクトリの編集中 snapshot（current）を取得する
  * GET /api/ir/snapshot?logicalId=...
  */
 export const GET: RequestHandler = async ({ url }) => {
@@ -27,13 +27,13 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		// 最新 snapshot を取得する
+		// 編集中 snapshot を取得する
 		const snapshot = await readLatestSnapshotIfEnabled(logicalId);
 		if (!snapshot) {
 			return json({ error: 'snapshot not found' }, { status: 404 });
 		}
 
-		// 最新 snapshot を JSON として返す
+		// 編集中 snapshot を JSON として返す
 		return json(snapshot);
 	} catch (error) {
 		logger.error('snapshot read failed', { errorMessage: error instanceof Error ? error.message : String(error) });

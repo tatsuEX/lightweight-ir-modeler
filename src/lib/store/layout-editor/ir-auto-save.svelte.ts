@@ -5,9 +5,8 @@ import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui
 import { getToastContext } from '$lib/store/toast/toast.svelte';
 import type { UIDefinition } from './layout-editor.svelte';
 import type { SnapshotComments } from './snapshot-comments.svelte';
-import { getLogger } from '$lib/server/logging/logger';
 
-const logger = getLogger(import.meta.url);
+// WARN: logger は ブラウザから利用できない。
 
 /**
  * IR 自動保存のクライアント側オプション（dir / maxGenerations はサーバのみ）
@@ -34,6 +33,7 @@ function buildSaveMeta(uiDefinition: UIDefinition): UiDefinitionEditorMeta {
 		name: uiDefinition.name,
 		description: uiDefinition.description,
 		version: uiDefinition.version,
+		...(uiDefinition.basedOn ? { basedOn: uiDefinition.basedOn } : {}),
 		...(uiDefinition.external ? { external: uiDefinition.external } : {})
 	};
 }
@@ -105,11 +105,11 @@ export function attachIrAutoSave(
 					return;
 				}
 
-				logger.warn(`[ir-auto-save] save failed: ${response.status}`);
+				console.warn(`[ir-auto-save] save failed: ${response.status}`);
 				toast.error('自動保存に失敗しました', `HTTP ${response.status}`);
 			} catch (error) {
 				const detail = error instanceof Error ? error.message : String(error);
-				logger.warn(`[ir-auto-save] save error: ${detail}`);
+				console.warn(`[ir-auto-save] save error: ${detail}`);
 				toast.error('自動保存に失敗しました', detail);
 			}
 		})();

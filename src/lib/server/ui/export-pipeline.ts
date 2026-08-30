@@ -44,7 +44,7 @@ export async function exportFromEditorState(
 }
 
 /**
- * 最新 IR snapshot から外部 UI 定義を出力する
+ * 編集中 IR snapshot から外部 UI 定義を出力する
  */
 export async function exportFromLatestSnapshot(
 	targetId: string,

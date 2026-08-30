@@ -66,7 +66,7 @@ describe('unshapePrimeFaces', () => {
 			logicalId: 'applyForm',
 			name: '申請フォーム',
 			description: '取込テスト',
-			version: '1.0.0'
+			version: '1.0'
 		});
 		expect(raw.external).toEqual({
 			primefaces: {

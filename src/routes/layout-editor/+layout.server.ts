@@ -23,7 +23,7 @@ function toClientAutoSave(
 }
 
 /**
- * layout-editor 向け autoSave 設定と最新 snapshot を返す
+ * layout-editor 向け autoSave 設定と編集中 snapshot を返す
  */
 export const load: LayoutServerLoad = async ({ url }) => {
 	const config = loadApplicationConfig();

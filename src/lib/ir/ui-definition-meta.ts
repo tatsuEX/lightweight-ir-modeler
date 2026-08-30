@@ -1,7 +1,7 @@
 import { normalizeExternalResidual, type ExternalResidual } from '$lib/ir/external-residual';
 
-/** 画面定義 version の初期値 */
-export const DEFAULT_UI_DEFINITION_VERSION = '1.0.0';
+/** 画面定義 version の初期値（`<main>.<sub>`。第 3 段は使わない） */
+export const DEFAULT_UI_DEFINITION_VERSION = '1.0';
 
 /**
  * エディタ UI から編集する画面定義メタデータ
@@ -14,6 +14,8 @@ export type UiDefinitionEditorMeta = {
 	name: string;
 	description: string;
 	version: string;
+	/** 過去版読込元の version（`<main>.<sub>`） */
+	basedOn?: string;
 	external?: ExternalResidual;
 };
 
@@ -23,6 +25,8 @@ export type UiDefinitionEditorMeta = {
 export type UiDefinitionSnapshotMeta = UiDefinitionEditorMeta & {
 	createdAt: string;
 	modifiedAt: string;
+	/** 確定版ファイルが作られた日時（current には載せない） */
+	releasedAt?: string;
 };
 
 /**
@@ -42,13 +46,15 @@ export function createEmptyUiDefinitionMeta(): UiDefinitionEditorMeta {
  */
 export function toEditorMeta(meta: UiDefinitionSnapshotMeta | UiDefinitionEditorMeta): UiDefinitionEditorMeta {
 	const external = normalizeExternalResidual(meta.external);
+	const basedOn = typeof meta.basedOn === 'string' ? meta.basedOn.trim() : '';
 
-	// WARN: external は無い場合キー自体を落とす。YAML dump / 比較ハッシュに undefined を混ぜない。
+	// WARN: external / basedOn は無い場合キー自体を落とす。YAML dump / 比較ハッシュに undefined を混ぜない。
 	return {
 		logicalId: meta.logicalId,
 		name: meta.name,
 		description: meta.description,
 		version: meta.version,
+		...(basedOn ? { basedOn } : {}),
 		...(external ? { external } : {})
 	};
 }
@@ -75,6 +81,26 @@ export function buildSnapshotMetaForWrite(
 		...editorMeta,
 		createdAt: previous.createdAt,
 		modifiedAt: iso
+	};
+}
+
+/**
+ * 確定版 snapshot 用メタデータを組み立てる（新ファイルのライフサイクル）
+ */
+export function buildPublishedSnapshotMeta(
+	editorMeta: UiDefinitionEditorMeta,
+	publishedVersion: string,
+	now: Date = new Date()
+): UiDefinitionSnapshotMeta {
+	const iso = now.toISOString();
+	const editor = toEditorMeta({ ...editorMeta, version: publishedVersion });
+
+	return {
+		...editor,
+		version: publishedVersion,
+		createdAt: iso,
+		modifiedAt: iso,
+		releasedAt: iso
 	};
 }
 
@@ -110,11 +136,14 @@ export function assertSafeLogicalIdPathSegment(logicalId: string): string {
 export function parseEditorMetaFromRecord(record: Record<string, unknown>): UiDefinitionEditorMeta {
 	const external = normalizeExternalResidual(record.external);
 
+	const basedOn = typeof record.basedOn === 'string' ? record.basedOn.trim() : '';
+
 	return {
 		logicalId: typeof record.logicalId === 'string' ? record.logicalId : '',
 		name: typeof record.name === 'string' ? record.name : '',
 		description: typeof record.description === 'string' ? record.description : '',
 		version: typeof record.version === 'string' ? record.version : '',
+		...(basedOn ? { basedOn } : {}),
 		...(external ? { external } : {})
 	};
 }

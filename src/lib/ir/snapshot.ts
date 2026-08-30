@@ -17,6 +17,8 @@ export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
 	'logicalId',
 	'name',
 	'description',
+	'basedOn',
+	'releasedAt',
 	'type',
 	'label',
 	'hint',

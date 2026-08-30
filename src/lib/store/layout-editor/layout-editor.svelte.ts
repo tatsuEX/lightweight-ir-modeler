@@ -24,6 +24,7 @@ export type UIDefinitionState = {
     name: string;
     description: string;
     version: string;
+    basedOn?: string;
     external?: ExternalResidual;
 }
 
@@ -115,6 +116,20 @@ export class UIDefinition {
     }
 
     /**
+     * 過去版読込元の version を取得する
+     */
+    get basedOn(): string | undefined {
+        return this.#state.basedOn;
+    }
+
+    /**
+     * 過去版読込元の version を設定する
+     */
+    set basedOn(value: string | undefined) {
+        this.#state.basedOn = value;
+    }
+
+    /**
      * 外部定義由来の残余（ベンダー固有キー）を取得する
      */
     get external(): ExternalResidual | undefined {
@@ -192,6 +207,7 @@ export class UIDefinition {
             this.name = meta.name;
             this.description = meta.description;
             this.version = meta.version;
+            this.basedOn = meta.basedOn;
             this.external = clonePlainData(meta.external);
         }
         this.replaceComponents(clonePlainData(components) as any[]);

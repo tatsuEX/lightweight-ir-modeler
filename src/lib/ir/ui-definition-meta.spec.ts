@@ -11,6 +11,7 @@ import {
 
 describe('ui-definition-meta', () => {
 	it('provides default version', () => {
+		expect(DEFAULT_UI_DEFINITION_VERSION).toBe('1.0');
 		expect(createEmptyUiDefinitionMeta().version).toBe(DEFAULT_UI_DEFINITION_VERSION);
 	});
 
@@ -44,6 +45,22 @@ describe('ui-definition-meta', () => {
 		expect(written.createdAt).toBe('2026-08-07T10:00:00.000Z');
 		expect(written.modifiedAt).toBe('2026-08-07T10:00:00.000Z');
 		expect(toEditorMeta(written)).toEqual(editorMeta);
+	});
+
+	it('keeps basedOn and drops releasedAt in toEditorMeta', () => {
+		const editor = toEditorMeta({
+			...createEmptyUiDefinitionMeta(),
+			logicalId: 'screenA',
+			name: 'Screen A',
+			basedOn: '1.0',
+			createdAt: '2026-08-07T10:00:00.000Z',
+			modifiedAt: '2026-08-07T11:00:00.000Z',
+			releasedAt: '2026-08-07T12:00:00.000Z'
+		});
+
+		expect(editor.basedOn).toBe('1.0');
+		expect(editor).not.toHaveProperty('releasedAt');
+		expect(editor).not.toHaveProperty('createdAt');
 	});
 
 	it('buildSnapshotMetaForWrite preserves createdAt and updates modifiedAt', () => {
