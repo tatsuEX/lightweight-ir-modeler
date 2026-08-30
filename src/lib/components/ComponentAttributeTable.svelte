@@ -44,6 +44,9 @@
 		itemDelimiter?: string;
 	} = $props();
 
+	/**
+	 * 選択項目のvalue/label 区切り文字を解決する
+	 */
 	const resolvedItemDelimiter = $derived(
 		itemDelimiter !== '' ? itemDelimiter : DEFAULT_ITEM_DELIMITER
 	);
@@ -76,12 +79,14 @@
 	/** boolean 列フィルタ（すべて / ON / OFF） */
 	type BooleanFilterValue = 'all' | 'on' | 'off';
 
+	/** boolean 列フィルタ（すべて / ON / OFF）の選択肢 */
 	const BOOLEAN_FILTER_ITEMS: SelectOptionType<BooleanFilterValue>[] = [
 		{ name: 'すべて', value: 'all' },
 		{ name: 'ON', value: 'on' },
 		{ name: 'OFF', value: 'off' }
 	];
 
+	/** 文字列一致モード（startsWith / contains / endsWith）の選択肢 */
 	const TEXT_MATCH_MODE_ITEMS: { id: TextMatchMode; label: string; shortLabel: string }[] = [
 		{ id: 'startsWith', label: '前方一致', shortLabel: '前方' },
 		{ id: 'contains', label: '部分一致', shortLabel: '部分' },
@@ -115,16 +120,20 @@
 		visibleComponents.filter((component) => matchesColumnFilters(component))
 	);
 
+	/** 表示対象コンポーネントの ID リスト */
 	const componentIds = $derived(displayedComponents.map((component) => component.id));
 
+	/** すべて選択されているか判定する */
 	const allSelected = $derived(
 		componentIds.length > 0 && componentIds.every((id) => selectedIds.has(id))
 	);
 
+	/** 一部選択されているか判定する */
 	const someSelected = $derived(
 		componentIds.length > 0 && componentIds.some((id) => selectedIds.has(id)) && !allSelected
 	);
 
+	/** type 複数選択フィルタの選択肢 */
 	const typeFilterOptions = $derived.by(() => {
 		const counts = new Map<string, number>();
 		for (const component of visibleComponents) {
@@ -136,6 +145,7 @@
 			.sort((a, b) => a.type.localeCompare(b.type));
 	});
 
+	/** 列フィルタが適用されているか判定する */
 	const hasActiveColumnFilters = $derived(
 		logicalIdQuery.trim() !== '' ||
 			selectedTypes.size > 0 ||
@@ -146,6 +156,7 @@
 			disabledFilter !== 'all'
 	);
 
+	/** ID 一致モードの短縮ラベル */
 	const logicalIdModeShortLabel = $derived(
 		TEXT_MATCH_MODE_ITEMS.find((item) => item.id === logicalIdMode)?.shortLabel ?? '部分'
 	);
@@ -164,23 +175,34 @@
 	const filterLabelClass = 'text-xs font-medium text-gray-700 dark:text-gray-200';
 	const activeFilterClass = 'ring-1 ring-primary-500 dark:ring-primary-400';
 
+	/**
+	 * 選択行数 を更新する
+	 */
 	$effect(() => {
 		selectedCount = selectedIds.size;
 	});
 
+	/**
+	 * selectedIds を更新する
+	 */
 	$effect(() => {
 		const alive = new Set(componentIds);
 		const next = new Set([...selectedIds].filter((id) => alive.has(id)));
 
+		/** 選択行数が変化した場合、selectedIds を更新する */
 		if (next.size !== selectedIds.size) {
 			selectedIds = next;
 		}
 	});
 
+	/**
+	 * selectedTypes を更新する
+	 */
 	$effect(() => {
 		const alive = new Set(typeFilterOptions.map((option) => option.type));
 		const next = new Set([...selectedTypes].filter((type) => alive.has(type)));
 
+		/** type 複数選択フィルタの選択数が変化した場合、selectedTypes を更新する */
 		if (next.size !== selectedTypes.size) {
 			selectedTypes = next;
 		}
@@ -379,6 +401,7 @@
 			class={columnGroup === 'basic' ? 'table-auto' : ''}
 		>
 		<TableHead class="sticky top-0 z-10">
+			<!-- 行選択 -->
 			<TableHeadCell class="{headCellClass} w-12">
 				<Checkbox
 					class="h-6 w-6 focus:ring-0"
@@ -387,13 +410,16 @@
 					onclick={toggleSelectAll}
 				/>
 			</TableHeadCell>
+			<!-- 運用コメント 列 -->
 			<TableHeadCell class="{headCellClass} w-14">
 				<span class="text-xs font-medium text-gray-500 dark:text-gray-400">#</span>
 			</TableHeadCell>
+			<!-- ID (論理:logicalId) 列 -->
 			<TableHeadCell class="{headCellClass} w-56">
 				<!-- WARN: ヘッダのフィルタ入力は arrowNavigation 対象外。将来ヘッダ ↔ 行の遷移を足す余地がある。 -->
 				<div class="flex min-w-0 flex-col gap-1">
 					<span class={filterLabelClass}>id</span>
+					<!-- ID 一致モード ボタン -->
 					<div class="flex min-w-0 items-center gap-1">
 						<Button
 							id={ID_MODE_TRIGGER_ID}
@@ -423,6 +449,7 @@
 								</DropdownItem>
 							{/each}
 						</Dropdown>
+						<!-- ID 一致モード フィルタ入力 -->
 						<Input
 							size="sm"
 							class="min-w-0 {logicalIdQuery.trim() !== '' ? activeFilterClass : ''}"
@@ -434,9 +461,11 @@
 					</div>
 				</div>
 			</TableHeadCell>
+			<!-- UIコンポーネント種別 列 -->
 			<TableHeadCell class="{headCellClass} w-36">
 				<div class="flex min-w-0 flex-col gap-1">
 					<span class={filterLabelClass}>type</span>
+					<!-- type 複数選択フィルタ ボタン -->
 					<Button
 						id={TYPE_FILTER_TRIGGER_ID}
 						type="button"
@@ -449,12 +478,12 @@
 						aria-expanded={typeFilterOpen}
 					>
 						<Tooltip>
-							<pre>{[...selectedTypes].join('\n')}</pre>	
+							<pre>{[...selectedTypes].join('\n')}</pre>
 						</Tooltip>
 						{#if selectedTypes.size > 0}
-							type · {selectedTypes.size}
+							{selectedTypes.size} 種選択中
 						{:else}
-							type
+							種類選択
 						{/if}
 					</Button>
 					<Dropdown
@@ -491,6 +520,7 @@
 					</Dropdown>
 				</div>
 			</TableHeadCell>
+			<!-- 表示ラベル 列 -->
 			<TableHeadCell class={headCellClass}>
 				<div class="flex min-w-0 flex-col gap-1">
 					<span class={filterLabelClass}>label</span>
@@ -505,6 +535,7 @@
 				</div>
 			</TableHeadCell>
 			{#if columnGroup === 'basic'}
+				<!-- ヒント (placeholderなど) 列 -->
 				<TableHeadCell class={headCellClass}>
 					<div class="flex min-w-0 flex-col gap-1">
 						<span class={filterLabelClass}>hint</span>
@@ -518,6 +549,7 @@
 						/>
 					</div>
 				</TableHeadCell>
+				<!-- 必須 列 -->
 				<TableHeadCell class="{headCellClass} w-28">
 					<div class="flex min-w-0 flex-col gap-1">
 						<span class={filterLabelClass}>required</span>
@@ -532,6 +564,7 @@
 						/>
 					</div>
 				</TableHeadCell>
+				<!-- readonly 列 -->
 				<TableHeadCell class="{headCellClass} w-28">
 					<div class="flex min-w-0 flex-col gap-1">
 						<span class={filterLabelClass}>readonly</span>
@@ -546,6 +579,7 @@
 						/>
 					</div>
 				</TableHeadCell>
+				<!-- disabled 列 -->
 				<TableHeadCell class="{headCellClass} w-28">
 					<div class="flex min-w-0 flex-col gap-1">
 						<span class={filterLabelClass}>disabled</span>
@@ -561,13 +595,16 @@
 					</div>
 				</TableHeadCell>
 			{:else if columnGroup === 'details'}
+				<!-- UIコンポーネントの詳細情報 列 -->
 				<TableHeadCell class="{headCellClass} {detailsCellClass} w-1/{2 * DETAILS_SLOTS.length}" colspan={DETAILS_SLOTS.length}>Details</TableHeadCell>
 			{:else}
+				<!-- UIコンポーネントの入力チェック情報 列 -->
 				<TableHeadCell class="{headCellClass} {validationCellClass} w-1/{2 * VALIDATION_SLOTS.length}" colspan={VALIDATION_SLOTS.length}>Validation</TableHeadCell>
 			{/if}
 		</TableHead>
 		<TableBody>
 			{#if visibleComponents.length === 0}
+				<!-- コンポーネントがない場合 -->
 				<TableBodyRow>
 					<TableBodyCell
 						colspan={totalColCount}
@@ -581,6 +618,7 @@
 					</TableBodyCell>
 				</TableBodyRow>
 			{:else if displayedComponents.length === 0}
+				<!-- フィルタに一致する行がない場合 -->
 				<TableBodyRow>
 					<TableBodyCell
 						colspan={totalColCount}
@@ -597,7 +635,9 @@
 			{:else}
 				<!-- WARN: key は編集対象の logicalId ではなく内部 id。key を変えると入力中に再マウントされフォーカスが飛ぶ。 -->
 				{#each displayedComponents as component, rowIndex (component.id)}
+					<!-- 行 -->
 					<TableBodyRow>
+						<!-- 行選択 -->
 						<TableBodyCell class={cellClass}>
 							<span class="contents" use:arrowNavigation={{ field: 'selected', row: rowIndex }}>
 								<Checkbox
@@ -609,6 +649,7 @@
 								/>
 							</span>
 						</TableBodyCell>
+						<!-- 運用コメント 列 -->
 						<TableBodyCell class={cellClass}>
 							<YamlCommentButton
 								ownerKey={componentCommentKey(component.id)}
@@ -616,6 +657,7 @@
 								ariaLabel="{component.type} の運用コメント"
 							/>
 						</TableBodyCell>
+						<!-- ID (論理:logicalId) 列 -->
 						<TableBodyCell class={cellClass}>
 							<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
 								<Input
@@ -626,9 +668,11 @@
 								/>
 							</span>
 						</TableBodyCell>
+						<!-- UIコンポーネント種別 列 -->
 						<TableBodyCell class={cellClass}>
 							<Badge color="gray">{component.type}</Badge>
 						</TableBodyCell>
+						<!-- 表示ラベル 列 -->
 						<TableBodyCell class={cellClass}>
 							<span class="contents" use:arrowNavigation={{ field: 'label', row: rowIndex }}>
 								<Input
@@ -641,6 +685,7 @@
 						</TableBodyCell>
 
 						{#if columnGroup === 'basic'}
+							<!-- ヒント (placeholderなど) 列 -->
 							<TableBodyCell class={cellClass}>
 								{#if component.hint !== undefined}
 									<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
@@ -655,6 +700,7 @@
 									<span class={notSupportedClass}>- not supported -</span>
 								{/if}
 							</TableBodyCell>
+							<!-- 必須 列 -->
 							<TableBodyCell class={cellClass}>
 								{#if component.validation?.required !== undefined}
 									<span
@@ -670,6 +716,7 @@
 									<span class={notSupportedClass}>- not supported -</span>
 								{/if}
 							</TableBodyCell>
+							<!-- readonly 列 -->
 							<TableBodyCell class={cellClass}>
 								{#if component.readonly !== undefined}
 									<span class="contents" use:arrowNavigation={{ field: 'readonly', row: rowIndex }}>
@@ -682,6 +729,7 @@
 									<span class={notSupportedClass}>- not supported -</span>
 								{/if}
 							</TableBodyCell>
+							<!-- disabled 列 -->
 							<TableBodyCell class={cellClass}>
 								{#if component.disabled !== undefined}
 									<span class="contents" use:arrowNavigation={{ field: 'disabled', row: rowIndex }}>
@@ -695,6 +743,7 @@
 								{/if}
 							</TableBodyCell>
 						{:else if columnGroup === 'details'}
+							<!-- UIコンポーネントの詳細情報 列 -->
 							{#each DETAILS_SLOTS as detailsSlot (detailsSlot)}
 								<TableBodyCell class="{cellClass} {detailsCellClass} w-1/{2 * DETAILS_SLOTS.length}">
 									<ComponentDetailsCell
@@ -706,6 +755,7 @@
 								</TableBodyCell>
 							{/each}
 						{:else}
+							<!-- UIコンポーネントの入力チェック情報 列 -->
 							{#each VALIDATION_SLOTS as validationSlot (validationSlot)}
 								<TableBodyCell class="{cellClass} {validationCellClass} w-1/{2 * VALIDATION_SLOTS.length}">
 									<ComponentValidationCell

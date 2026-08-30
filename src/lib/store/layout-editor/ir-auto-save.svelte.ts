@@ -5,12 +5,18 @@ import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui
 import { getToastContext } from '$lib/store/toast/toast.svelte';
 import type { UIDefinition } from './layout-editor.svelte';
 import type { SnapshotComments } from './snapshot-comments.svelte';
+import { getLogger } from '$lib/server/logging/logger';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * IR 自動保存のクライアント側オプション（dir / maxGenerations はサーバのみ）
  */
 export type IrAutoSaveOptions = Pick<IrAutoSaveConfig, 'enabled' | 'delay' | 'commentDelayExtra'>;
 
+/**
+ * snapshot API へ POST するペイロード
+ */
 type SnapshotSavePayload = {
 	uiDefinition: UiDefinitionEditorMeta;
 	components: readonly unknown[];
@@ -74,38 +80,48 @@ export function attachIrAutoSave(
 	 */
 	function postSnapshot(payload: SnapshotSavePayload, irHash: string, commentsHash: string): void {
 		void (async () => {
+			// 保存済み hash が変化していない場合は保存しない
 			if (irHash === lastSavedIrHash && commentsHash === lastSavedCommentsHash) {
 				return;
 			}
 
+			// UI 定義メタデータが準備されていない場合は保存しない
 			if (!isUiDefinitionMetaReady(payload.uiDefinition)) {
 				return;
 			}
 
 			try {
+				// snapshot API へ POST する
 				const response = await fetch('/api/ir/snapshot', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(payload)
 				});
 
+				// 保存成功時は保存済み hash を更新する
 				if (response.ok) {
 					lastSavedIrHash = irHash;
 					lastSavedCommentsHash = commentsHash;
 					return;
 				}
 
-				console.warn('[ir-auto-save] save failed:', response.status);
+				logger.warn(`[ir-auto-save] save failed: ${response.status}`);
 				toast.error('自動保存に失敗しました', `HTTP ${response.status}`);
 			} catch (error) {
-				console.warn('[ir-auto-save] save error:', error);
 				const detail = error instanceof Error ? error.message : String(error);
+				logger.warn(`[ir-auto-save] save error: ${detail}`);
 				toast.error('自動保存に失敗しました', detail);
 			}
 		})();
 	}
 
+	/**
+	 * IR 変化時に snapshot API へ POST する debounce
+	 */
 	const saveSoon = debounce(postSnapshot, options.delay);
+	/**
+	 * コメント map 変化時に snapshot API へ POST する debounce
+	 */
 	const saveLater = debounce(postSnapshot, options.delay + options.commentDelayExtra);
 
 	// WARN: retain を save と同じ $effect で #map に書くと effect_update_depth_exceeded になる。
@@ -116,6 +132,9 @@ export function attachIrAutoSave(
 		});
 	});
 
+	/**
+	 * IR 変化時に snapshot API へ POST する
+	 */
 	$effect(() => {
 		const componentIds = uiDefinition.components.map((component) => component.id);
 		const payload: SnapshotSavePayload = {
@@ -129,9 +148,11 @@ export function attachIrAutoSave(
 		const commentsChanged = commentsHash !== lastSavedCommentsHash;
 
 		if (irChanged) {
+			// IR 変化時は遅延保存をキャンセルし、即時保存を実行する
 			saveLater.cancel();
 			saveSoon(payload, irHash, commentsHash);
 		} else if (commentsChanged) {
+			// コメント map 変化時は即時保存をキャンセルし、遅延保存を実行する
 			saveSoon.cancel();
 			saveLater(payload, irHash, commentsHash);
 		}
