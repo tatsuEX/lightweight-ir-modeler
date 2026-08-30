@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T08:01:00"
-summary: "debounce 付き IR YAML snapshot の自動保存・運用コメント（commentDelayExtra）"
+updated: "2026-08-31T06:20:00"
+summary: "current / history / versions による IR YAML snapshot 自動保存と確定版"
 features:
   - ir-snapshot
   - auto-save
@@ -12,12 +12,13 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-28 08:01
+最終更新: 2026-08-31 06:20
 
 ## 概要
 
-編集中の UI 定義を、debounce 付きでサーバ上の YAML snapshot として世代管理する。  
-外部 UI 形式への変換とは **別経路**（Export とは独立）。
+編集中の UI 定義を、debounce 付きでサーバ上の YAML snapshot として保存する。  
+作業コピーは `current/`、自動保存の世代は `history/`（`maxGenerations` で prune）。確定版は `versions/<main.sub>/`（immutable）。  
+外部 UI 形式への変換とは **別経路**（Export とは独立。Export も current を読む）。
 
 前提設定（例: `config/application-dev.yml`）:
 
@@ -61,12 +62,13 @@ sequenceDiagram
   else 送信
     Auto->>API: uiDefinition + components
     API->>IO: writeSnapshot
-    IO->>Disk: 最新と比較（id 除外・preferred+ASCII キーソート YAML + コメント）
+    IO->>Disk: current と比較（id 除外・preferred+ASCII キーソート YAML + コメント）
     alt 内容同一
       IO-->>API: skipped=true → 200
     else 新規
-      IO->>Disk: ir-snapshot-YYYYMMDDTHHmmss.yml（wx）
-      IO->>Disk: pruneSnapshots(maxGenerations)
+      IO->>Disk: current/snapshot.yml を上書き
+      IO->>Disk: history/ir-snapshot-YYYYMMDDTHHmmss.yml（wx）
+      IO->>Disk: pruneSnapshots(history, maxGenerations)
       IO-->>API: 201
     end
   end
@@ -86,16 +88,26 @@ sequenceDiagram
 ## ファイル配置
 
 ```text
-<data/ir>/<logicalId>/ir-snapshot-YYYYMMDDTHHmmss.yml
-<data/ir>/<logicalId>/ir-snapshot-YYYYMMDDTHHmmss-2.yml   # 同一秒衝突時
+<data/ir>/<logicalId>/current/snapshot.yml
+<data/ir>/<logicalId>/history/ir-snapshot-YYYYMMDDTHHmmss.yml
+<data/ir>/<logicalId>/history/ir-snapshot-YYYYMMDDTHHmmss-2.yml   # 同一秒衝突時
+<data/ir>/<logicalId>/versions/1.0/snapshot.yml
+<data/ir>/<logicalId>/versions/2.0/snapshot.yml
 ```
 
 - ディレクトリ名は画面 ID（`logicalId`）。未使用 ID への切替時は確認ダイアログがあり得る（[layout-editor](./layout-editor.md)）
-- ファイル名の時刻は **ローカル時刻**
+- 編集中の正は常に `current/snapshot.yml`（上書き）。GET / エディタ復元 / snapshot 経由の Export もここを読む
+- `history/` は自動保存の世代。prune 対象。復元 UI は無い（手動リストア用）
+- `versions/<main.sub>/snapshot.yml` は確定版。上書きしない。version は `<main>.<sub>`（既定 `1.0`。第 3 段は使わない）
+- 確定は 3 系統: HEAD の続きは main+1.0、過去版のパッチは 同 main の sub+1、過去版を新 HEAD にする場合は 旧 HEAD の main+1.0
+- 過去版読込は各 main の最新 sub のみ選べる。読込時は history をクリアし、`basedOn` に選択元を記録する。current の `createdAt` / `modifiedAt` はそのファイルのライフサイクルで付け直す
+- 旧レイアウト（`<logicalId>/ir-snapshot-*.yml`）は current が無いときだけ読む。次の保存で current + history へ書く（旧ファイルは移動しない）
+- history ファイル名の時刻は **ローカル時刻**
 - ファイル内 `savedAt` は ISO UTC
 - 画面 ID を変えると別ディレクトリへ保存される。過剰なディレクトリ生成は許容する（復元は ID 単位）
-- 世代のソート・prune は **ファイル名** 基準（mtime ではない）
+- 世代のソート・prune は **history のファイル名** 基準（mtime ではない）
 - 復元時: component `id` を除去して保存 → 読込時に再採番
+- `uiDefinition.version` の既定は `1.0`（`<main>.<sub>`。第 3 段は使わない）
 
 ## YAML envelope (version = 1)
 
@@ -119,7 +131,7 @@ Key order for every mapping:
 Envelope shape:
 
 - root: version, savedAt, uiDefinition, components
-- uiDefinition: version, createdAt, modifiedAt, logicalId, name, description (external last if present)
+- uiDefinition: version, createdAt, modifiedAt, logicalId, name, description, basedOn / releasedAt（ある場合）, external last if present
 - components[]: logicalId, type, label, then type-specific keys, then external
 
 createdAt is preserved by buildSnapshotMetaForWrite on first save.
@@ -131,8 +143,11 @@ application.yml still loads with js-yaml for now; unify onto eemeli/yaml later.
 | Method | Path | 用途 |
 |---|---|---|
 | `POST` | `/api/ir/snapshot` | 保存（201 / skip 時 200） |
-| `GET` | `/api/ir/snapshot?logicalId=` | 最新 1 件取得 |
+| `GET` | `/api/ir/snapshot?logicalId=` | 編集中コピー（current。無ければ旧 flat latest） |
 | `GET` | `/api/ir/snapshot/logical-ids` | オートコンプリート用一覧 |
+| `GET` | `/api/ir/snapshot/versions?logicalId=` | 確定版一覧 / HEAD / 選択候補 |
+| `POST` | `/api/ir/snapshot/publish` | 確定（`mode`: revision / patch / new-head） |
+| `POST` | `/api/ir/snapshot/load-version` | 確定版を current へ載せ history をクリア |
 
 ## 関連実装
 

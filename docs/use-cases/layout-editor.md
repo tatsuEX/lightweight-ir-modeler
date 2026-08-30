@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:56:00"
+updated: "2026-08-31T06:20:00"
 summary: "Property 属性テーブルと Preview の chrome 固定スクロール、snapshot 運用コメント"
 features:
   - layout-editor
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-28 07:56
+最終更新: 2026-08-31 06:20
 
 ## 概要
 
@@ -45,7 +45,7 @@ flowchart LR
   end
 
   Layout["+layout.svelte\nUIDefinition Context"]
-  Server["+layout.server.ts\n最新 snapshot 読込"]
+  Server["+layout.server.ts\ncurrent snapshot 読込"]
   Store[UIDefinition]
   Auto[attachIrAutoSave]
   API["POST /api/ir/snapshot"]
@@ -81,6 +81,13 @@ flowchart LR
 
 `logicalId` の妥当性は `isValidLogicalId`（`/^[a-zA-Z][a-zA-Z0-9_-]*$/`）。  
 パスセグメントとしても同じ制約（`assertSafeLogicalIdPathSegment`）で traversal を防ぐ。
+
+### 確定版
+
+アコーディオンの version 欄の下で:
+
+- **確定**: current を `versions/<main.sub>/` へ複製する。HEAD の続きは main を +1。過去版（`basedOn` が HEAD より古い）からはパッチ（sub+1）か新たな正本（旧 HEAD の main+1）を選ぶ
+- **読込**: 各 main の最新 sub だけ選べる。current を置き換え、history を空にし、`basedOn` を記録する
 
 ## Property: 編集可能な項目のみ
 

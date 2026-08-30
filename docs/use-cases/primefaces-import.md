@@ -1,6 +1,6 @@
 ---
 created: "2026-08-10T06:20:00"
-updated: "2026-08-10T06:20:00"
+updated: "2026-08-31T05:55:00"
 summary: "PrimeFaces XHTML Import: parse-xml / unshape / タグ判別と unsupported コメント救出"
 features:
   - ui-import
@@ -11,7 +11,7 @@ features:
 
 # PrimeFaces Import（XHTML / Facelet）
 
-最終更新: 2026-08-10 06:20
+最終更新: 2026-08-31 05:55
 
 Import 全体のパイプラインは [外部 UI 定義の取り込み（Import）](./ui-import.md) を参照。  
 本稿は **target `primefaces` 固有** の parse / unshape / タグ判別をまとめる。
@@ -36,7 +36,7 @@ Export 側のテンプレート対応は [PrimeFaces Export](./primefaces-export
 1. `h:form@_id` → Raw `logicalId`
 2. `h:head/title`（なければ先頭コメント 1 行目）→ `name`
 3. 先頭コメント 2 行目 → `description`（無ければ空文字）
-4. `version` は XHTML に無い → `DEFAULT_UI_DEFINITION_VERSION`（`1.0.0`）
+4. `version` は XHTML に無い → `DEFAULT_UI_DEFINITION_VERSION`（`1.0`）
 5. `p:panelGrid` 子を文書順に走査し、`p:outputLabel` と次のコントロール（または unsupported コメント）をペアリング
 6. `p:messages` は無視（Export が常に出し直す）
 

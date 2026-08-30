@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-24T23:50:00"
-summary: "IR snapshot と UI import/export/download の HTTP エンドポイント契約"
+updated: "2026-08-31T06:20:00"
+summary: "IR snapshot（current / versions）と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
   - ir-snapshot
@@ -12,7 +12,7 @@ features:
 
 # HTTP API
 
-最終更新: 2026-08-24 23:50
+最終更新: 2026-08-31 06:20
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -29,7 +29,7 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 
 ### `GET /api/ir/snapshot?logicalId=<id>`
 
-指定 logicalId の最新 snapshot を JSON で返す。`comments` は YAML から抽出したパスマップ（ファイル内の `#` コメント）。
+指定 logicalId の編集中 snapshot（`current/snapshot.yml`。無ければ旧レイアウトの latest）を JSON で返す。`comments` は YAML から抽出したパスマップ（ファイル内の `#` コメント）。
 
 - **404**: 無し
 - **400**: logicalId 不正
@@ -38,6 +38,29 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 ### `GET /api/ir/snapshot/logical-ids`
 
 `{ logicalIds: string[] }` を返す。自動保存無効時は空配列（403 にしない）。
+
+### `GET /api/ir/snapshot/versions?logicalId=<id>`
+
+`{ versions, head, selectable }` を返す。`selectable` は各 main の最新 sub のみ。自動保存無効時は空（403 にしない）。logicalId 不正は **400**。
+
+### `POST /api/ir/snapshot/publish`
+
+current を `versions/<main.sub>/snapshot.yml` へ複製する。Body: `{ logicalId, mode?: 'revision' | 'patch' | 'new-head' }`。`mode` 省略時は `revision`。
+
+- **201**: `{ version, snapshot }`（更新後の current）
+- **400**: 過去版からの確定なのに mode が revision、またはその逆
+- **404**: current が無い
+- **409**: 同じ version ディレクトリが既にある
+- **403**: 自動保存無効
+
+### `POST /api/ir/snapshot/load-version`
+
+確定版を current へ載せ、history を空にする。Body: `{ logicalId, version }`。`basedOn` に選択元を記録する。
+
+- **200**: current と同じ JSON 形
+- **400**: version が選択不可（その main の最新 sub ではない）
+- **404**: 確定版ファイルが無い
+- **403**: 自動保存無効
 
 ## UI Export
 
@@ -52,7 +75,7 @@ Body 例（仮想。`target` は registry 登録済み targetId）:
     "logicalId": "sampleForm",
     "name": "Sample",
     "description": "",
-    "version": "1.0.0"
+    "version": "1.0"
   },
   "components": []
 }
@@ -111,7 +134,7 @@ Body 例（仮想。`target` は registry 登録済み targetId）:
     "logicalId": "sampleForm",
     "name": "Sample Form",
     "description": "",
-    "version": "1.0.0",
+    "version": "1.0",
     "external": {
       "<targetId>": {}
     }
