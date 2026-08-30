@@ -1,10 +1,12 @@
 import { load } from 'js-yaml';
-import type {
-	AppIoConfig,
-	AppIoExportConfig,
-	AppIoExportTemplateTargetConfig,
-	ApplicationConfig,
-	IrAutoSaveConfig
+import {
+	DEFAULT_IR_AUTO_SAVE_COMMENT_DELAY_EXTRA,
+	DEFAULT_IR_AUTO_SAVE_DELAY,
+	type AppIoConfig,
+	type AppIoExportConfig,
+	type AppIoExportTemplateTargetConfig,
+	type ApplicationConfig,
+	type IrAutoSaveConfig
 } from '$lib/config/application-types';
 import {
 	DEFAULT_CONFIRM_SNAPSHOT_DIR_CREATION,
@@ -38,12 +40,23 @@ function parseIrAutoSave(raw: unknown): IrAutoSaveConfig | undefined {
 
 	const block = raw as Record<string, unknown>;
 	const enabled = block.enabled === true;
-	const delay = block.delay === undefined ? 500 : block.delay;
+	const delay = block.delay === undefined ? DEFAULT_IR_AUTO_SAVE_DELAY : block.delay;
+	const commentDelayExtra =
+		block.commentDelayExtra === undefined
+			? DEFAULT_IR_AUTO_SAVE_COMMENT_DELAY_EXTRA
+			: block.commentDelayExtra;
 	const dir = block.dir;
 	const maxGenerations = block.maxGenerations === undefined ? 10 : block.maxGenerations;
 
 	if (typeof delay !== 'number' || !Number.isInteger(delay) || delay <= 0) {
 		throw new Error('application config "ir.autoSave.delay" must be a positive integer');
+	}
+	if (
+		typeof commentDelayExtra !== 'number' ||
+		!Number.isInteger(commentDelayExtra) ||
+		commentDelayExtra < 0
+	) {
+		throw new Error('application config "ir.autoSave.commentDelayExtra" must be an integer >= 0');
 	}
 	if (typeof maxGenerations !== 'number' || !Number.isInteger(maxGenerations) || maxGenerations < 2) {
 		throw new Error('application config "ir.autoSave.maxGenerations" must be an integer >= 2');
@@ -56,6 +69,7 @@ function parseIrAutoSave(raw: unknown): IrAutoSaveConfig | undefined {
 		return {
 			enabled: true,
 			delay,
+			commentDelayExtra,
 			dir: dir.trim(),
 			maxGenerations
 		};
@@ -68,6 +82,7 @@ function parseIrAutoSave(raw: unknown): IrAutoSaveConfig | undefined {
 	return {
 		enabled: false,
 		delay,
+		commentDelayExtra,
 		dir: typeof dir === 'string' ? dir.trim() : '',
 		maxGenerations
 	};

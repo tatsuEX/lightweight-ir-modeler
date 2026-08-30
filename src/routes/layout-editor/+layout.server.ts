@@ -1,7 +1,26 @@
+import {
+	DEFAULT_IR_AUTO_SAVE_COMMENT_DELAY_EXTRA,
+	DEFAULT_IR_AUTO_SAVE_DELAY,
+	type IrAutoSaveConfig
+} from '$lib/config/application-types';
 import { createEmptyUiDefinitionMeta, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { readLatestSnapshotIfEnabled } from '$lib/server/io/ir-snapshot-io';
 import type { LayoutServerLoad } from './$types';
+
+/**
+ * layout-editor クライアントへ渡す autoSave オプションを作る
+ */
+function toClientAutoSave(
+	autoSave: IrAutoSaveConfig | undefined,
+	enabled: boolean
+): Pick<IrAutoSaveConfig, 'enabled' | 'delay' | 'commentDelayExtra'> {
+	return {
+		enabled,
+		delay: autoSave?.delay ?? DEFAULT_IR_AUTO_SAVE_DELAY,
+		commentDelayExtra: autoSave?.commentDelayExtra ?? DEFAULT_IR_AUTO_SAVE_COMMENT_DELAY_EXTRA
+	};
+}
 
 /**
  * layout-editor 向け autoSave 設定と最新 snapshot を返す
@@ -16,8 +35,8 @@ export const load: LayoutServerLoad = async ({ url }) => {
 
 	const baseDisabled = {
 		autoSave: {
-			enabled: false as const,
-			delay: autoSave?.delay ?? 500
+			...toClientAutoSave(autoSave, false),
+			enabled: false as const
 		},
 		initialSnapshot: null as unknown[] | null,
 		initialUiDefinition: null as ReturnType<typeof createEmptyUiDefinitionMeta> | null,
@@ -31,6 +50,11 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		return baseDisabled;
 	}
 
+	const enabledAutoSave = {
+		...toClientAutoSave(autoSave, true),
+		enabled: true as const
+	};
+
 	if (logicalIdParam && isValidLogicalId(logicalIdParam)) {
 		const latest = await readLatestSnapshotIfEnabled(logicalIdParam);
 
@@ -40,10 +64,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 				: { ...defaultUiDefinition, logicalId: logicalIdParam };
 
 			return {
-				autoSave: {
-					enabled: true as const,
-					delay: autoSave.delay
-				},
+				autoSave: enabledAutoSave,
 				initialSnapshot: latest.components,
 				initialUiDefinition: editorMeta,
 				initialComments: latest.comments,
@@ -54,10 +75,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		}
 
 		return {
-			autoSave: {
-				enabled: true as const,
-				delay: autoSave.delay
-			},
+			autoSave: enabledAutoSave,
 			initialSnapshot: null,
 			initialUiDefinition: null,
 			initialComments: {},
@@ -71,10 +89,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	}
 
 	return {
-		autoSave: {
-			enabled: true as const,
-			delay: autoSave.delay
-		},
+		autoSave: enabledAutoSave,
 		initialSnapshot: null,
 		initialUiDefinition: null,
 		initialComments: {},

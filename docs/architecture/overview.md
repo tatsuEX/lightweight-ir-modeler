@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:25:00"
-summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置・Global Toast"
+updated: "2026-08-28T08:01:00"
+summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置・Global Toast・autoSave delay"
 features:
   - architecture
   - ir
@@ -20,7 +20,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-28 07:25
+最終更新: 2026-08-28 08:01
 
 ## 目的
 
@@ -198,7 +198,7 @@ classDiagram
   - `app.io.exportDir` — 外部 UI 定義の出力ルート（未設定時は export API が 403）
   - `app.io.export.templates.<targetId>.dir` — Handlebars 等テンプレート根（target ごと、差し替え可能）
   - `app.io.importDir` — 予約（YAML ではコメントアウト、利用箇所なし。Import はアップロード方式）
-  - `ir.autoSave.*` — snapshot 自動保存（主に `application-dev.yml`）
+  - `ir.autoSave.*` — snapshot 自動保存（主に `application-dev.yml`）。`delay` は IR、`commentDelayExtra` はコメントのみに加算
   - `preview.theme` / `preview.transformTarget` — Preview UI 用
   - `logging.*` — サーバログ（コンソール / ファイル / rolling）。詳細は [サーバロギング](./logging.md)
 

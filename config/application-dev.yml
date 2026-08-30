@@ -15,6 +15,8 @@ ir:
   autoSave:
     enabled: true
     delay: 500
+    # コメント map のみ変化したときに delay へ加算する（ms）。0 なら IR と同じ
+    commentDelayExtra: 1500
     dir: ./data/ir
     maxGenerations: 10
 

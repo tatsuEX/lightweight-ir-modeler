@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:36:00"
-summary: "debounce 付き IR YAML snapshot の自動保存・運用コメント"
+updated: "2026-08-28T08:01:00"
+summary: "debounce 付き IR YAML snapshot の自動保存・運用コメント（commentDelayExtra）"
 features:
   - ir-snapshot
   - auto-save
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-28 07:36
+最終更新: 2026-08-28 08:01
 
 ## 概要
 
@@ -26,9 +26,19 @@ ir:
   autoSave:
     enabled: true
     delay: 500
+    commentDelayExtra: 1500
     dir: ./data/ir
     maxGenerations: 10
 ```
+
+| キー | 意味 |
+|---|---|
+| `delay` | Property / Layout（IR メタ + components）変化後の待ち（ms） |
+| `commentDelayExtra` | コメント map **のみ** 変化したときに `delay` へ加算する（ms）。省略時 1500。`0` なら IR と同じ |
+
+実効待ちは IR 変化が `delay`、コメントのみが `delay + commentDelayExtra`。両方変わるときは短い `delay` に合流し、payload には最新コメントを載せる。debounce はクライアントのみ。サーバ IO は POST 受信後に即比較・書込する。
+
+運用コメントの下書き（Monaco）は autoSave しない。`#map` に載るのはモーダルの保存と左ツリー切替。
 
 `enabled: false` または未設定のとき、書込 API は 403。logical-ids 一覧は空配列を返す。
 
@@ -44,8 +54,8 @@ sequenceDiagram
   participant Disk as autoSave.dir
 
   Editor->>Store: メタ / components 変更
-  Auto->>Auto: $effect で payload + hash 生成
-  Note over Auto: debounce(delay)
+  Auto->>Auto: $effect で payload + IR/コメント hash 生成
+  Note over Auto: IR 変化は debounce(delay) / コメントのみは delay+commentDelayExtra
   alt meta 未準備 or hash 同一
     Auto-->>Auto: 送信スキップ
   else 送信
@@ -66,7 +76,7 @@ sequenceDiagram
 
 | 層 | 比較単位 | 備考 |
 |---|---|---|
-| クライアント | `buildSaveHash`（`JSON.stringify`、component `id` と comments を含む） | 連続入力の送信抑制 |
+| クライアント | IR hash とコメント hash（`JSON.stringify`、component `id` を含む） | 変化種別に応じて delay を分ける。連続入力の送信抑制 |
 | サーバ | `normalizeSnapshotForCompare` + `normalizeCommentsForCompare` | 意味的に同じ内容の再書込を skip |
 
 そのため、見た目上の reorder や id 再生成だけではサーバ側で skip されることがある。

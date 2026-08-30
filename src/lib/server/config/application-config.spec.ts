@@ -44,6 +44,7 @@ ir:
 		expect(config.ir?.autoSave).toEqual({
 			enabled: false,
 			delay: 500,
+			commentDelayExtra: 1500,
 			dir: './data/ir',
 			maxGenerations: 10
 		});
@@ -64,6 +65,7 @@ ir:
 		expect(config.ir?.autoSave).toEqual({
 			enabled: true,
 			delay: 800,
+			commentDelayExtra: 1500,
 			dir: './snapshots',
 			maxGenerations: 5
 		});
@@ -95,6 +97,37 @@ ir:
     dir: ./data/ir
 `)
 		).toThrow('ir.autoSave.delay" must be a positive integer');
+	});
+
+	it('parses commentDelayExtra override including 0', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+${minimalPreviewYaml}
+ir:
+  autoSave:
+    enabled: true
+    delay: 800
+    commentDelayExtra: 0
+    dir: ./snapshots
+    maxGenerations: 5
+`);
+		expect(config.ir?.autoSave?.commentDelayExtra).toBe(0);
+	});
+
+	it('rejects invalid commentDelayExtra', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+${minimalPreviewYaml}
+ir:
+  autoSave:
+    enabled: true
+    commentDelayExtra: -1
+    dir: ./data/ir
+`)
+		).toThrow('ir.autoSave.commentDelayExtra" must be an integer >= 0');
 	});
 
 	it('rejects invalid maxGenerations', () => {
@@ -288,6 +321,7 @@ describe('profile overlay', () => {
 		expect(config.ir?.autoSave).toEqual({
 			enabled: true,
 			delay: 500,
+			commentDelayExtra: 1500,
 			dir: './data/ir',
 			maxGenerations: 10
 		});
