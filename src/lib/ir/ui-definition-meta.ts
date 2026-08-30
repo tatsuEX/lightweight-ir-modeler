@@ -16,6 +16,14 @@ export type UiDefinitionEditorMeta = {
 	version: string;
 	/** 過去版読込元の version（`<main>.<sub>`） */
 	basedOn?: string;
+	/** ユーザ任意の版識別名・変更点 */
+	changeReason?: string;
+	/** リリース日（`YYYY-MM-DD`） */
+	releasedAt?: string;
+	/** 廃止日（`YYYY-MM-DD`） */
+	closedAt?: string;
+	/** 廃止理由 */
+	closedReason?: string;
 	external?: ExternalResidual;
 };
 
@@ -25,9 +33,70 @@ export type UiDefinitionEditorMeta = {
 export type UiDefinitionSnapshotMeta = UiDefinitionEditorMeta & {
 	createdAt: string;
 	modifiedAt: string;
-	/** 確定版ファイルが作られた日時（current には載せない） */
-	releasedAt?: string;
 };
+
+/**
+ * 空でない文字列だけを返す
+ */
+function optionalNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== 'string') {
+		return undefined;
+	}
+
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * 日付のみ（YYYY-MM-DD）に正規化する
+ *
+ * WARN: 旧確定 YAML の ISO datetime `releasedAt` は日付部分だけ残す。
+ */
+function optionalDateOnly(value: unknown): string | undefined {
+	if (typeof value !== 'string') {
+		return undefined;
+	}
+
+	const trimmed = value.trim();
+	if (trimmed.length === 0) {
+		return undefined;
+	}
+
+	if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+		return trimmed;
+	}
+
+	const isoDate = /^(\d{4}-\d{2}-\d{2})T/.exec(trimmed);
+	return isoDate ? isoDate[1] : undefined;
+}
+
+/**
+ * エディタ任意項目をキー省略付きで取り出す
+ */
+function pickOptionalEditorFields(meta: {
+	basedOn?: unknown;
+	changeReason?: unknown;
+	releasedAt?: unknown;
+	closedAt?: unknown;
+	closedReason?: unknown;
+}): Pick<
+	UiDefinitionEditorMeta,
+	'basedOn' | 'changeReason' | 'releasedAt' | 'closedAt' | 'closedReason'
+> {
+	const basedOn = optionalNonEmptyString(meta.basedOn);
+	const changeReason = optionalNonEmptyString(meta.changeReason);
+	const releasedAt = optionalDateOnly(meta.releasedAt);
+	const closedAt = optionalDateOnly(meta.closedAt);
+	const closedReason = optionalNonEmptyString(meta.closedReason);
+
+	return {
+		...(basedOn ? { basedOn } : {}),
+		...(changeReason ? { changeReason } : {}),
+		...(releasedAt ? { releasedAt } : {}),
+		...(closedAt ? { closedAt } : {}),
+		...(closedReason ? { closedReason } : {})
+	};
+}
 
 /**
  * layout-editor 初期化用の空メタデータ
@@ -46,15 +115,14 @@ export function createEmptyUiDefinitionMeta(): UiDefinitionEditorMeta {
  */
 export function toEditorMeta(meta: UiDefinitionSnapshotMeta | UiDefinitionEditorMeta): UiDefinitionEditorMeta {
 	const external = normalizeExternalResidual(meta.external);
-	const basedOn = typeof meta.basedOn === 'string' ? meta.basedOn.trim() : '';
 
-	// WARN: external / basedOn は無い場合キー自体を落とす。YAML dump / 比較ハッシュに undefined を混ぜない。
+	// WARN: 任意キーは無い場合キー自体を落とす。YAML dump / 比較ハッシュに undefined を混ぜない。
 	return {
 		logicalId: meta.logicalId,
 		name: meta.name,
 		description: meta.description,
 		version: meta.version,
-		...(basedOn ? { basedOn } : {}),
+		...pickOptionalEditorFields(meta),
 		...(external ? { external } : {})
 	};
 }
@@ -68,17 +136,18 @@ export function buildSnapshotMetaForWrite(
 	now: Date = new Date()
 ): UiDefinitionSnapshotMeta {
 	const iso = now.toISOString();
+	const editor = toEditorMeta(editorMeta);
 
 	if (!previous?.createdAt) {
 		return {
-			...editorMeta,
+			...editor,
 			createdAt: iso,
 			modifiedAt: iso
 		};
 	}
 
 	return {
-		...editorMeta,
+		...editor,
 		createdAt: previous.createdAt,
 		modifiedAt: iso
 	};
@@ -86,6 +155,8 @@ export function buildSnapshotMetaForWrite(
 
 /**
  * 確定版 snapshot 用メタデータを組み立てる（新ファイルのライフサイクル）
+ *
+ * WARN: `releasedAt` はユーザ入力。空ならキーを書かない（確定時刻では埋めない）。
  */
 export function buildPublishedSnapshotMeta(
 	editorMeta: UiDefinitionEditorMeta,
@@ -99,8 +170,7 @@ export function buildPublishedSnapshotMeta(
 		...editor,
 		version: publishedVersion,
 		createdAt: iso,
-		modifiedAt: iso,
-		releasedAt: iso
+		modifiedAt: iso
 	};
 }
 
@@ -131,19 +201,17 @@ export function assertSafeLogicalIdPathSegment(logicalId: string): string {
 }
 
 /**
- * API リクエスト body からエディタ編集メタデータを取り出す（日時は無視）
+ * API リクエスト body からエディタ編集メタデータを取り出す（システム日時は無視）
  */
 export function parseEditorMetaFromRecord(record: Record<string, unknown>): UiDefinitionEditorMeta {
 	const external = normalizeExternalResidual(record.external);
-
-	const basedOn = typeof record.basedOn === 'string' ? record.basedOn.trim() : '';
 
 	return {
 		logicalId: typeof record.logicalId === 'string' ? record.logicalId : '',
 		name: typeof record.name === 'string' ? record.name : '',
 		description: typeof record.description === 'string' ? record.description : '',
 		version: typeof record.version === 'string' ? record.version : '',
-		...(basedOn ? { basedOn } : {}),
+		...pickOptionalEditorFields(record),
 		...(external ? { external } : {})
 	};
 }

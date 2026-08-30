@@ -1,19 +1,12 @@
 import type { IrSnapshot } from '$lib/ir/snapshot';
-import type { PublishKind } from '$lib/ir/snapshot-version';
+import type { PublishKind, PublishedVersionsListing } from '$lib/ir/snapshot-version';
 import type { YamlCommentMap } from '$lib/utils/yaml-comments';
+
+export type { PublishedVersionsListing };
 
 /** クライアントが受け取る snapshot（コメント付き） */
 export type LoadedWorkingSnapshot = IrSnapshot & {
 	comments: YamlCommentMap;
-};
-
-/**
- * 確定版一覧の API 応答
- */
-export type PublishedVersionsListing = {
-	versions: string[];
-	head: string | null;
-	selectable: string[];
 };
 
 /**

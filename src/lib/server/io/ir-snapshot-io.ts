@@ -21,14 +21,17 @@ import {
 } from '$lib/ir/ui-definition-meta';
 import {
 	assertSafeVersionPathSegment,
+	EMPTY_PUBLISHED_VERSIONS_LISTING,
 	findHeadVersion,
 	isValidSnapshotVersion,
-	needsPublishKindChoice,
+	getPublishContext,
 	resolveNextPublishedVersion,
 	selectablePublishedVersions,
 	sortSnapshotVersionStrings,
+	type PublishedVersionsListing,
 	type PublishKind
 } from '$lib/ir/snapshot-version';
+import { parseYaml } from '$lib/utils/yaml-document';
 import {
 	loadApplicationConfig,
 	resolveApplicationPath,
@@ -141,6 +144,33 @@ async function readUtf8IfExists(filePath: string): Promise<string | null> {
 		}
 
 		throw error;
+	}
+}
+
+/**
+ * snapshot YAML から changeReason だけ読む（一覧用。失敗時は未設定）
+ */
+function peekChangeReasonFromSnapshotYaml(yamlText: string): string | undefined {
+	try {
+		const root = parseYaml(yamlText);
+		if (root === null || typeof root !== 'object' || Array.isArray(root)) {
+			return undefined;
+		}
+
+		const uiDefinition = (root as Record<string, unknown>).uiDefinition;
+		if (uiDefinition === null || typeof uiDefinition !== 'object' || Array.isArray(uiDefinition)) {
+			return undefined;
+		}
+
+		const changeReason = (uiDefinition as Record<string, unknown>).changeReason;
+		if (typeof changeReason !== 'string') {
+			return undefined;
+		}
+
+		const trimmed = changeReason.trim();
+		return trimmed.length > 0 ? trimmed : undefined;
+	} catch {
+		return undefined;
 	}
 }
 
@@ -515,19 +545,33 @@ export async function listPublishedVersionIds(logicalId: string): Promise<string
 }
 
 /**
- * 確定版の一覧・HEAD・選択候補を返す
+ * 確定版の一覧・HEAD・選択候補・版要約を返す
+ *
+ * WARN: `summaries` は各 `versions/<v>/snapshot.yml` から読む。将来 versions 直下の
+ * cache で埋めても同じ応答形にする（検索容易性）。
  */
-export async function listPublishedVersions(logicalId: string): Promise<{
-	versions: string[];
-	head: string | null;
-	selectable: string[];
-}> {
+export async function listPublishedVersions(logicalId: string): Promise<PublishedVersionsListing> {
 	const versions = await listPublishedVersionIds(logicalId);
+	if (versions.length === 0) {
+		return { ...EMPTY_PUBLISHED_VERSIONS_LISTING };
+	}
+
+	const autoSave = getAutoSaveConfig();
+	const logicalIdDir = resolveSnapshotDirForLogicalId(autoSave, logicalId);
+	const summaries = await Promise.all(
+		versions.map(async (version) => {
+			const yamlText = await readUtf8IfExists(resolveVersionFile(logicalIdDir, version));
+			const changeReason = yamlText ? peekChangeReasonFromSnapshotYaml(yamlText) : undefined;
+
+			return changeReason ? { version, changeReason } : { version };
+		})
+	);
 
 	return {
 		versions,
 		head: findHeadVersion(versions),
-		selectable: selectablePublishedVersions(versions)
+		selectable: selectablePublishedVersions(versions),
+		summaries
 	};
 }
 
@@ -562,13 +606,16 @@ async function publishSnapshotUnchecked(
 		? toEditorMeta(loaded.uiDefinition)
 		: { ...createEmptyUiDefinitionMeta(), logicalId };
 	const existing = await listPublishedVersionIds(logicalId);
-	const choiceNeeded = needsPublishKindChoice(existing, editorMeta.basedOn);
+	const publishContext = getPublishContext(existing, editorMeta.basedOn);
 
-	if (choiceNeeded && kind === 'revision') {
+	if (publishContext === 'first' && kind !== 'revision') {
+		throw new IrSnapshotRequestError(400, 'first publish must use revision');
+	}
+	if (publishContext === 'past' && kind === 'revision') {
 		throw new IrSnapshotRequestError(400, 'publish from a past version requires mode patch or new-head');
 	}
-	if (!choiceNeeded && kind !== 'revision') {
-		throw new IrSnapshotRequestError(400, 'mode patch and new-head are only allowed when basedOn is older than HEAD');
+	if (publishContext === 'head' && kind === 'new-head') {
+		throw new IrSnapshotRequestError(400, 'new-head is only allowed when basedOn is older than HEAD');
 	}
 
 	let nextVersion: string;
@@ -602,7 +649,8 @@ async function publishSnapshotUnchecked(
 	const currentEditor = toEditorMeta({
 		...editorMeta,
 		version: nextVersion,
-		basedOn: kind === 'patch' ? editorMeta.basedOn : undefined
+		// WARN: 過去版パッチだけ basedOn を残す。HEAD パッチは新 HEAD になるので落とす。
+		basedOn: kind === 'patch' && publishContext === 'past' ? editorMeta.basedOn : undefined
 	});
 	const currentMeta = buildSnapshotMetaForWrite(currentEditor, loaded.uiDefinition, savedAt);
 	const currentSnapshot = createIrSnapshot(currentMeta, loaded.components, savedAt);

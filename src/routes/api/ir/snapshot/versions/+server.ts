@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { isValidLogicalId } from '$lib/ir/ui-definition-meta';
+import { EMPTY_PUBLISHED_VERSIONS_LISTING } from '$lib/ir/snapshot-version';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { listPublishedVersions } from '$lib/server/io/ir-snapshot-io';
 import { getLogger } from '$lib/server/logging/logger';
@@ -14,7 +15,7 @@ const logger = getLogger(import.meta.url);
 export const GET: RequestHandler = async ({ url }) => {
 	const config = loadApplicationConfig();
 	if (!config.ir?.autoSave?.enabled) {
-		return json({ versions: [], head: null, selectable: [] });
+		return json({ ...EMPTY_PUBLISHED_VERSIONS_LISTING });
 	}
 
 	const logicalId = url.searchParams.get('logicalId')?.trim() ?? '';

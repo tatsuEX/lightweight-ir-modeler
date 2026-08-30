@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Accordion, AccordionItem, Input, Label, Textarea } from 'flowbite-svelte';
+	import { Accordion, AccordionItem, Datepicker, Input, Label, Textarea } from 'flowbite-svelte';
 	import Autocomplete from '$lib/components/Autocomplete.svelte';
 	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
 	import SnapshotVersionControls from '$lib/components/SnapshotVersionControls.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
 	import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
+	import { formatPublishedVersionLabel } from '$lib/ir/snapshot-version';
+	import { closeDatepickerOnFocusOut, formatDateString, parseDateString } from '$lib/utils/date-time-ir';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
@@ -43,7 +45,7 @@
 
 	const accordionHeader = $derived(
 		isUiDefinitionMetaReady(uiDefinition)
-			? `${uiDefinition.name} (${uiDefinition.logicalId}) - ver. ${uiDefinition.version}`
+			? `${uiDefinition.name} (${uiDefinition.logicalId}) - ${formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}`
 			: '画面の基本情報を入力'
 	);
 
@@ -285,6 +287,84 @@
 			</div>
 
 			<div class="{fieldClass} md:col-span-2">
+				<Label for="ui-definition-version">確定版 (version)</Label>
+				<p id="ui-definition-version" class="text-sm text-gray-900 dark:text-gray-100">
+					{formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}
+				</p>
+				<SnapshotVersionControls />
+			</div>
+
+			<div class="{fieldClass} md:col-span-2">
+				<Label for="ui-definition-change-reason">変更概要 (changeReason)</Label>
+				<Textarea
+					id="ui-definition-change-reason"
+					class="w-full"
+					rows={2}
+					placeholder="版の識別名・変更点"
+					aria-label="変更概要"
+					bind:value={uiDefinition.changeReason}
+				/>
+			</div>
+
+			<div class={fieldClass}>
+				<Label for="ui-definition-released-at">リリース日 (releasedAt)</Label>
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div onfocusout={closeDatepickerOnFocusOut}>
+					<Datepicker
+						id="ui-definition-released-at"
+						placeholder="リリース日"
+						inputClass="text-sm"
+						showActionButtons
+						aria-label="リリース日"
+						bind:value={
+							() => parseDateString(uiDefinition.releasedAt),
+							(date) => {
+								uiDefinition.releasedAt = formatDateString(date) ?? '';
+							}
+						}
+						onclear={() => {
+							uiDefinition.releasedAt = '';
+						}}
+					/>
+				</div>
+			</div>
+
+			<div class={fieldClass}>
+				<Label for="ui-definition-closed-at">廃止日 (closedAt)</Label>
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div onfocusout={closeDatepickerOnFocusOut}>
+					<Datepicker
+						id="ui-definition-closed-at"
+						placeholder="廃止日"
+						inputClass="text-sm"
+						showActionButtons
+						aria-label="廃止日"
+						bind:value={
+							() => parseDateString(uiDefinition.closedAt),
+							(date) => {
+								uiDefinition.closedAt = formatDateString(date) ?? '';
+							}
+						}
+						onclear={() => {
+							uiDefinition.closedAt = '';
+						}}
+					/>
+				</div>
+			</div>
+
+			<div class="{fieldClass} md:col-span-2">
+				<Label for="ui-definition-closed-reason">廃止理由 (closedReason)</Label>
+				<Textarea
+					id="ui-definition-closed-reason"
+					class="w-full"
+					rows={2}
+					placeholder="廃止理由"
+					aria-label="廃止理由"
+					bind:value={uiDefinition.closedReason}
+				/>
+			</div>
+
+			<div class="{fieldClass} md:col-span-2">
 				<Label for="ui-definition-description">説明</Label>
 				<Textarea
 					id="ui-definition-description"
@@ -294,21 +374,6 @@
 					aria-label="画面の説明"
 					bind:value={uiDefinition.description}
 				/>
-			</div>
-
-			<div class={fieldClass}>
-				<Label for="ui-definition-version">version</Label>
-				<Input
-					id="ui-definition-version"
-					size="sm"
-					placeholder="1.0"
-					aria-label="画面定義 version"
-					bind:value={uiDefinition.version}
-				/>
-			</div>
-
-			<div class="{fieldClass} md:col-span-2">
-				<SnapshotVersionControls />
 			</div>
 		</div>
 	</AccordionItem>

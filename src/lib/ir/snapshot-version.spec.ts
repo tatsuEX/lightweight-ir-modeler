@@ -4,10 +4,13 @@ import {
 	findHeadVersion,
 	formatSnapshotVersion,
 	isValidSnapshotVersion,
-	needsPublishKindChoice,
+	getPublishContext,
+	isEditingPastPublishedVersion,
 	parseSnapshotVersion,
 	resolveNextPublishedVersion,
-	selectablePublishedVersions
+	selectablePublishedVersions,
+	formatPublishedVersionLabel,
+	findPublishedChangeReason
 } from '$lib/ir/snapshot-version';
 
 describe('snapshot-version', () => {
@@ -28,17 +31,25 @@ describe('snapshot-version', () => {
 		expect(findHeadVersion([])).toBeNull();
 	});
 
-	it('requires a kind choice only when basedOn is older than HEAD', () => {
-		expect(needsPublishKindChoice(['1.0'], undefined)).toBe(false);
-		expect(needsPublishKindChoice(['1.0'], '1.0')).toBe(false);
-		expect(needsPublishKindChoice(['1.0', '2.0'], '1.0')).toBe(true);
-		expect(needsPublishKindChoice(['2.3'], '2.3')).toBe(false);
+	it('classifies publish context', () => {
+		expect(getPublishContext([], undefined)).toBe('first');
+		expect(getPublishContext(['1.0'], undefined)).toBe('head');
+		expect(getPublishContext(['1.0'], '1.0')).toBe('head');
+		expect(getPublishContext(['1.0', '2.0'], '1.0')).toBe('past');
+		expect(isEditingPastPublishedVersion(['2.3'], '2.3')).toBe(false);
+		expect(isEditingPastPublishedVersion(['1.0', '2.0'], '1.0')).toBe(true);
 	});
 
 	it('resolves first publish and normal revision', () => {
 		expect(resolveNextPublishedVersion([], undefined, 'revision')).toBe('1.0');
 		expect(resolveNextPublishedVersion(['1.0'], undefined, 'revision')).toBe('2.0');
 		expect(resolveNextPublishedVersion(['2.3'], '2.3', 'revision')).toBe('3.0');
+	});
+
+	it('resolves patch from HEAD as same-main sub increment', () => {
+		expect(resolveNextPublishedVersion(['1.0'], undefined, 'patch')).toBe('1.1');
+		expect(resolveNextPublishedVersion(['2.3'], '2.3', 'patch')).toBe('2.4');
+		expect(resolveNextPublishedVersion(['1.0', '2.0'], undefined, 'patch')).toBe('2.1');
 	});
 
 	it('resolves patch and new-head from a past version', () => {
@@ -53,9 +64,18 @@ describe('snapshot-version', () => {
 		expect(() => resolveNextPublishedVersion(['1.0', '2.0'], '1.0', 'revision')).toThrow(
 			/patch or new-head/
 		);
-		expect(() => resolveNextPublishedVersion(['1.0'], undefined, 'patch')).toThrow(
+		expect(() => resolveNextPublishedVersion(['1.0'], undefined, 'new-head')).toThrow(
 			/only allowed when basedOn/
 		);
+		expect(() => resolveNextPublishedVersion([], undefined, 'patch')).toThrow(/first publish/);
 		expect(() => resolveNextPublishedVersion([], undefined, 'new-head')).toThrow(/first publish/);
+	});
+
+	it('formats user-facing version labels from changeReason', () => {
+		expect(formatPublishedVersionLabel('1.0')).toBe('1.0');
+		expect(formatPublishedVersionLabel('1.0', '初回リリース')).toBe('初回リリース (1.0)');
+		expect(formatPublishedVersionLabel('2.0', '正本切替', { head: true })).toBe('正本切替 (2.0) (HEAD)');
+		expect(findPublishedChangeReason([{ version: '1.0', changeReason: '初回' }], '1.0')).toBe('初回');
+		expect(findPublishedChangeReason(undefined, '1.0')).toBeUndefined();
 	});
 });

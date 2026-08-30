@@ -256,7 +256,10 @@ describe('ir-snapshot-io', () => {
 	});
 
 	it('publishes current as 1.0 then 2.0 on revision', async () => {
-		await writeSnapshot(sampleEditorMeta, [{ id: '1', type: 'textbox', logicalId: 'a' }]);
+		await writeSnapshot(
+			{ ...sampleEditorMeta, changeReason: '初回' },
+			[{ id: '1', type: 'textbox', logicalId: 'a' }]
+		);
 		const first = await publishSnapshot(sampleEditorMeta.logicalId);
 		expect(first.version).toBe('1.0');
 		expect(first.snapshot.uiDefinition?.version).toBe('1.0');
@@ -265,7 +268,8 @@ describe('ir-snapshot-io', () => {
 
 		const { screenDir } = layoutPaths(tempDir, sampleEditorMeta.logicalId);
 		const publishedYaml = await readFile(join(screenDir, 'versions', '1.0', 'snapshot.yml'), 'utf8');
-		expect(publishedYaml).toContain('releasedAt:');
+		expect(publishedYaml).toContain('初回');
+		expect(publishedYaml).not.toContain('releasedAt:');
 		expect(publishedYaml).toContain('version: "1.0"');
 
 		await writeSnapshot(sampleEditorMeta, [{ id: '2', type: 'textbox', logicalId: 'b' }]);
@@ -273,7 +277,11 @@ describe('ir-snapshot-io', () => {
 		expect(second.version).toBe('2.0');
 		expect(await listPublishedVersions(sampleEditorMeta.logicalId)).toMatchObject({
 			head: '2.0',
-			selectable: ['1.0', '2.0']
+			selectable: ['1.0', '2.0'],
+			summaries: [
+				{ version: '1.0', changeReason: '初回' },
+				{ version: '2.0' }
+			]
 		});
 	});
 
@@ -297,6 +305,31 @@ describe('ir-snapshot-io', () => {
 		const currentYaml = await readFile(currentFile, 'utf8');
 		expect(currentYaml).toContain('basedOn: "1.0"');
 		expect(currentYaml).not.toContain('releasedAt:');
+	});
+
+	it('publishes a HEAD patch as same-main sub increment', async () => {
+		await writeSnapshot(
+			{ ...sampleEditorMeta, changeReason: '初回' },
+			[{ id: '1', type: 'textbox', logicalId: 'a' }]
+		);
+		await publishSnapshot(sampleEditorMeta.logicalId);
+		await writeSnapshot(
+			{ ...sampleEditorMeta, changeReason: 'メタ修正' },
+			[{ id: '1', type: 'textbox', logicalId: 'a' }]
+		);
+
+		const patched = await publishSnapshot(sampleEditorMeta.logicalId, 'patch');
+		expect(patched.version).toBe('1.1');
+		expect(patched.snapshot.uiDefinition?.changeReason).toBe('メタ修正');
+		expect(patched.snapshot.uiDefinition?.basedOn).toBeUndefined();
+		expect(await listPublishedVersions(sampleEditorMeta.logicalId)).toMatchObject({
+			head: '1.1',
+			selectable: ['1.1'],
+			summaries: [
+				{ version: '1.0', changeReason: '初回' },
+				{ version: '1.1', changeReason: 'メタ修正' }
+			]
+		});
 	});
 
 	it('publishes patch and new-head from a past version', async () => {

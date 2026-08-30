@@ -1,7 +1,7 @@
 import type { IrAutoSaveConfig } from '$lib/config/application-types';
 import { untrack } from 'svelte';
 import { debounce } from '$lib/utils/debounce';
-import { isUiDefinitionMetaReady, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
+import { isUiDefinitionMetaReady, toEditorMeta, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
 import { getToastContext } from '$lib/store/toast/toast.svelte';
 import type { UIDefinition } from './layout-editor.svelte';
 import type { SnapshotComments } from './snapshot-comments.svelte';
@@ -28,14 +28,18 @@ type SnapshotSavePayload = {
  * WARN: external を落とすと import 由来のベンダー固有キーが snapshot 経由で失われる。
  */
 function buildSaveMeta(uiDefinition: UIDefinition): UiDefinitionEditorMeta {
-	return {
+	return toEditorMeta({
 		logicalId: uiDefinition.logicalId,
 		name: uiDefinition.name,
 		description: uiDefinition.description,
 		version: uiDefinition.version,
-		...(uiDefinition.basedOn ? { basedOn: uiDefinition.basedOn } : {}),
+		basedOn: uiDefinition.basedOn,
+		changeReason: uiDefinition.changeReason,
+		releasedAt: uiDefinition.releasedAt,
+		closedAt: uiDefinition.closedAt,
+		closedReason: uiDefinition.closedReason,
 		...(uiDefinition.external ? { external: uiDefinition.external } : {})
-	};
+	});
 }
 
 /**

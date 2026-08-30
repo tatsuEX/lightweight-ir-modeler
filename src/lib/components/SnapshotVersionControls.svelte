@@ -3,7 +3,10 @@
 	import ConfirmPublishKindModal from '$lib/components/ConfirmPublishKindModal.svelte';
 	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
 	import {
-		needsPublishKindChoice,
+		EMPTY_PUBLISHED_VERSIONS_LISTING,
+		findPublishedChangeReason,
+		formatPublishedVersionLabel,
+		getPublishContext,
 		resolveNextPublishedVersion,
 		type PublishKind
 	} from '$lib/ir/snapshot-version';
@@ -22,37 +25,69 @@
 	const snapshotComments = getSnapshotCommentsContext();
 	const toast = getToastContext();
 
-	let listing = $state<PublishedVersionsListing>({ versions: [], head: null, selectable: [] });
+	let listing = $state<PublishedVersionsListing>({ ...EMPTY_PUBLISHED_VERSIONS_LISTING });
 	let selectedVersion = $state('');
 	let busy = $state(false);
 	let kindModalOpen = $state(false);
+	let listingReady = $state(false);
 
-	const canMutate = $derived(isUiDefinitionMetaReady(uiDefinition) && isValidLogicalId(uiDefinition.logicalId));
-	const choiceNeeded = $derived(needsPublishKindChoice(listing.versions, uiDefinition.basedOn));
+	const canMutate = $derived(
+		listingReady && isUiDefinitionMetaReady(uiDefinition) && isValidLogicalId(uiDefinition.logicalId)
+	);
+	const publishContext = $derived(getPublishContext(listing.versions, uiDefinition.basedOn));
+	const workingChangeReason = $derived(uiDefinition.changeReason);
 	const patchVersion = $derived(
-		choiceNeeded ? resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'patch') : ''
+		publishContext === 'first'
+			? ''
+			: resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'patch')
 	);
 	const newHeadVersion = $derived(
-		choiceNeeded ? resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'new-head') : ''
+		publishContext === 'past'
+			? resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'new-head')
+			: ''
 	);
 	const revisionVersion = $derived(
-		choiceNeeded ? '' : resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'revision')
+		publishContext === 'past'
+			? ''
+			: resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'revision')
 	);
 	const versionItems = $derived<SelectOptionType<string>[]>(
 		listing.selectable.map((version) => ({
 			value: version,
-			name: version === listing.head ? `${version} (HEAD)` : version
+			name: formatPublishedVersionLabel(
+				version,
+				findPublishedChangeReason(listing.summaries, version),
+				{ head: version === listing.head }
+			)
 		}))
+	);
+	const headLabel = $derived(
+		listing.head
+			? formatPublishedVersionLabel(
+					listing.head,
+					findPublishedChangeReason(listing.summaries, listing.head)
+				)
+			: ''
+	);
+	const basedOnLabel = $derived(
+		uiDefinition.basedOn
+			? formatPublishedVersionLabel(
+					uiDefinition.basedOn,
+					findPublishedChangeReason(listing.summaries, uiDefinition.basedOn)
+				)
+			: ''
 	);
 
 	$effect(() => {
 		const logicalId = uiDefinition.logicalId;
 		if (!isValidLogicalId(logicalId)) {
-			listing = { versions: [], head: null, selectable: [] };
+			listing = { ...EMPTY_PUBLISHED_VERSIONS_LISTING };
 			selectedVersion = '';
+			listingReady = true;
 			return;
 		}
 
+		listingReady = false;
 		void refreshListing(logicalId);
 	});
 
@@ -68,6 +103,8 @@
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
 			toast.warn('確定版一覧を取得できませんでした', detail);
+		} finally {
+			listingReady = true;
 		}
 	}
 
@@ -96,9 +133,10 @@
 		busy = true;
 		try {
 			const result = await publishWorkingSnapshot(uiDefinition.logicalId, kind);
+			const publishedLabel = formatPublishedVersionLabel(result.version, workingChangeReason);
 			applyLoadedSnapshot(result.snapshot);
 			await refreshListing(uiDefinition.logicalId);
-			toast.info('確定しました', `v${result.version}`);
+			toast.info('確定しました', publishedLabel);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
 			toast.error('確定に失敗しました', detail);
@@ -112,12 +150,12 @@
 	 * 確定ボタンを処理する
 	 */
 	function handlePublish(): void {
-		if (choiceNeeded) {
-			kindModalOpen = true;
+		if (publishContext === 'first') {
+			void publishWithKind('revision');
 			return;
 		}
 
-		void publishWithKind('revision');
+		kindModalOpen = true;
 	}
 
 	/**
@@ -130,10 +168,14 @@
 
 		busy = true;
 		try {
+			const loadedLabel = formatPublishedVersionLabel(
+				selectedVersion,
+				findPublishedChangeReason(listing.summaries, selectedVersion)
+			);
 			const snapshot = await loadWorkingSnapshotFromVersion(uiDefinition.logicalId, selectedVersion);
 			applyLoadedSnapshot(snapshot);
 			await refreshListing(uiDefinition.logicalId);
-			toast.info('過去版を読み込みました', `v${selectedVersion}（history をリセット）`);
+			toast.info('過去版を読み込みました', `${loadedLabel}（history をリセット）`);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
 			toast.error('過去版の読込に失敗しました', detail);
@@ -146,12 +188,14 @@
 <div class="flex flex-col gap-2">
 	<div class="flex flex-wrap items-end gap-2">
 		<Button size="sm" color="primary" disabled={!canMutate || busy} onclick={handlePublish}>
-			{revisionVersion ? `確定（→ ${revisionVersion}）` : '確定'}
+			{publishContext === 'first' && revisionVersion
+				? `確定（→ ${formatPublishedVersionLabel(revisionVersion, workingChangeReason)}）`
+				: '確定'}
 		</Button>
 	</div>
 	<div class="flex flex-wrap items-end gap-2">
 		<div class="min-w-40 flex-1">
-			<Label for="published-version-select">確定版</Label>
+			<Label for="published-version-select">過去版を読み込む</Label>
 			<Select
 				id="published-version-select"
 				size="sm"
@@ -171,17 +215,20 @@
 		</Button>
 	</div>
 	{#if listing.head}
-		<p class="text-xs text-gray-500 dark:text-gray-400">HEAD: {listing.head}</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">HEAD: {headLabel}</p>
 	{/if}
 	{#if uiDefinition.basedOn}
-		<p class="text-xs text-gray-500 dark:text-gray-400">basedOn: {uiDefinition.basedOn}</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">basedOn: {basedOnLabel}</p>
 	{/if}
 </div>
 
 <ConfirmPublishKindModal
 	bind:open={kindModalOpen}
+	{publishContext}
 	patchVersion={patchVersion}
+	revisionVersion={revisionVersion}
 	newHeadVersion={newHeadVersion}
+	changeReason={workingChangeReason}
 	{busy}
 	onConfirm={(kind) => void publishWithKind(kind)}
 	onCancel={() => {

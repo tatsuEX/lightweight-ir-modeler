@@ -19,9 +19,9 @@ describe('comment-target-tree', () => {
 
 		expect(tree.ownerKey).toBe(UI_DEFINITION_COMMENT_KEY);
 		const labels = tree.children.map((node) => node.label);
-		expect(labels).toEqual(['logicalId', 'name', 'description', 'external', 'version']);
+		expect(labels).toEqual(['logicalId', 'name', 'version', 'description', 'external']);
 		expect(tree.children[0].ownerKey).toBe('uiDefinition.logicalId');
-		expect(tree.children[3].children[0].ownerKey).toBe("uiDefinition.external['im-forma']");
+		expect(tree.children[4].children[0].ownerKey).toBe("uiDefinition.external['im-forma']");
 	});
 
 	it('includes component domain keys and skips session id', () => {

@@ -25,6 +25,10 @@ export type UIDefinitionState = {
     description: string;
     version: string;
     basedOn?: string;
+    changeReason?: string;
+    releasedAt?: string;
+    closedAt?: string;
+    closedReason?: string;
     external?: ExternalResidual;
 }
 
@@ -130,6 +134,62 @@ export class UIDefinition {
     }
 
     /**
+     * ユーザ任意の版識別名・変更点を取得する
+     */
+    get changeReason(): string {
+        return this.#state.changeReason ?? '';
+    }
+
+    /**
+     * ユーザ任意の版識別名・変更点を設定する
+     */
+    set changeReason(value: string) {
+        this.#state.changeReason = value;
+    }
+
+    /**
+     * リリース日を取得する（`YYYY-MM-DD`）
+     */
+    get releasedAt(): string {
+        return this.#state.releasedAt ?? '';
+    }
+
+    /**
+     * リリース日を設定する
+     */
+    set releasedAt(value: string) {
+        this.#state.releasedAt = value;
+    }
+
+    /**
+     * 廃止日を取得する（`YYYY-MM-DD`）
+     */
+    get closedAt(): string {
+        return this.#state.closedAt ?? '';
+    }
+
+    /**
+     * 廃止日を設定する
+     */
+    set closedAt(value: string) {
+        this.#state.closedAt = value;
+    }
+
+    /**
+     * 廃止理由を取得する
+     */
+    get closedReason(): string {
+        return this.#state.closedReason ?? '';
+    }
+
+    /**
+     * 廃止理由を設定する
+     */
+    set closedReason(value: string) {
+        this.#state.closedReason = value;
+    }
+
+    /**
      * 外部定義由来の残余（ベンダー固有キー）を取得する
      */
     get external(): ExternalResidual | undefined {
@@ -208,6 +268,10 @@ export class UIDefinition {
             this.description = meta.description;
             this.version = meta.version;
             this.basedOn = meta.basedOn;
+            this.changeReason = meta.changeReason ?? '';
+            this.releasedAt = meta.releasedAt ?? '';
+            this.closedAt = meta.closedAt ?? '';
+            this.closedReason = meta.closedReason ?? '';
             this.external = clonePlainData(meta.external);
         }
         this.replaceComponents(clonePlainData(components) as any[]);
