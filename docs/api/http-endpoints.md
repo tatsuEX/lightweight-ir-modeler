@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T06:20:00"
+updated: "2026-08-31T08:05:00"
 summary: "IR snapshot（current / versions）と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
@@ -12,7 +12,7 @@ features:
 
 # HTTP API
 
-最終更新: 2026-08-31 06:20
+最終更新: 2026-08-31 08:05
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -41,17 +41,19 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 
 ### `GET /api/ir/snapshot/versions?logicalId=<id>`
 
-`{ versions, head, selectable }` を返す。`selectable` は各 main の最新 sub のみ。自動保存無効時は空（403 にしない）。logicalId 不正は **400**。
+`{ versions, head, selectable, summaries }` を返す。`selectable` は各 main の最新 sub のみ。`summaries` は全確定版の `{ version, changeReason? }[]`（いまは各 `versions/<v>/snapshot.yml` から読む。将来 versions 直下の cache で埋めても同じ形）。自動保存無効時は空（403 にしない）。logicalId 不正は **400**。
 
 ### `POST /api/ir/snapshot/publish`
 
 current を `versions/<main.sub>/snapshot.yml` へ複製する。Body: `{ logicalId, mode?: 'revision' | 'patch' | 'new-head' }`。`mode` 省略時は `revision`。
 
 - **201**: `{ version, snapshot }`（更新後の current）
-- **400**: 過去版からの確定なのに mode が revision、またはその逆
+- **400**: 初回なのに patch/new-head、過去版なのに revision、HEAD なのに new-head
 - **404**: current が無い
 - **409**: 同じ version ディレクトリが既にある
 - **403**: 自動保存無効
+
+HEAD 上では `patch` で同一 main の sub+1（メタ修正など）、`revision` で main+1.0。過去版（`basedOn` が HEAD より古い）では `patch` または `new-head`。
 
 ### `POST /api/ir/snapshot/load-version`
 

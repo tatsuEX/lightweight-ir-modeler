@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T06:20:00"
+updated: "2026-08-31T08:05:00"
 summary: "Property 属性テーブルと Preview の chrome 固定スクロール、snapshot 運用コメント"
 features:
   - layout-editor
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-31 06:20
+最終更新: 2026-08-31 08:05
 
 ## 概要
 
@@ -84,10 +84,16 @@ flowchart LR
 
 ### 確定版
 
-アコーディオンの version 欄の下で:
+`version` はシステム採番（`<main>.<sub>`）で手入力しない。ユーザ向けの版識別は **changeReason（+ version）**。
 
-- **確定**: current を `versions/<main.sub>/` へ複製する。HEAD の続きは main を +1。過去版（`basedOn` が HEAD より古い）からはパッチ（sub+1）か新たな正本（旧 HEAD の main+1）を選ぶ
-- **読込**: 各 main の最新 sub だけ選べる。current を置き換え、history を空にし、`basedOn` を記録する
+アコーディオンの項目順は ID → 画面名 → 確定版 → 変更概要 → リリース日 → 廃止日 → 廃止理由 → 説明。
+
+- **確定**: current を `versions/<main.sub>/` へ複製する。初回は確認なしで `1.0`。2 回目以降はダイアログで選ぶ
+  - HEAD 作業中: **パッチ**（同一 main の sub+1。メタ修正など） / **改版**（main+1.0）
+  - 過去版（`basedOn` が HEAD より古い）: **パッチ**（その main の sub+1） / **新たな正本**（旧 HEAD の main+1）
+  ボタン／確認ダイアログも `changeReason (version)` で示す
+- **読込**: 選択 UI は `changeReason (version)`（HEAD は末尾に付記）。各 main の最新 sub だけ選べる。current を置き換え、history を空にし、`basedOn` を記録する
+- **ライフサイクル**: `releasedAt` / `closedAt`（`YYYY-MM-DD`）と `closedReason` は current の任意入力。確定時にその版へコピーする。既確定 YAML への後書きはしない
 
 ## Property: 編集可能な項目のみ
 

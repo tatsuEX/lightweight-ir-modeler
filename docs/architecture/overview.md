@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T08:01:00"
+updated: "2026-08-31T07:50:00"
 summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置・Global Toast・autoSave delay"
 features:
   - architecture
@@ -20,7 +20,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-28 08:01
+最終更新: 2026-08-31 07:50
 
 ## 目的
 
@@ -118,8 +118,13 @@ classDiagram
   class UiDefinitionEditorMeta {
     +logicalId string
     +name string
-    +description string
     +version string
+    +changeReason string
+    +releasedAt string
+    +closedAt string
+    +closedReason string
+    +description string
+    +basedOn string
     +external ExternalResidual
   }
 

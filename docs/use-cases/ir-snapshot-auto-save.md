@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T06:20:00"
+updated: "2026-08-31T08:05:00"
 summary: "current / history / versions による IR YAML snapshot 自動保存と確定版"
 features:
   - ir-snapshot
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-31 06:20
+最終更新: 2026-08-31 08:05
 
 ## 概要
 
@@ -98,9 +98,13 @@ sequenceDiagram
 - ディレクトリ名は画面 ID（`logicalId`）。未使用 ID への切替時は確認ダイアログがあり得る（[layout-editor](./layout-editor.md)）
 - 編集中の正は常に `current/snapshot.yml`（上書き）。GET / エディタ復元 / snapshot 経由の Export もここを読む
 - `history/` は自動保存の世代。prune 対象。復元 UI は無い（手動リストア用）
-- `versions/<main.sub>/snapshot.yml` は確定版。上書きしない。version は `<main>.<sub>`（既定 `1.0`。第 3 段は使わない）
-- 確定は 3 系統: HEAD の続きは main+1.0、過去版のパッチは 同 main の sub+1、過去版を新 HEAD にする場合は 旧 HEAD の main+1.0
-- 過去版読込は各 main の最新 sub のみ選べる。読込時は history をクリアし、`basedOn` に選択元を記録する。current の `createdAt` / `modifiedAt` はそのファイルのライフサイクルで付け直す
+- `versions/<main.sub>/snapshot.yml` は確定版。上書きしない。version は `<main>.<sub>`（既定 `1.0`。第 3 段は使わない）。ユーザ向けの版識別は **changeReason（+ version）**
+- 確定は次の系統。初回のみ確認なしで `1.0`。2 回目以降はダイアログで選ぶ
+  - **パッチ**（sub+1）: HEAD 上のメタ修正など、および過去版の修正。HEAD `v5.0` → `v5.1`、過去 `v1.0`（HEAD が `v2.x`）→ `v1.1`
+  - **改版**（main+1.0）: HEAD の大きな変更。HEAD `v5.0` → `v6.0`
+  - **新たな正本**: 過去版を新 HEAD にする。過去 `v1.0`（HEAD が `v2.x`）→ `v3.0`
+- 過去版読込は各 main の最新 sub のみ選べる。選択 UI は `changeReason (version)`。読込時は history をクリアし、`basedOn` に選択元を記録する。current の `createdAt` / `modifiedAt` はそのファイルのライフサイクルで付け直す
+- `changeReason` / `releasedAt` / `closedAt` / `closedReason` は current の任意項目。確定時にその版へコピーする。`releasedAt` はユーザのリリース日（`YYYY-MM-DD`）。空ならキー省略（確定時刻では埋めない）。既確定ファイルへの後書き廃止はしない
 - 旧レイアウト（`<logicalId>/ir-snapshot-*.yml`）は current が無いときだけ読む。次の保存で current + history へ書く（旧ファイルは移動しない）
 - history ファイル名の時刻は **ローカル時刻**
 - ファイル内 `savedAt` は ISO UTC
@@ -131,7 +135,7 @@ Key order for every mapping:
 Envelope shape:
 
 - root: version, savedAt, uiDefinition, components
-- uiDefinition: version, createdAt, modifiedAt, logicalId, name, description, basedOn / releasedAt（ある場合）, external last if present
+- uiDefinition: logicalId, name, version, changeReason / releasedAt / closedAt / closedReason（ある場合）, description, basedOn（ある場合）, external last if present, then createdAt, modifiedAt
 - components[]: logicalId, type, label, then type-specific keys, then external
 
 createdAt is preserved by buildSnapshotMetaForWrite on first save.
@@ -145,7 +149,7 @@ application.yml still loads with js-yaml for now; unify onto eemeli/yaml later.
 | `POST` | `/api/ir/snapshot` | 保存（201 / skip 時 200） |
 | `GET` | `/api/ir/snapshot?logicalId=` | 編集中コピー（current。無ければ旧 flat latest） |
 | `GET` | `/api/ir/snapshot/logical-ids` | オートコンプリート用一覧 |
-| `GET` | `/api/ir/snapshot/versions?logicalId=` | 確定版一覧 / HEAD / 選択候補 |
+| `GET` | `/api/ir/snapshot/versions?logicalId=` | 確定版一覧 / HEAD / 選択候補 / summaries（changeReason） |
 | `POST` | `/api/ir/snapshot/publish` | 確定（`mode`: revision / patch / new-head） |
 | `POST` | `/api/ir/snapshot/load-version` | 確定版を current へ載せ history をクリア |
 
