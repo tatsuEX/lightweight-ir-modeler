@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T07:50:00"
-summary: "モジュール境界・データフロー・shape/merge/serialize 概観・CLI 配置・Global Toast・autoSave delay"
+updated: "2026-09-01T08:20:00"
+summary: "モジュール境界・データフロー・射影プラグイン・CLI 配置・Global Toast・autoSave delay"
 features:
   - architecture
   - ir
@@ -12,6 +12,7 @@ features:
   - import
   - ir-snapshot
   - arcane
+  - plugins
   - yaml-comments
   - application-config
   - logging
@@ -20,7 +21,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-08-31 07:50
+最終更新: 2026-09-01 08:20
 
 ## 目的
 
@@ -35,6 +36,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
 | `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | 共有フィールド変換 + target 固有 `*-transform.ts` |
+| `projection/` | IR の読み取り専用 view（opt-in 射影プラグイン） | `applyProjections`、`by-logical-id` / `db-maxlength`（[プラグイン](./plugins.md)） |
 | `config/` | クライアント安全な設定 type・既定値・純関数 | `application-types.ts`, `layout-editor-config.ts`, `preview-config.ts` |
 | `server/io/` | ファイル I/O | `ir-snapshot-io.ts`（autoSave）, `ir-snapshot-file.ts`（任意パス読込）, `definition-export-io.ts`, `writers/`（shape / merge / serialize）, `readers/`（parse / unshape）, target 固有ヘルパ |
 | `server/ui/` | Import / Export オーケストレーション | `export-pipeline.ts`, `export-target-registry.ts`, `import-pipeline.ts`, `import-target-registry.ts` |
@@ -55,6 +57,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 - `RawDefinition` は Reader / Writer に依存しない
 - IR（ドメイン）は外部 UI フレームワーク定義に依存しない
 - 形式固有ロジックは Transformer / Reader / Writer に閉じる
+- 射影 view は IR を置き換えない（[プラグイン](./plugins.md)）
 - `schema/` は `server/config` を import しない（SvelteKit private env を引かない）
 - IR がモデル化しないベンダー固有キーは `external['<targetId>']`（不透明な残余バッグ）にのみ置く
 
@@ -95,11 +98,12 @@ merge / serialize の方言は [UI Export](../use-cases/ui-export.md) および�
 ```text
 IR snapshot YAML ファイル
   → restoreIrSnapshotFromYaml（ir/） / loadRestoredIrSnapshotFile（server/io、任意パス）
-  → scripts/lib（target 投影・Handlebars・argv）
+  → applyProjections（$lib/projection、CLI --projection で opt-in）
+  → scripts/lib（target 残余投影・Handlebars・argv）
   → scripts/arcane-summon.ts（stdout / --out）
 ```
 
-Writer / Raw 検証 / `application.yml` は使わない。詳細は [arcane:summon](../use-cases/arcane-summon.md)。
+Writer / Raw 検証 / `application.yml` は使わない。射影契約は [プラグイン](./plugins.md)。詳細は [arcane:summon](../use-cases/arcane-summon.md)。
 
 ## 主要型・クラス関係
 
@@ -211,6 +215,7 @@ classDiagram
 
 ## 関連ドキュメント
 
+- [プラグイン（射影）](./plugins.md)
 - [レイアウトエディタ](../use-cases/layout-editor.md)
 - [Global Toast](../use-cases/global-toast.md)
 - [IR snapshot](../use-cases/ir-snapshot-auto-save.md)

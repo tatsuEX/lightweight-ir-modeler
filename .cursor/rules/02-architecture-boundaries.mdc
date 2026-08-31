@@ -13,6 +13,7 @@ alwaysApply: true
 | `raw/` | Temporary model between external files and IR |
 | `schema/` | Trust boundary (JSON Schema / Zod) |
 | `transform/` | Raw ⇄ IR |
+| `projection/` | Read-only IR views (opt-in first-party projection plugins) |
 | `io/` | External file read/write |
 | `config/` | Client-safe application config types, defaults, pure helpers |
 | `server/config/` | Server-only YAML load / merge / parse / path resolution |
