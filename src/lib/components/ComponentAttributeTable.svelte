@@ -168,6 +168,7 @@
 
 	// 入力行を詰めて一覧性を上げる（Flowbite 既定の px-6 py-4 は広すぎる）
 	const cellClass = 'px-3 py-2';
+	// WARN: z-10 はスクロール行より上にヘッダを保つ。メタ Accordion の Datepicker（z-10）より手前に出ないよう、Accordion 側で z-20 を付けている。
 	const headCellClass = `${cellClass} sticky top-0 z-10 bg-gray-50 dark:bg-gray-700 align-top`;
 	const detailsCellClass = '';
 	const validationCellClass = '';

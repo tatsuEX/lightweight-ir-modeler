@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T08:05:00"
-summary: "Property 属性テーブルと Preview の chrome 固定スクロール、snapshot 運用コメント"
+updated: "2026-09-01T07:08:00"
+summary: "Property 属性テーブル、Preview 固定スクロール、画面メタの版操作表示"
 features:
   - layout-editor
   - ui-definition
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-08-31 08:05
+最終更新: 2026-09-01 07:08
 
 ## 概要
 
@@ -84,15 +84,16 @@ flowchart LR
 
 ### 確定版
 
-`version` はシステム採番（`<main>.<sub>`）で手入力しない。ユーザ向けの版識別は **changeReason（+ version）**。
+`version` はシステム採番（`<main>.<sub>`）で手入力しない。ユーザ向けの版識別は **changeReason（+ version）**。作業中の版はアコーディオン header に出す。本体に「確定版」欄は置かない。
 
-アコーディオンの項目順は ID → 画面名 → 確定版 → 変更概要 → リリース日 → 廃止日 → 廃止理由 → 説明。
+アコーディオンの項目順は ID → 画面名 → 版操作と変更概要 → リリース日 → 廃止日 → 廃止理由 → 説明。
 
 - **確定**: current を `versions/<main.sub>/` へ複製する。初回は確認なしで `1.0`。2 回目以降はダイアログで選ぶ
-  - HEAD 作業中: **パッチ**（同一 main の sub+1。メタ修正など） / **改版**（main+1.0）
+  - 最新版（HEAD）作業中: **パッチ**（同一 main の sub+1。メタ修正など） / **改版**（main+1.0）
   - 過去版（`basedOn` が HEAD より古い）: **パッチ**（その main の sub+1） / **新たな正本**（旧 HEAD の main+1）
   ボタン／確認ダイアログも `changeReason (version)` で示す
-- **読込**: 選択 UI は `changeReason (version)`（HEAD は末尾に付記）。各 main の最新 sub だけ選べる。current を置き換え、history を空にし、`basedOn` を記録する
+- **読込**: 選択 UI は `changeReason (version)`（最新版は末尾に付記）。各 main の最新 sub だけ選べる。Select が作業中の版と違うときは「未読込」と分かる。current を置き換え、history を空にし、`basedOn` を記録する。`basedOn` は既定では出さない
+- **最新版**: キャプションで、いまの HEAD を常時示す
 - **ライフサイクル**: `releasedAt` / `closedAt`（`YYYY-MM-DD`）と `closedReason` は current の任意入力。確定時にその版へコピーする。既確定 YAML への後書きはしない
 
 ## Property: 編集可能な項目のみ
@@ -129,7 +130,9 @@ flowchart TB
 - **常時表示列**: 行選択 / `logicalId` / `type` / `label`
 - **列グループ切替**（presentation state。IR / snapshot には載せない）: `Basic` | `Details` | `Validation`（関心別。type 名では増やさない）
 - Details / Validation は **固定スロット列**（行ごとに td 数が変わらない）。ヘッダは `colspan` でグループ名のみ表示する。
-- **viewport 内スクロール**: AppHeader → layout-editor Nav → Property 見出し → メタ Accordion / 列グループ切替は自然高（`shrink-0`）。残り高さをテーブル領域に渡し、表だけ `overflow-auto` する。Accordion の開閉でテーブル高が伸縮する。thead は sticky。セル内スクロールはしない。Datepicker ポップオーバーが表の overflow で切れる場合がある。
+- **viewport 内スクロール**: AppHeader → layout-editor Nav → Property 見出し → メタ Accordion / 列グループ切替は自然高（`shrink-0`）。残り高さをテーブル領域に渡し、表だけ `overflow-auto` する。Accordion の開閉でテーブル高が伸縮する。thead は sticky（`z-10`、スクロール行より上）。セル内スクロールはしない。
+- **メタ Accordion の Datepicker**: Flowbite カレンダーは portal せず `absolute z-10`。sticky thead と同じ z だとヘッダに中段が隠れるため、Accordion ルートを `z-20` にしてカレンダー全体をヘッダより手前に出す。
+- **表セル内の Datepicker**: ポップオーバーが表の `overflow-auto` で切れる場合がある（Dropdown の Popper とは別）。
 
 | グループ | 追加列 | 編集対象（列位置に type 別フィールドを載せる） |
 |---|---|---|

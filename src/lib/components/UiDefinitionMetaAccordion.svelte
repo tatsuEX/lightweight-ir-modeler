@@ -239,7 +239,8 @@
 	});
 </script>
 
-<div class="relative mb-4">
+<!-- WARN: Datepicker は portal せず absolute z-10。sticky thead（z-10）より後の DOM だとカレンダー中段がヘッダに隠れる。 -->
+<div class="relative z-20 mb-4">
 	<Accordion>
 	<AccordionItem
 		class="!m-0"
