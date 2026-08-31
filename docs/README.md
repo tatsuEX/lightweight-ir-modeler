@@ -1,10 +1,11 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:36:00"
-summary: "docs 索引と現行スコープ、core / adapter target 分離方針"
+updated: "2026-09-01T06:59:00"
+summary: "docs 索引と現行スコープ、core / adapter target 分離方針、ライセンス方針"
 features:
   - docs
   - architecture
+  - licensing
   - layout-editor
   - ir-snapshot
   - arcane
@@ -19,7 +20,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-08-28 07:36
+最終更新: 2026-09-01 06:59
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -29,21 +30,22 @@ features:
 ### Core（IR / 横断パイプライン / API）
 
 1. [アーキテクチャ概要](./architecture/overview.md) — モジュール境界・データフロー・クラス関係
-2. [レイアウトエディタ編集](./use-cases/layout-editor.md) — property / layout / preview
-3. [Global Toast](./use-cases/global-toast.md) — アプリ全体の Growl 相当通知
-4. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
-5. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
-6. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
-7. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
-8. [HTTP API](./api/http-endpoints.md)
-9. [ロギング](./architecture/logging.md)
+2. [ライセンス方針](./architecture/licensing.md) — 自コード MIT / 第三者 NOTICE / `static/` 掲載
+3. [レイアウトエディタ編集](./use-cases/layout-editor.md) — property / layout / preview
+4. [Global Toast](./use-cases/global-toast.md) — アプリ全体の Growl 相当通知
+5. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
+6. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
+7. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
+8. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
+9. [HTTP API](./api/http-endpoints.md)
+10. [ロギング](./architecture/logging.md)
 
 ### Adapter target（ベンダー固有）
 
-10. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
-11. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
-12. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
-13. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
+11. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
+12. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
+13. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
+14. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
 
 ## ドキュメントの層
 

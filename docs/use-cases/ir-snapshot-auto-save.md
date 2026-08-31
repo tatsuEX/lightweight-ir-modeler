@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T08:05:00"
+updated: "2026-09-01T06:45:00"
 summary: "current / history / versions による IR YAML snapshot 自動保存と確定版"
 features:
   - ir-snapshot
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-08-31 08:05
+最終更新: 2026-09-01 06:45
 
 ## 概要
 
@@ -103,7 +103,7 @@ sequenceDiagram
   - **パッチ**（sub+1）: HEAD 上のメタ修正など、および過去版の修正。HEAD `v5.0` → `v5.1`、過去 `v1.0`（HEAD が `v2.x`）→ `v1.1`
   - **改版**（main+1.0）: HEAD の大きな変更。HEAD `v5.0` → `v6.0`
   - **新たな正本**: 過去版を新 HEAD にする。過去 `v1.0`（HEAD が `v2.x`）→ `v3.0`
-- 過去版読込は各 main の最新 sub のみ選べる。選択 UI は `changeReason (version)`。読込時は history をクリアし、`basedOn` に選択元を記録する。current の `createdAt` / `modifiedAt` はそのファイルのライフサイクルで付け直す
+- 過去版読込は各 main の最新 sub のみ選べる。選択 UI は `changeReason (version)`（最新版は末尾に付記）。読込時は history をクリアし、`basedOn` に選択元を記録する（画面には既定で出さない）。current の `createdAt` / `modifiedAt` はそのファイルのライフサイクルで付け直す
 - `changeReason` / `releasedAt` / `closedAt` / `closedReason` は current の任意項目。確定時にその版へコピーする。`releasedAt` はユーザのリリース日（`YYYY-MM-DD`）。空ならキー省略（確定時刻では埋めない）。既確定ファイルへの後書き廃止はしない
 - 旧レイアウト（`<logicalId>/ir-snapshot-*.yml`）は current が無いときだけ読む。次の保存で current + history へ書く（旧ファイルは移動しない）
 - history ファイル名の時刻は **ローカル時刻**

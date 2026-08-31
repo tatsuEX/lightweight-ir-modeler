@@ -81,6 +81,7 @@ npm run preview
 |---|---|
 | [docs/README.md](./docs/README.md) | 索引と現状スコープ |
 | [アーキテクチャ概要](./docs/architecture/overview.md) | モジュール境界・データフロー |
+| [ライセンス方針](./docs/architecture/licensing.md) | 自コード MIT / 第三者 NOTICE |
 | [レイアウトエディタ](./docs/use-cases/layout-editor.md) | property / layout / preview |
 | [IR スナップショット自動保存](./docs/use-cases/ir-snapshot-auto-save.md) | 自動保存 |
 | [UI Export](./docs/use-cases/ui-export.md) | 外部定義の出力 |
@@ -95,3 +96,10 @@ npm run preview
 - Tailwind CSS / Flowbite Svelte
 - Zod / Handlebars（Export 等）
 - Vitest
+
+## ライセンス
+
+このリポジトリの自作ソースは [MIT License](./LICENSE) です（`package.json` の `"license": "MIT"` も同じ）。
+
+第三者パッケージの著作権表示と許諾文は [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) にあります。  
+依存ライブラリが ISC など別ライセンスでも、本プロジェクト自身のライセンスは MIT のままです。
