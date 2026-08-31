@@ -14,5 +14,6 @@ alwaysApply: true
 
 - Prefer a direct solution that works for the current format/flow.
 - Do not add extension points “for later” unless required by an accepted boundary in architecture rules.
+- Accepted extension boundary: the closed plugin kinds in `.cursor/rules/16-plugins.mdc` (projection, writer-filter, adapter-target) and **static id/order injection** (config / CLI / optional args). Extract a contract from a real caller. Do not invent a generic plugin framework, load untrusted code, or add a fourth kind until the same idea appears in 3+ places.
 - For public/module APIs, also follow **API Encapsulation** (`.cursor/rules/13-api-encapsulation.mdc`): do not require callers to know internal structure when it is derivable from arguments already passed; optional overrides are OK.
 - For **where to put or split modules** (visibility, change reasons), follow **Module Boundaries vs API Encapsulation** (`.cursor/rules/14-module-vs-api-boundaries.mdc`). Do not split modules just to separate technical layers if that recreates a mandatory call sequence across imports.

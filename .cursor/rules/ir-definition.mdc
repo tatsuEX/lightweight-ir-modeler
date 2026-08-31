@@ -6,7 +6,8 @@ alwaysApply: false
 
 # IR Definition
 
-- `IRDefinition` is the **SSOT (Single Source Of Truth)**. Treat breaking changes as high-risk; prefer additive, explicit migrations later (migration system itself is out of scope now).
+- `IRDefinition` is the **SSOT (Single Source Of Truth)**. Treat breaking changes as high-risk; prefer additive changes. An IR schema migration *engine* is deferred (distinct from snapshot *product* versions under `versions/`).
+- Projection views (e.g. map by `logicalId`) are not IR. Do not persist them on the snapshot or import adapter types here. See `.cursor/rules/16-plugins.mdc`.
 - Keep this package free of external UI-framework types, file I/O, and Svelte.
 - Concrete UI kinds live under `src/lib/ir/elements/` and **extend** `Component`.
 - `IRDefinition` aggregates elements; it does not know about Reader/Writer/Raw schemas.

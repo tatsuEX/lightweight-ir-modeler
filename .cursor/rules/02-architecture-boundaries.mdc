@@ -26,7 +26,7 @@ alwaysApply: true
 - **DefinitionReader** — external UI file → `RawDefinition`
 - **DefinitionWriter** — `RawDefinition` → external UI file (create/overwrite)
 - **RawDefinition** — flexible intermediate for transform; not the SSOT (Single Source Of Truth)
-- **SchemaValidator** — validate at system boundaries (initial: Raw via JSON Schema/Zod; IR validation later)
+- **SchemaValidator** — validate at system boundaries (Raw via JSON Schema/Zod). A domain validation engine is deferred
 - **IRTransformer** — Raw ⇄ IR
 - **IRDefinition** — aggregate of UI elements; SSOT (Single Source Of Truth); handle breaking changes with extreme care
 - **Component** — base for concrete types under `ir/elements/`
@@ -38,6 +38,7 @@ alwaysApply: true
 - `IRDefinition` must not depend on external UI framework definitions.
 - Format-specific logic stays in Reader / Writer / Transformer.
 - `IRDefinition` is the stable domain model.
+- First-party plugins (projection, writer-filter, adapter-target) sit beside this layout. Projections must not replace IR; writer-filters must not skip Raw validation. See `.cursor/rules/16-plugins.mdc`.
 
 ## Dataflow
 
@@ -54,8 +55,15 @@ alwaysApply: true
 1. GUI edits `IRDefinition`
 2. Transformer → `RawDefinition`
 3. SchemaValidator validates Raw via `RawDefinitionSchema`
-4. Writer → external UI definition files
+4. Writer → external UI definition files (writer-filters may run after Raw validation, before serialize)
 
-### Validation scope (initial)
+### Plugins (beside the flow)
 
-Schema validation at boundaries only. Domain validation and cross-definition validation come after the core transform flow is solid.
+- **projection** — read-only view of restored IR for templates / `arcane:summon` / optional writer lookup
+- **writer-filter** — ordered `payload → filter → payload` on validated Raw (not an event bus)
+
+They must not replace IR as the SSOT (Single Source Of Truth).
+
+### Validation scope
+
+Schema validation at boundaries (Raw via JSON Schema/Zod). A domain validation *engine* remains deferred; local IR checks are allowed when a concrete bug needs them.

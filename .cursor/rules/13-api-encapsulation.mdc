@@ -36,6 +36,16 @@ writeArtifact(targetId, `components/${type}.hbs`, ctx);
 writeArtifact(targetId, ctx);
 ```
 
+```typescript
+// ❌ BAD — caller must resolve plugin ids then apply
+const ids = resolveProjectionIdsFromConfig();
+const view = applyProjections(snapshot, ids);
+
+// ✅ GOOD — apply loads config defaults; optional ids are a static override (CLI / args)
+const view = applyProjections(snapshot);
+const viewFromCli = applyProjections(snapshot, { projectionIds });
+```
+
 ## When not to over-encapsulate
 
 - Merging would couple unrelated change reasons (architecture boundary violation).

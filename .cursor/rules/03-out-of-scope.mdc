@@ -1,17 +1,42 @@
 ---
-description: Out of scope for initial implementation — do not build these yet
+description: Living scope policy — first-party plugins in view; deferred systems listed
 alwaysApply: true
 ---
 
-# Out of Scope (Initial Implementation)
+# Scope Policy
 
-Do **not** implement until explicitly requested after the core import/export flow is working:
+Core import/export is working. This file is a living deferral list, not an initial-implementation freeze.
 
-- Plugin framework
-- Event bus
-- Domain validation engine
-- Undo/Redo system
-- Version migration system
-- Complex service layer
+## In view — first-party plugins
 
-If a task seems to need one of the above, solve with the smallest local approach that keeps Reader → Raw → validate → IR → GUI (and reverse) working.
+Closed plugin kinds (see `.cursor/rules/16-plugins.mdc`):
+
+- **projection** — read-only view of IR for templates / CLI / downstream lookup (e.g. map by `logicalId`)
+- **writer-filter** — ordered filters on validated Raw (layout defaults, residual restore, derive target-specified info)
+- **adapter-target** — in-repo Reader / Writer / Transformer bundle
+
+Allowed now:
+
+- Design and implement the smallest contract + one concrete plugin per kind that has a real caller
+- Compose writer-filters as an ordered pipeline (`payload → filter → payload`)
+- Inject **ids and order** through static inflow channels: `application.yml`, CLI flags, or optional call arguments. Implement only the channel the first caller needs. Do not freeze the product to a single channel
+
+Still forbidden as a *framework*:
+
+- Runtime load of untrusted / out-of-repo code (`eval`, arbitrary dynamic `import`)
+- Third-party plugin SDK, marketplace, sandbox, or lifecycle PluginHost
+- Event bus (a filter pipeline is not an event bus)
+- A shared Plugin base class covering all kinds before three hosts share the same code
+- Empty hosts with no concrete plugin behind them
+
+## Deferred until explicitly requested
+
+| Item | May do locally | Must not build |
+|---|---|---|
+| Event bus | Direct calls, Context, stores; **ordered filter pipelines** | App-wide pub/sub |
+| Domain validation | Boundary Raw Zod; a local IR check when a bug needs it | Generic engine / rule DSL |
+| Undo/Redo | Snapshot `current` / `history` / `versions` | Editor command stack |
+| IR schema migration | Additive IR changes; snapshot *product* versions (`versions/`) | Format migration engine |
+| Service framework | Use-case modules and plugin pipeline runners | Generic application/domain-service layer |
+
+If a task seems to need a deferred item, solve with the smallest local approach that keeps Reader → Raw → validate → IR → GUI (and reverse) working. Projections and writer-filters sit *beside* that flow; they must not replace IR as the SSOT (Single Source Of Truth).

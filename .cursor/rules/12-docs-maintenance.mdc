@@ -69,8 +69,8 @@ The domain core is **pure IR** (SSOT (Single Source Of Truth)). External UI plat
 
 | Layer | Paths (examples) | May document |
 |---|---|---|
-| **Core** | `docs/architecture/`・`docs/api/`・横断 use-case（`ui-import.md` / `ui-export.md` / `layout-editor.md` / `ir-snapshot-*.md`） | IR・横断パイプライン・HTTP 契約・`external['<targetId>']`・shape / merge / serialize の**一般概念**・registry |
-| **Adapter target** | `docs/use-cases/<targetId>-import.md`・`<targetId>-export.md`（例: `primefaces-*`・`im-forma-*`） | ベンダー語彙・type マップ・文書族判定・merge 手順・serialize 方言・target 固有 WARN |
+| **Core** | `docs/architecture/`・`docs/api/`・横断 use-case（`ui-import.md` / `ui-export.md` / `layout-editor.md` / `ir-snapshot-*.md`） | IR・横断パイプライン・HTTP 契約・`external['<targetId>']`・shape / merge / serialize の**一般概念**・registry・projection / writer-filter の**契約** |
+| **Adapter target** | `docs/use-cases/<targetId>-import.md`・`<targetId>-export.md`（例: `primefaces-*`・`im-forma-*`） | ベンダー語彙・type マップ・文書族判定・merge / writer-filter 段の中身・serialize 方言・target 固有 WARN |
 
 Rules:
 

@@ -9,8 +9,9 @@ alwaysApply: false
 - `RawDefinition` is a **temporary** model for import/export flexibility — not the SSOT (Single Source Of Truth).
 - Raw must not import Reader, Writer, or Svelte/UI code.
 - `SchemaValidator` is the trust boundary with the outside world.
-- **Initial:** validate Raw with JSON Schema/Zod (`RawDefinitionSchema`).
-- **Later:** IR schema validation — do not build it until the transform flow is established.
+- Validate Raw with JSON Schema/Zod (`RawDefinitionSchema`) at the import/export boundary.
+- A generic IR / domain validation *engine* is deferred (see `.cursor/rules/03-out-of-scope.mdc`). A local IR check is fine when a concrete bug needs it.
+- Writer-filters run **after** this Raw validation. They must not skip it.
 
 ```typescript
 // ✅ GOOD — validate at boundary before transform/write

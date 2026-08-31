@@ -1,0 +1,42 @@
+---
+description: First-party projection, writer-filter, and adapter-target plugins
+alwaysApply: true
+---
+
+# Plugins
+
+Implementations live in-repo and register by **id**. Selection/order may be injected through **static** inflow channels (config, CLI, optional args). Code is not loaded from untrusted paths.
+
+## Kinds
+
+| Kind | Does | Does not |
+|---|---|---|
+| projection | Build a read-only view from restored IR (`componentsByLogicalId`, …) | Mutate IR, persist the view, own vendor serialize |
+| writer-filter | Transform validated Raw / residual toward a target payload | Skip Raw validation, talk over an event bus |
+| adapter-target | Reader / Writer / Transformer / schema / target docs | Import into `ir/` |
+
+Core `ir/` stays the SSOT (Single Source Of Truth) as an array of components. Projection output is for templates, `arcane:summon`, and optional lookup inside writer-filters.
+
+## Injection
+
+- Registry: `id` → implementation (compile-time)
+- Inflow: list of ids (and order) from `application.yml`, CLI, or optional call arguments. Do not freeze the product to one channel; add a channel only when a caller needs it
+- Public API applies the list internally (`applyProjections(snapshot, ids?)`). Callers do not resolve-then-apply as two required steps
+- Defaults must work with no override. CLI / args are overrides (see `.cursor/rules/13-api-encapsulation.mdc`)
+- Injection is **which registered plugins run**, not loading arbitrary user JS
+
+## Do not
+
+```typescript
+// ✅ GOOD — named in-repo projection; ids from config or CLI override
+const view = applyProjections(snapshot);
+
+// ✅ GOOD — target writer pipeline
+const payload = applyWriterFilters(targetId, raw, view);
+
+// ❌ BAD — user JS / out-of-repo module as a plugin
+const mod = await import(cliPluginPath);
+
+// ❌ BAD — write projection back into IR / snapshot
+snapshot.componentsByLogicalId = view.componentsByLogicalId;
+```
