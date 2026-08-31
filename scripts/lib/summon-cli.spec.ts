@@ -40,12 +40,45 @@ describe('parseSummonCliArgs', () => {
 			target: 'primefaces',
 			template: './a.hbs',
 			source: './b.yaml',
-			out: './c.js'
+			out: './c.js',
+			projectionIds: undefined,
+			bytesPerChar: undefined
 		});
 	});
 
 	it('rejects unknown arguments', () => {
 		expect(() => parseSummonCliArgs(['--nope'])).toThrow('unknown argument: --nope');
+	});
+
+	it('reads --projection and --bytes-per-char', () => {
+		expect(
+			parseSummonCliArgs([
+				'--target',
+				'primefaces',
+				'--template',
+				'./a.hbs',
+				'--source',
+				'./b.yaml',
+				'--projection',
+				'by-logical-id, db-maxlength',
+				'--bytes-per-char',
+				'4'
+			])
+		).toEqual({
+			help: false,
+			target: 'primefaces',
+			template: './a.hbs',
+			source: './b.yaml',
+			out: undefined,
+			projectionIds: ['by-logical-id', 'db-maxlength'],
+			bytesPerChar: 4
+		});
+	});
+
+	it('rejects a non-positive --bytes-per-char', () => {
+		expect(() =>
+			parseSummonCliArgs(['--target', 'x', '--template', 'a', '--source', 'b', '--bytes-per-char', '0'])
+		).toThrow('--bytes-per-char must be a positive integer');
 	});
 });
 
@@ -110,5 +143,45 @@ describe('runSummonCli', () => {
 
 		expect(result.output).toBe('unknown-target');
 		expect(result.warnings).toEqual([missingTargetResidualWarning('unknown-target')]);
+	});
+
+	it('applies by-logical-id when --projection is set', () => {
+		const yamlText = serializeIrSnapshot({
+			version: 1,
+			savedAt: '2026-08-25T00:00:00.000Z',
+			uiDefinition: {
+				...createEmptyUiDefinitionMeta(),
+				logicalId: 'userRegistration',
+				name: 'ユーザー登録',
+				createdAt: '2026-08-25T00:00:00.000Z',
+				modifiedAt: '2026-08-25T00:00:00.000Z'
+			},
+			components: [
+				{
+					logicalId: 'userName',
+					type: 'textbox',
+					label: '氏名',
+					validation: { maxlength: 30 }
+				}
+			]
+		});
+		const { sourcePath, templatePath } = writeSummonFixtures({
+			yamlText,
+			templateSource:
+				'{{componentsByLogicalId.userName.logicalId}}:{{componentsByLogicalId.userName.validation.dbMaxlength}}'
+		});
+
+		const result = runSummonCli([
+			'--target',
+			'primefaces',
+			'--template',
+			templatePath,
+			'--source',
+			sourcePath,
+			'--projection',
+			'by-logical-id,db-maxlength'
+		]);
+
+		expect(result.output).toBe('userName:90');
 	});
 });

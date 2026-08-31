@@ -77,4 +77,42 @@ describe('summonFromSnapshot', () => {
 		expect(warnings).toEqual([]);
 		expect(output).toBe('primefaces userForm nameWv');
 	});
+
+	it('projects target residual onto componentsByLogicalId', () => {
+		const snapshot: RestoredIrSnapshot = {
+			...snapshotWithPrimefaces,
+			components: [
+				{
+					id: 'cmp-1',
+					logicalId: 'userName',
+					type: 'textbox',
+					label: '名前',
+					external: {
+						primefaces: { widgetVar: 'nameWv' },
+						'im-forma': { itemId: 'name' }
+					}
+				}
+			]
+		};
+
+		const { output, warnings } = summonFromSnapshot({
+			target: 'primefaces',
+			templateSource: '{{componentsByLogicalId.userName.external.widgetVar}}',
+			snapshot,
+			projectionIds: ['by-logical-id']
+		});
+
+		expect(warnings).toEqual([]);
+		expect(output).toBe('nameWv');
+	});
+
+	it('omits componentsByLogicalId when projections are not requested', () => {
+		const { output } = summonFromSnapshot({
+			target: 'primefaces',
+			templateSource: '{{#if componentsByLogicalId}}yes{{else}}no{{/if}}',
+			snapshot: snapshotWithPrimefaces
+		});
+
+		expect(output).toBe('no');
+	});
 });

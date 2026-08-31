@@ -1,5 +1,7 @@
 import Handlebars from 'handlebars';
 import { hasTargetResidual, readTargetResidual } from '$lib/ir/external-residual';
+import { applyProjections } from '$lib/projection/apply-projections';
+import type { ApplyProjectionsOptions, IrProjectionView } from '$lib/projection/types';
 import type { RestoredIrSnapshot } from '$lib/ir/snapshot';
 
 const handlebars = Handlebars.create();
@@ -19,6 +21,7 @@ export type SummonTemplateContext = {
 	uiDefinition: Record<string, unknown>;
 	components: unknown[];
 	external: Record<string, unknown>;
+	componentsByLogicalId?: Record<string, unknown>;
 };
 
 /**
@@ -58,10 +61,29 @@ function projectComponentForTarget(component: unknown, targetId: string): unknow
 }
 
 /**
- * 復元済み snapshot から Handlebars context を組み立てる
+ * logicalId map の各値にも同じ target 残余投影を掛ける
+ */
+function projectComponentMapForTarget(
+	map: Record<string, unknown> | undefined,
+	targetId: string
+): Record<string, unknown> | undefined {
+	if (map === undefined) {
+		return undefined;
+	}
+
+	const projected: Record<string, unknown> = Object.create(null);
+	for (const [logicalId, component] of Object.entries(map)) {
+		projected[logicalId] = projectComponentForTarget(component, targetId);
+	}
+
+	return projected;
+}
+
+/**
+ * 復元済み snapshot（または射影 view）から Handlebars context を組み立てる
  */
 export function buildSummonContext(
-	snapshot: RestoredIrSnapshot,
+	snapshot: RestoredIrSnapshot | IrProjectionView,
 	targetId: string
 ): { context: SummonTemplateContext; warnings: string[] } {
 	const uiExternal = readTargetResidual(snapshot.uiDefinition.external, targetId);
@@ -75,6 +97,11 @@ export function buildSummonContext(
 		warnings.push(missingTargetResidualWarning(targetId));
 	}
 
+	const componentsByLogicalId = projectComponentMapForTarget(
+		'componentsByLogicalId' in snapshot ? snapshot.componentsByLogicalId : undefined,
+		targetId
+	);
+
 	return {
 		context: {
 			target: targetId,
@@ -87,7 +114,8 @@ export function buildSummonContext(
 			components: snapshot.components.map((component) =>
 				projectComponentForTarget(component, targetId)
 			),
-			external: uiExternal
+			external: uiExternal,
+			...(componentsByLogicalId === undefined ? {} : { componentsByLogicalId })
 		},
 		warnings
 	};
@@ -102,8 +130,14 @@ export function summonFromSnapshot(options: {
 	target: string;
 	templateSource: string;
 	snapshot: RestoredIrSnapshot;
+	projectionIds?: readonly string[];
+	pluginOptions?: ApplyProjectionsOptions['pluginOptions'];
 }): SummonResult {
-	const { context, warnings } = buildSummonContext(options.snapshot, options.target);
+	const { view, warnings: projectionWarnings } = applyProjections(options.snapshot, {
+		projectionIds: options.projectionIds,
+		pluginOptions: options.pluginOptions
+	});
+	const { context, warnings: summonWarnings } = buildSummonContext(view, options.target);
 	const output = handlebars.compile(options.templateSource)(context);
-	return { output, warnings };
+	return { output, warnings: [...projectionWarnings, ...summonWarnings] };
 }

@@ -24,9 +24,8 @@ const sampleSnapshot: RestoredIrSnapshot = {
 			logicalId: 'userName',
 			type: 'textbox',
 			label: '氏名',
-			required: true,
-			maxlength: 64,
-			external: { widgetVar: 'userNameWv' }
+			validation: { required: true, maxlength: 64 },
+			external: { primefaces: { widgetVar: 'userNameWv' } }
 		},
 		{
 			id: 'cmp-2',
@@ -55,12 +54,16 @@ const sampleSnapshot: RestoredIrSnapshot = {
 /**
  * サンプル hbs を読んで描画する
  */
-function renderSample(fileName: string): string {
+function renderSample(
+	fileName: string,
+	projectionIds?: readonly string[]
+): string {
 	const templateSource = readFileSync(resolve(SAMPLE_DIR, fileName), 'utf8');
 	const { output } = summonFromSnapshot({
 		target: 'primefaces',
 		templateSource,
-		snapshot: sampleSnapshot
+		snapshot: sampleSnapshot,
+		projectionIds
 	});
 	return output;
 }
@@ -82,12 +85,17 @@ describe('templates/cli/summon/primefaces samples', () => {
 		expect(output).toContain('console.log(component.logicalId, component.type, component.label)');
 	});
 
-	it('renders CREATE TABLE DDL and skips label columns', () => {
+	it('renders CREATE TABLE DDL from validation.maxlength and skips label columns', () => {
 		const output = renderSample('create-table.sql.hbs');
 		expect(output).toContain('CREATE TABLE userRegistration');
 		expect(output).toContain('userName VARCHAR(64) NOT NULL');
 		expect(output).toContain('age INTEGER');
 		expect(output).toContain('birthDate DATE');
 		expect(output).not.toContain('sectionTitle');
+	});
+
+	it('uses validation.dbMaxlength in CREATE TABLE when db-maxlength is opted in', () => {
+		const output = renderSample('create-table.sql.hbs', ['db-maxlength']);
+		expect(output).toContain('userName VARCHAR(192) NOT NULL');
 	});
 });

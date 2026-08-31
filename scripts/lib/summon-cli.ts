@@ -12,6 +12,8 @@ export type SummonCliOptions = {
 	template: string | undefined;
 	source: string | undefined;
 	out: string | undefined;
+	projectionIds: string[] | undefined;
+	bytesPerChar: number | undefined;
 };
 
 /**
@@ -28,19 +30,44 @@ export type SummonCliRunResult = {
  */
 export function summonUsage(): string {
 	return `Usage:
-  npm run arcane:summon -- --target <id> --template <hbs> --source <yaml> [--out <file>]
+  npm run arcane:summon -- --target <id> --template <hbs> --source <yaml> [--out <file>] [--projection <ids>] [--bytes-per-char <n>]
 
 Options:
-      --target <id>       テンプレートへ渡す targetId（任意文字列）
-      --template <hbs>    Handlebars テンプレートパス
-      --source <yaml>     IR snapshot YAML ファイル
-  -o, --out <file>        出力ファイル（省略時は stdout）
-  -h, --help              このヘルプ
+      --target <id>            テンプレートへ渡す targetId（任意文字列）
+      --template <hbs>         Handlebars テンプレートパス
+      --source <yaml>          IR snapshot YAML ファイル
+  -o, --out <file>             出力ファイル（省略時は stdout）
+      --projection <ids>       射影プラグイン id（カンマ区切り、例: by-logical-id,db-maxlength）
+      --bytes-per-char <n>     db-maxlength のバイト倍率（正の整数、省略時 3）
+  -h, --help                   このヘルプ
 
 Examples:
   npm run arcane:summon -- --target primefaces --template ./create-events.js.hbs --source ./ir-snapshot.yaml
   npm run arcane:summon -- --target primefaces --template ./x.hbs --source ./s.yaml > out.js
+  npm run arcane:summon -- --target primefaces --template ./create-table.sql.hbs --source ./s.yaml --projection by-logical-id,db-maxlength
 `;
+}
+
+/**
+ * カンマ区切りの射影 id リストを配列にする
+ */
+export function parseProjectionIdList(raw: string): string[] {
+	return raw
+		.split(',')
+		.map((pluginId) => pluginId.trim())
+		.filter((pluginId) => pluginId !== '');
+}
+
+/**
+ * --bytes-per-char の値を正の整数として読む
+ */
+function parseBytesPerChar(raw: string): number {
+	const value = Number(raw);
+	if (!Number.isInteger(value) || value <= 0) {
+		throw new Error('--bytes-per-char must be a positive integer');
+	}
+
+	return value;
 }
 
 /**
@@ -52,7 +79,9 @@ export function parseSummonCliArgs(argv: string[]): SummonCliOptions {
 		target: undefined,
 		template: undefined,
 		source: undefined,
-		out: undefined
+		out: undefined,
+		projectionIds: undefined,
+		bytesPerChar: undefined
 	};
 
 	for (let i = 0; i < argv.length; i += 1) {
@@ -87,6 +116,12 @@ export function parseSummonCliArgs(argv: string[]): SummonCliOptions {
 			case '-o':
 			case '--out':
 				options.out = next();
+				break;
+			case '--projection':
+				options.projectionIds = parseProjectionIdList(next());
+				break;
+			case '--bytes-per-char':
+				options.bytesPerChar = parseBytesPerChar(next());
 				break;
 			default:
 				throw new Error(`unknown argument: ${arg}`);
@@ -130,7 +165,17 @@ export function runSummonCli(argv: string[]): SummonCliRunResult {
 	const sourcePath = requireExistingFile('--source', options.source);
 	const snapshot = loadRestoredIrSnapshotFile(sourcePath);
 	const templateSource = readFileSync(templatePath, 'utf8');
-	const { output, warnings } = summonFromSnapshot({ target, templateSource, snapshot });
+	const pluginOptions =
+		options.bytesPerChar === undefined
+			? undefined
+			: { 'db-maxlength': { bytesPerChar: options.bytesPerChar } };
+	const { output, warnings } = summonFromSnapshot({
+		target,
+		templateSource,
+		snapshot,
+		projectionIds: options.projectionIds,
+		pluginOptions
+	});
 
 	return {
 		output,
