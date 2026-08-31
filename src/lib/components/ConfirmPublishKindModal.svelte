@@ -25,27 +25,28 @@
 	} = $props();
 </script>
 
-<Modal title="確定の系統" bind:open size="sm">
+<Modal title="確定の系統" bind:open size="md" classes={{ header: "py-2 md:py-2", body: "p-4" }}>
 	<div class="flex flex-col gap-4">
 		<p class="text-sm text-gray-700 dark:text-gray-300">
 			{#if publishContext === 'past'}
-				HEAD より古い版を編集しています。メタの修正などはパッチ、この内容を正本にする場合は新たな正本を選んでください。
+				最新版より古い版を編集しています。<br>
+				メタの修正などはパッチ、この内容を正本にする場合は新たな正本を選んでください。
 			{:else}
 				メタの修正などはパッチ（同一 main の sub を進める）、大きな変更は改版（main を進める）を選んでください。
 			{/if}
 		</p>
-		<div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-			<Button color="alternative" disabled={busy} onclick={onCancel}>キャンセル</Button>
-			<Button color="alternative" disabled={busy} onclick={() => onConfirm('patch')}>
-				パッチとして確定（{formatPublishedVersionLabel(patchVersion, changeReason)}）
+		<div class="flex flex-col gap-2 sm:flex-row sm:justify-center text-center">
+			<Button size="xs" color="alternative" disabled={busy} onclick={onCancel}>キャンセル</Button>
+			<Button size="xs" color="alternative" disabled={busy} onclick={() => onConfirm('patch')}>
+				修正版更新<br>({formatPublishedVersionLabel(patchVersion, changeReason)})
 			</Button>
 			{#if publishContext === 'past'}
-				<Button color="primary" disabled={busy} onclick={() => onConfirm('new-head')}>
-					新たな正本として確定（{formatPublishedVersionLabel(newHeadVersion, changeReason)}）
+				<Button size="xs" color="primary" disabled={busy} onclick={() => onConfirm('new-head')}>
+					新たな正本として確定<br>({formatPublishedVersionLabel(newHeadVersion, changeReason)})
 				</Button>
 			{:else}
-				<Button color="primary" disabled={busy} onclick={() => onConfirm('revision')}>
-					改版として確定（{formatPublishedVersionLabel(revisionVersion, changeReason)}）
+				<Button size="xs" color="primary" disabled={busy} onclick={() => onConfirm('revision')}>
+					改版として確定<br>({formatPublishedVersionLabel(revisionVersion, changeReason)})
 				</Button>
 			{/if}
 		</div>

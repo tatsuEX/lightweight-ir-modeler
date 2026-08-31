@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Button, Label, Select, type SelectOptionType } from 'flowbite-svelte';
 	import ConfirmPublishKindModal from '$lib/components/ConfirmPublishKindModal.svelte';
 	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
@@ -21,6 +22,13 @@
 		type PublishedVersionsListing
 	} from '$lib/store/layout-editor/snapshot-version-client';
 
+	let {
+		showBasedOn = false
+	}: {
+		/** true のときだけ読込元（basedOn）を出す。既定は出さない */
+		showBasedOn?: boolean;
+	} = $props();
+
 	const uiDefinition = getUIDefinitionContext();
 	const snapshotComments = getSnapshotCommentsContext();
 	const toast = getToastContext();
@@ -36,21 +44,33 @@
 	);
 	const publishContext = $derived(getPublishContext(listing.versions, uiDefinition.basedOn));
 	const workingChangeReason = $derived(uiDefinition.changeReason);
+	/**
+	 * パッチ版を取得する
+	 */
 	const patchVersion = $derived(
 		publishContext === 'first'
 			? ''
 			: resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'patch')
 	);
+	/**
+	 * 新たな正本版を取得する
+	 */
 	const newHeadVersion = $derived(
 		publishContext === 'past'
 			? resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'new-head')
 			: ''
 	);
+	/**
+	 * 通常の改版版を取得する
+	 */
 	const revisionVersion = $derived(
 		publishContext === 'past'
 			? ''
 			: resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'revision')
 	);
+	/**
+	 * 過去版一覧を取得する
+	 */
 	const versionItems = $derived<SelectOptionType<string>[]>(
 		listing.selectable.map((version) => ({
 			value: version,
@@ -61,7 +81,37 @@
 			)
 		}))
 	);
-	const headLabel = $derived(
+	/**
+	 * 作業中の版として Select に載せる version を返す
+	 */
+	function resolveLoadedSelectableVersion(
+		currentListing: PublishedVersionsListing,
+		basedOn: string | undefined,
+		version: string
+	): string {
+		if (basedOn && currentListing.selectable.includes(basedOn)) {
+			return basedOn;
+		}
+		if (currentListing.selectable.includes(version)) {
+			return version;
+		}
+
+		return currentListing.head ?? currentListing.selectable.at(-1) ?? '';
+	}
+
+	const loadedSelectableVersion = $derived(
+		resolveLoadedSelectableVersion(listing, uiDefinition.basedOn, uiDefinition.version)
+	);
+	/**
+	 * Select が作業中の版と違い、まだ読込していない
+	 */
+	const selectionPending = $derived(
+		selectedVersion !== '' && selectedVersion !== loadedSelectableVersion
+	);
+	/**
+	 * 最新版のラベルを取得する
+	 */
+	const latestLabel = $derived(
 		listing.head
 			? formatPublishedVersionLabel(
 					listing.head,
@@ -69,6 +119,9 @@
 				)
 			: ''
 	);
+	/**
+	 * 読込元版のラベルを取得する
+	 */
 	const basedOnLabel = $derived(
 		uiDefinition.basedOn
 			? formatPublishedVersionLabel(
@@ -78,6 +131,9 @@
 			: ''
 	);
 
+	/**
+	 * UI 定義の logicalId が変更されたら確定版一覧を再取得する
+	 */
 	$effect(() => {
 		const logicalId = uiDefinition.logicalId;
 		if (!isValidLogicalId(logicalId)) {
@@ -92,14 +148,36 @@
 	});
 
 	/**
+	 * 作業中メタが変わったら Select を作業中の版へ合わせる（ユーザの未読込選択は basedOn が変わらない限り維持する）
+	 */
+	$effect(() => {
+		const basedOn = uiDefinition.basedOn;
+		const version = uiDefinition.version;
+		const preferred = untrack(() =>
+			resolveLoadedSelectableVersion(listing, basedOn, version)
+		);
+		if (preferred !== '') {
+			selectedVersion = preferred;
+		}
+	});
+
+	/**
 	 * 確定版一覧を再取得する
 	 */
-	async function refreshListing(logicalId: string): Promise<void> {
+	async function refreshListing(logicalId: string, nextSelected?: string): Promise<void> {
 		try {
 			listing = await fetchPublishedVersions(logicalId);
-			if (!listing.selectable.includes(selectedVersion)) {
-				selectedVersion = listing.head ?? listing.selectable.at(-1) ?? '';
+			if (nextSelected && listing.selectable.includes(nextSelected)) {
+				selectedVersion = nextSelected;
+				return;
 			}
+
+			// WARN: logicalId 切替時は作業中の版へ合わせる。未読込の Select 操作は一覧再取得より前だけ有効。
+			selectedVersion = resolveLoadedSelectableVersion(
+				listing,
+				uiDefinition.basedOn,
+				uiDefinition.version
+			);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
 			toast.warn('確定版一覧を取得できませんでした', detail);
@@ -135,7 +213,7 @@
 			const result = await publishWorkingSnapshot(uiDefinition.logicalId, kind);
 			const publishedLabel = formatPublishedVersionLabel(result.version, workingChangeReason);
 			applyLoadedSnapshot(result.snapshot);
-			await refreshListing(uiDefinition.logicalId);
+			await refreshListing(uiDefinition.logicalId, result.version);
 			toast.info('確定しました', publishedLabel);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
@@ -174,7 +252,7 @@
 			);
 			const snapshot = await loadWorkingSnapshotFromVersion(uiDefinition.logicalId, selectedVersion);
 			applyLoadedSnapshot(snapshot);
-			await refreshListing(uiDefinition.logicalId);
+			await refreshListing(uiDefinition.logicalId, selectedVersion);
 			toast.info('過去版を読み込みました', `${loadedLabel}（history をリセット）`);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
@@ -192,8 +270,10 @@
 				? `確定（→ ${formatPublishedVersionLabel(revisionVersion, workingChangeReason)}）`
 				: '確定'}
 		</Button>
-		<div class="w-44 min-w-0">
-			<Label for="published-version-select">過去版</Label>
+		<div class="min-w-0 flex-1">
+			<Label for="published-version-select">
+				{selectionPending ? '過去版（未読込）' : '過去版'}
+			</Label>
 			<Select
 				id="published-version-select"
 				size="sm"
@@ -201,11 +281,17 @@
 				bind:value={selectedVersion}
 				disabled={!canMutate || busy || versionItems.length === 0}
 				placeholder="確定版がありません"
+				aria-label={selectionPending ? '過去版（未読込）' : '過去版'}
+				classes={{
+					select: selectionPending
+						? 'border-amber-500 ring-1 ring-amber-500 dark:border-amber-400 dark:ring-amber-400'
+						: ''
+				}}
 			/>
 		</div>
 		<Button
 			size="sm"
-			color="alternative"
+			color={selectionPending ? 'amber' : 'alternative'}
 			disabled={!canMutate || busy || selectedVersion === ''}
 			onclick={() => void handleLoadVersion()}
 		>
@@ -213,9 +299,9 @@
 		</Button>
 	</div>
 	{#if listing.head}
-		<p class="text-xs text-gray-500 dark:text-gray-400">HEAD: {headLabel}</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">最新版: {latestLabel}</p>
 	{/if}
-	{#if uiDefinition.basedOn}
+	{#if showBasedOn && uiDefinition.basedOn}
 		<p class="text-xs text-gray-500 dark:text-gray-400">読込元: {basedOnLabel}</p>
 	{/if}
 </div>

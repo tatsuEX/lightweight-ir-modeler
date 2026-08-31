@@ -287,15 +287,8 @@
 				/>
 			</div>
 
-			<div class={fieldClass}>
-				<Label for="ui-definition-version">確定版</Label>
-				<p
-					id="ui-definition-version"
-					class="truncate text-sm text-gray-900 dark:text-gray-100"
-					title={formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}
-				>
-					{formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}
-				</p>
+			<div class="{fieldClass} md:col-span-2">
+				<SnapshotVersionControls />
 			</div>
 
 			<div class="{fieldClass} md:col-span-2">
@@ -307,10 +300,6 @@
 					aria-label="変更概要"
 					bind:value={uiDefinition.changeReason}
 				/>
-			</div>
-
-			<div class="{fieldClass} md:col-span-4">
-				<SnapshotVersionControls />
 			</div>
 
 			<div class={compactDateClass}>

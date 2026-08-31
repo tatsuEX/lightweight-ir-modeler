@@ -241,6 +241,8 @@ export const EMPTY_PUBLISHED_VERSIONS_LISTING: PublishedVersionsListing = {
 
 /**
  * ユーザ向けの版識別ラベルを作る（changeReason を主、version を括弧で併記）
+ *
+ * `options.head` が true なら末尾に「最新版」を付ける。
  */
 export function formatPublishedVersionLabel(
 	version: string,
@@ -250,7 +252,7 @@ export function formatPublishedVersionLabel(
 	const trimmedReason = changeReason?.trim() ?? '';
 	const identity = trimmedReason.length > 0 ? `${trimmedReason} (${version})` : version;
 
-	return options?.head ? `${identity} (HEAD)` : identity;
+	return options?.head ? `${identity} (最新版)` : identity;
 }
 
 /**

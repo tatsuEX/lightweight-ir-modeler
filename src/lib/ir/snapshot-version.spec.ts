@@ -74,7 +74,7 @@ describe('snapshot-version', () => {
 	it('formats user-facing version labels from changeReason', () => {
 		expect(formatPublishedVersionLabel('1.0')).toBe('1.0');
 		expect(formatPublishedVersionLabel('1.0', '初回リリース')).toBe('初回リリース (1.0)');
-		expect(formatPublishedVersionLabel('2.0', '正本切替', { head: true })).toBe('正本切替 (2.0) (HEAD)');
+		expect(formatPublishedVersionLabel('2.0', '正本切替', { head: true })).toBe('正本切替 (2.0) (最新版)');
 		expect(findPublishedChangeReason([{ version: '1.0', changeReason: '初回' }], '1.0')).toBe('初回');
 		expect(findPublishedChangeReason(undefined, '1.0')).toBeUndefined();
 	});
