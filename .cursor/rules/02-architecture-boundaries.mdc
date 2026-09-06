@@ -9,7 +9,7 @@ alwaysApply: true
 
 | Path | Role |
 |---|---|
-| `ir/` | Stable domain SSOT (Single Source Of Truth) (`IRDefinition`, `Component`, `ir/elements/`) |
+| `ir/` | Domain SSOT (Single Source Of Truth) by IR **kind** (`UIDefinition`, `ir/elements/`, snapshot helpers). Do not name a catch-all `IRDefinition` |
 | `raw/` | Temporary model between external files and IR |
 | `schema/` | Trust boundary (JSON Schema / Zod) |
 | `transform/` | Raw ⇄ IR |
@@ -17,10 +17,10 @@ alwaysApply: true
 | `io/` | External file read/write |
 | `config/` | Client-safe application config types, defaults, pure helpers |
 | `server/config/` | Server-only YAML load / merge / parse / path resolution |
-| `store/` | Presentation-facing IR operations |
+| `store/` | Presentation-facing operations (`$state`, Context). Holds domain instances; does not replace them |
 | `components/` | Svelte UI widgets (not IR elements) |
 
-`ir/elements/` holds concrete IR UI element types that extend `Component`. Do not confuse with `lib/components/` (Svelte).
+`ir/elements/` holds UI-element factories (and later concrete types that extend `Component`). Do not confuse with `lib/components/` (Svelte).
 
 ## Responsibilities
 
@@ -28,18 +28,18 @@ alwaysApply: true
 - **DefinitionWriter** — `RawDefinition` → external UI file (create/overwrite)
 - **RawDefinition** — flexible intermediate for transform; not the SSOT (Single Source Of Truth)
 - **SchemaValidator** — validate at system boundaries (Raw via JSON Schema/Zod). A domain validation engine is deferred
-- **IRTransformer** — Raw ⇄ IR
-- **IRDefinition** — aggregate of UI elements; SSOT (Single Source Of Truth); handle breaking changes with extreme care
-- **Component** — base for concrete types under `ir/elements/`
-- **IRDefinitionStore** — GUI-operable IR operations (presentation layer)
+- **IRTransformer** — Raw ⇄ IR (per target)
+- **UIDefinition** — UI-definition aggregate (current IR kind); SSOT (Single Source Of Truth) for that kind; public surface is `meta` + `components` plus operations (`append`, `loadSnapshot`, …). No per-field accessors; handle breaking changes with extreme care
+- **Component** — base for concrete types under `ir/elements/` (hierarchy may still be incomplete)
+- **layout-editor store** — GUI-operable operations: inject `$state` into `UIDefinition`, Context, import/export HTTP
 
 ## Dependency rules
 
 - `RawDefinition` must not depend on Reader/Writer.
-- `IRDefinition` must not depend on external UI framework definitions.
+- `UIDefinition` must not depend on external UI framework definitions or Svelte.
 - Format-specific logic stays in Reader / Writer / Transformer.
-- `IRDefinition` is the stable domain model.
-- First-party plugins (projection, writer-filter, adapter-target) sit beside this layout. Projections must not replace IR; writer-filters must not skip Raw validation. See `.cursor/rules/16-plugins.mdc`.
+- Purpose-specific **meta DTO projections** (live / editor / snapshot / vendor export) live in `ui-definition-meta.ts`, not as ad-hoc methods on the aggregate.
+- First-party plugins (projection, writer-filter, adapter-target) sit beside this layout. Plugin projections must not replace IR; writer-filters must not skip Raw validation. See `.cursor/rules/16-plugins.mdc`.
 
 ## Dataflow
 
@@ -48,19 +48,19 @@ alwaysApply: true
 1. External UI definition file
 2. Reader → `RawDefinition`
 3. SchemaValidator validates Raw via `RawDefinitionSchema`
-4. Transformer → `IRDefinition`
-5. GUI renders IR
+4. Transformer → `UIDefinition` (editor meta + components)
+5. GUI renders via store Context
 
 ### Export
 
-1. GUI edits `IRDefinition`
-2. Transformer → `RawDefinition`
+1. GUI edits `UIDefinition`
+2. Vendor-export meta projection → Transformer → `RawDefinition` (includes IR lineage keys such as `basedOn`)
 3. SchemaValidator validates Raw via `RawDefinitionSchema`
-4. Writer → external UI definition files (writer-filters may run after Raw validation, before serialize)
+4. Writer → external UI definition files (writer-filters may run after Raw validation, before serialize). Lineage may be embedded in artifact comments when the target dialect allows
 
 ### Plugins (beside the flow)
 
-- **projection** — read-only view of restored IR for templates / `arcane:summon` / optional writer lookup
+- **projection** — read-only view of restored IR for templates / `arcane:summon` / optional writer lookup (not the same as meta DTO projections)
 - **writer-filter** — ordered `payload → filter → payload` on validated Raw (not an event bus)
 
 They must not replace IR as the SSOT (Single Source Of Truth).

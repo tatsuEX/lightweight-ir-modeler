@@ -15,7 +15,7 @@ Implementations live in-repo and register by **id**. Selection/order may be inje
 | writer-filter | Transform validated Raw / residual toward a target payload | Skip Raw validation, talk over an event bus |
 | adapter-target | Reader / Writer / Transformer / schema / target docs | Import into `ir/` |
 
-Core `ir/` stays the SSOT (Single Source Of Truth) as an array of components. Projection output is for templates, `arcane:summon`, and optional lookup inside writer-filters.
+Core `ir/` stays the SSOT (Single Source Of Truth) for named IR kinds (`UIDefinition` today). Projection output is for templates, `arcane:summon`, and optional lookup inside writer-filters.
 
 ## Injection
 

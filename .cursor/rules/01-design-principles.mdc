@@ -10,6 +10,16 @@ alwaysApply: true
 - Prefer **MVP**: implement a small working slice first.
 - Abstract or share only after the same technical idea appears in **3+ places** (or clear scale demands it). Do not invent frameworks early.
 
+## Naming IR kinds
+
+- Do **not** use `IRDefinition` or `ir-definition` as a type or file name. Name each IR kind (`UIDefinition`, later layout IR, …).
+
+## Structure over local patches
+
+- Do not hide a mapping that serves GUI, snapshot persist, **and** vendor export behind a one-off class method or a call-site `Pick` / field list.
+- When the same domain data has two or more output paths, give the projection a name next to the domain type (for UI definition meta: `src/lib/ir/ui-definition-meta.ts`).
+- **YAGNI** still applies: do not add a projection with no caller, a fourth plugin kind, or unused extension points.
+
 ## When implementing
 
 - Prefer a direct solution that works for the current format/flow.

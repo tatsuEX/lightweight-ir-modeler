@@ -11,6 +11,7 @@ alwaysApply: false
 - Keep format-specific mapping here (or behind small helpers in this package), not in `ir/` or `store/`.
 - Do not read/write files here — that is `io/`.
 - Do not bypass SchemaValidator; callers validate Raw at boundaries around transform.
+- Export: copy **`toVendorExportMeta`** fields onto Raw, including lineage (`basedOn`, `changeReason`). Import: do **not** map vendor values onto `basedOn`.
 
 ```typescript
 // ✅ GOOD

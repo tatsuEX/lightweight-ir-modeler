@@ -1,15 +1,16 @@
 ---
-description: Store and presentation — IR operations UI, no domain ownership
+description: Store and presentation — UIDefinition operations UI, no domain ownership
 globs: src/lib/store/**/*,src/routes/**/*,src/lib/components/**/*
 alwaysApply: false
 ---
 
 # Store & Presentation
 
-- `IRDefinitionStore` / layout-editor state expose GUI-operable operations over IR (presentation edge).
+- layout-editor state exposes GUI-operable operations over **`UIDefinition`** (presentation edge).
 - `src/routes/` and `src/lib/components/` render and bind UI; they do not own transform or external-format rules.
 - Do not put Reader/Writer/schema details into Svelte components — call store or thin app functions instead.
-- Do not redefine SSOT (Single Source Of Truth) in the store; the store holds/references `IRDefinition`, it does not replace it.
+- Do not redefine SSOT (Single Source Of Truth) in the store; the store injects `$state` into a domain `UIDefinition` and shares it via Context.
+- GUI binds `ui.meta` and `ui.components` (the `$state` objects). The domain class mutates them; it has no per-field accessors.
 
 ## Context API
 
@@ -17,8 +18,8 @@ alwaysApply: false
 - Example: `setUIDefinitionContext` in `+layout.svelte`, `getUIDefinitionContext` in pages/components.
 
 ```typescript
-// ✅ GOOD — ancestor sets, descendant gets
-setUIDefinitionContext(new UIDefinition());
+// ✅ GOOD — ancestor sets a reactive domain instance, descendant gets
+setUIDefinitionContext(createReactiveUIDefinition(...));
 const ui = getUIDefinitionContext();
 
 // ❌ BAD — module singleton or prop-drill the store tree-wide

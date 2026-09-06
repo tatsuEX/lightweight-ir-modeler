@@ -9,8 +9,9 @@ alwaysApply: false
 - **Reader:** external UI definition file → `RawDefinition`.
 - **Writer:** `RawDefinition` → external UI definition file (create/overwrite).
 - Isolate all external-format parsing/serialization here (and under `io/formats/` when a second format appears — YAGNI until then).
-- Do not depend on `IRDefinition` from Reader/Writer; go through Raw + Transformer.
+- Do not import `UIDefinition` from Reader/Writer; go through Raw + Transformer.
 - Raw must remain independent of Reader/Writer (no reverse dependency).
+- Optional IR **lineage** keys on Raw (`basedOn`, `changeReason`, …) are not vendor vocabulary. Writers may embed them in artifact comments when the target dialect allows. Import must not invent `basedOn` from a vendor file.
 
 ```typescript
 // ✅ GOOD

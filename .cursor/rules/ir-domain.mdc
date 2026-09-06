@@ -1,0 +1,27 @@
+---
+description: IR domain package — named kinds, no Svelte or vendor types
+globs: src/lib/ir/**/*
+alwaysApply: false
+---
+
+# IR domain (`ir/`)
+
+- `ir/` holds **named IR kinds**. The current UI-definition aggregate is **`UIDefinition`**. Do **not** introduce a type or file named `IRDefinition` / `ir-definition`.
+- Treat breaking changes to a kind’s durable fields as high-risk; prefer additive changes. An IR schema migration *engine* is deferred (distinct from snapshot *product* versions under `versions/`).
+- `UIDefinition` public surface is `meta` / `components` plus operations (`append`, `loadSnapshot`, …). Do not add per-field get/set for live meta keys.
+- Plugin projection views (e.g. map by `logicalId`) are not IR. Do not persist them on the snapshot or import adapter types here. See `.cursor/rules/16-plugins.mdc`.
+- Keep this package free of external UI-framework types, file I/O, and Svelte.
+- UI-definition meta **DTO projections** (live / editor / snapshot / vendor export) live in `ui-definition-meta.ts`.
+- Concrete UI kinds belong under `src/lib/ir/elements/`. Factories may return plain objects until a `Component` class hierarchy exists.
+- `UIDefinition` aggregates elements; it does not know about Reader/Writer/Raw schemas or `ImportedDefinition`.
+
+```typescript
+// ✅ GOOD — domain-only
+export class UIDefinition { ... }
+
+// ❌ BAD — framework leak into IR
+import type { SomethingFromVendorSdk } from 'vendor-ui';
+
+// ❌ BAD — catch-all kind name
+export class IRDefinition { ... }
+```

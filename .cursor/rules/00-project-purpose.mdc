@@ -6,13 +6,15 @@ alwaysApply: true
 # Project Purpose
 
 - Speed up prototype design and authoring of UI definitions.
-- Treat an abstracted **IR (Intermediate Representation)** as the domain core and **SSOT (Single Source Of Truth)**.
-- Use the IR to convert to/from UI-framework (and other vendor) definition files.
+- Treat abstracted **IR (Intermediate Representation)** kinds as the domain core and **SSOT (Single Source Of Truth)**.
+- Use those IR models to convert to/from UI-framework (and other vendor) definition files.
 - Maximize portability; minimize dependence on specific tech stacks or platform vendors.
 
 ## Core implication
 
-All durable meaning about a UI definition lives in **IRDefinition**. External formats are adapters around it, not the source of truth.
+Durable meaning about a **UI definition** lives in **`UIDefinition`** (under `ir/`). External formats are adapters around it, not the source of truth.
+
+`ir/` may later hold other IR kinds (for example layout IR). Each kind has its **own type name**. Do **not** name a type or file `IRDefinition` / `ir-definition`.
 
 ## Documentation implication
 
