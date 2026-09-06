@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T06:22:00"
+updated: "2026-09-07T07:14:00"
 summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion、component hydrate"
 features:
   - ir-snapshot
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-07 06:22
+最終更新: 2026-09-07 07:14
 
 ## 概要
 
@@ -137,7 +137,7 @@ Root は UI IR 定義の**構造版** `schemaVersion`（`<main>.<sub>`。現行 
 
 migration step は plain record → record の関数（`snapshot-migration.ts`）。Domain 型を import しないので、過去 schema の知識が Domain Model に入らない。現行 schema は `1.0` のみなので登録 step は空。
 
-Output uses eemeli/yaml Document (not js-yaml). Operational Markdown comments are stored as YAML `#` (`commentBefore`):
+Output uses eemeli/yaml Document. Operational Markdown comments are stored as YAML `#` (`commentBefore`):
 
 - `uiDefinition` key: one comment for the meta accordion as a whole
 - any path under `uiDefinition` (domain keys such as `logicalId`, and `external…`)
@@ -164,8 +164,6 @@ Envelope shape:
 - 読込後のライブ配列は `EditorComponent[]`。次回保存で既定値が YAML に埋まり、未使用だった `tooltip` / `autosize` は消える（schemaVersion は上げない）
 
 createdAt is preserved by buildSnapshotMetaForWrite on first save.
-
-application.yml still loads with js-yaml for now; unify onto eemeli/yaml later.
 
 ## 関連 API
 

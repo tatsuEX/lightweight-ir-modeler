@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T06:40:00"
+updated: "2026-09-07T07:14:00"
 summary: "モジュール境界・UIDefinition は meta/components 公開・EditorComponent discriminated union・snapshot schemaVersion"
 features:
   - architecture
@@ -21,7 +21,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-09-07 06:40
+最終更新: 2026-09-07 07:14
 
 ## 目的
 
@@ -44,7 +44,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
 | `store/layout-editor/` | 画面向け状態 | `createReactiveUIDefinition` / Context、`ir-auto-save.svelte.ts` ほか |
 | `store/toast/` | アプリ全体の Toast メッセージ | `toast.svelte.ts`（`ToastMessages` / Context） |
-| `utils/` | YAML key sort / Document / comments | `object-key-sort.ts`, `yaml-document.ts`, `yaml-comments.ts` (IR snapshot; application.yml still js-yaml) |
+| `utils/` | YAML key sort / Document / comments | `object-key-sort.ts`, `yaml-document.ts`, `yaml-comments.ts`（IR snapshot の Document / コメント。application.yml と schema YAML の読込も `parseYaml`） |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
 
 設定の可視性:

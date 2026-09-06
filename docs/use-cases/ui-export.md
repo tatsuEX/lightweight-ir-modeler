@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T00:04:00"
+updated: "2026-09-07T07:14:00"
 summary: "Export 横断パイプライン・ベンダー投影・IR 系統キー"
 features:
   - ui-export
@@ -14,7 +14,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-09-07 00:04
+最終更新: 2026-09-07 07:14
 
 ## 概要
 
@@ -137,7 +137,7 @@ sequenceDiagram
 ## Raw 検証と JSON Schema
 
 - Schema ファイル: `schemas/raw/<filename>`（レジストリでファイル名を明示）
-- 対応拡張子: `.json` / `.yaml` / `.yml`（拡張子に応じて `JSON.parse` または `js-yaml`）
+- 対応拡張子: `.json` / `.yaml` / `.yml`（拡張子に応じて `JSON.parse` または eemeli/yaml）
 - 読込: `json-schema-loader.ts` → オブジェクト → `z.fromJSONSchema` → プロセス内 `Map` キャッシュ
 - 検証: `validateRawDefinition`（失敗時 `RawValidationError`、メッセージは Zod 日本語ロケール）
 - WARN: YAML を採用する場合はレジストリに `.yaml` / `.yml` を**明示**する。暗黙の自動探索（同 stem の json/yaml 切り替え）はしない
