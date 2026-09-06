@@ -210,7 +210,8 @@ export const PersistedLabelSchema = z.object({
  * 永続化形（id なし）: 未知ベンダー type
  *
  * WARN: 元のベンダー型名は `sourceType` に退避する。`type: string` の catch-all は
- * discriminant を壊すので置かない。正規化は `hydrateEditorComponent`（restore / loadSnapshot）。
+ * discriminant を壊すので置かない。正規化は `parsePersistedComponent`（Import）と
+ * `hydrateEditorComponent`（restore / loadSnapshot）。
  */
 export const PersistedUnsupportedSchema = z.object({
 	type: z.literal('unsupported'),
@@ -267,6 +268,31 @@ export type KnownComponentType = Exclude<ComponentType, 'unsupported'>;
 
 /** 選択系 items の 1 要素 */
 export type SelectItem = z.infer<typeof SelectItemSchema>;
+
+/** items を持つ Editor component */
+export type SelectEditorComponent = Extract<
+	EditorComponent,
+	{ type: 'checkbox' | 'radio' | 'dropdown' | 'dropdown-multi' }
+>;
+
+/**
+ * 選択系 items を { label, value }[] に揃える
+ */
+export function toSelectItems(items: ReadonlyArray<string | SelectItem>): SelectItem[] {
+	return items.map((item) => (typeof item === 'string' ? { label: item, value: item } : item));
+}
+
+/**
+ * 選択系 component か判定する
+ */
+export function isSelectEditorComponent(component: EditorComponent): component is SelectEditorComponent {
+	return (
+		component.type === 'checkbox' ||
+		component.type === 'radio' ||
+		component.type === 'dropdown' ||
+		component.type === 'dropdown-multi'
+	);
+}
 
 /** 既知 type の列（ファクトリ registry と同期させる） */
 export const KNOWN_COMPONENT_TYPES = [

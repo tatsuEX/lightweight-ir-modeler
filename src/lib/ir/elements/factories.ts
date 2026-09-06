@@ -396,7 +396,7 @@ export function createLabel(info: FactoryInit<'label'>): EditorOf<'label'> {
 /**
  * 未知ベンダー type を unsupported として作成する
  *
- * WARN: Phase 1 では registry に載せない。未知 type の正規化は Phase 3。
+ * WARN: registry には載せない。未知 type の正規化は `parsePersistedComponent` / hydrate。
  */
 export function createUnsupported(
 	info: {
@@ -451,8 +451,8 @@ export function isPropertyEditableType(type: unknown): type is KnownComponentTyp
 /**
  * info.type に対応するファクトリでコンポーネントを作成する
  *
- * WARN: 未登録 type はデフォルトを補えないため、id だけ付けて素通しする。
- * 未知 type を `unsupported` へ正規化するのは Phase 3。
+ * WARN: 未登録 type（`unsupported` を含む）は id だけ付けて素通しする。
+ * 未知ベンダー type の正規化は `parsePersistedComponent` / hydrate の責務。
  */
 export function createComponentByType(
 	info: unknown

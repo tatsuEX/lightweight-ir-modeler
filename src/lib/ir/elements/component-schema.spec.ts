@@ -3,6 +3,8 @@ import {
 	COMPONENT_TYPES,
 	EditorComponentSchema,
 	hydrateEditorComponent,
+	parsePersistedComponent,
+	toSelectItems,
 	KNOWN_COMPONENT_TYPES,
 	PersistedComponentSchema,
 	toPersistedComponent
@@ -140,5 +142,22 @@ describe('IR component schema', () => {
 
 	it('rejects hydrate without an id', () => {
 		expect(() => hydrateEditorComponent({ type: 'textbox' })).toThrow(/non-empty id/);
+	});
+
+	it('normalizes string items to label/value pairs', () => {
+		expect(toSelectItems(['A', { label: 'B', value: 'b' }])).toEqual([
+			{ label: 'A', value: 'A' },
+			{ label: 'B', value: 'b' }
+		]);
+	});
+
+	it('parses a persisted vendor type without minting id', () => {
+		const persisted = parsePersistedComponent({ type: 'product_72_shape', label: '図形' });
+		expect(persisted.type).toBe('unsupported');
+		if (persisted.type !== 'unsupported') {
+			throw new Error('expected unsupported');
+		}
+		expect(persisted.sourceType).toBe('product_72_shape');
+		expect(persisted).not.toHaveProperty('id');
 	});
 });
