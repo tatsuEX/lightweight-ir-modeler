@@ -9,12 +9,10 @@
 	import PreviewRadio from './PreviewRadio.svelte';
 	import PreviewDropdown from './PreviewDropdown.svelte';
 	import PreviewDropdownMulti from './PreviewDropdownMulti.svelte';
-	// import PreviewDatepicker from './PreviewDatepicker.svelte';
-	// import PreviewDateSpan from './PreviewDateSpan.svelte';
-	// import PreviewDatetimepicker from './PreviewDatetimepicker.svelte';
 	import PreviewLabel from './PreviewLabel.svelte';
 	import PreviewUnknown from './PreviewUnknown.svelte';
-	import type { PreviewComponentType, PreviewRendererProps } from '$lib/preview/preview-types';
+	import { isComponentType, type ComponentType } from '$lib/ir/elements/component-schema';
+	import type { PreviewRendererProps } from '$lib/preview/preview-types';
 
 	const PREVIEW_COMPONENT_REGISTRY = {
 		textbox: PreviewTextbox,
@@ -24,23 +22,22 @@
 		radio: PreviewRadio,
 		dropdown: PreviewDropdown,
 		'dropdown-multi': PreviewDropdownMulti,
-		// datepicker: PreviewDatepicker,
-		// date-span: PreviewDateSpan,
-		// datetimepicker: PreviewDatetimepicker,
-		// timepicker: PreviewTimepicker,
+		datepicker: PreviewUnknown,
+		'date-span': PreviewUnknown,
+		datetimepicker: PreviewUnknown,
+		timepicker: PreviewUnknown,
 		label: PreviewLabel,
-		unknown: PreviewUnknown,
-	} satisfies Record<PreviewComponentType, Component<PreviewRendererProps>>;
+		unsupported: PreviewUnknown
+	} satisfies Record<ComponentType, Component<PreviewRendererProps>>;
 	/* === △△△ PREVIEW COMPONENT REGISTRY △△△ === */
 
 	/**
 	 * component.type からプレビューレンダラを解決する
+	 *
+	 * WARN: 未実装 type（date/time 系）と `unsupported` は PreviewUnknown。
 	 */
 	function resolvePreviewRenderer(type: string): Component<PreviewRendererProps> {
-		return (
-			(PREVIEW_COMPONENT_REGISTRY as Record<string, Component<PreviewRendererProps>>)[type] ??
-			PreviewUnknown
-		);
+		return isComponentType(type) ? PREVIEW_COMPONENT_REGISTRY[type] : PreviewUnknown;
 	}
 
 	let { component }: PreviewRendererProps = $props();

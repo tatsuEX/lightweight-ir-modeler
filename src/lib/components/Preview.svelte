@@ -116,7 +116,7 @@
 					<tr class="{PREVIEW_ROW} border-collapse border border-gray-300">
 						<td class="{PREVIEW_ROW_HEADER} p-2 border-collapse border border-gray-300 w-1/4 align-top font-bold">
 							{component.label}
-							{#if component.validation?.required ?? false}
+							{#if component.validation.required}
 								<span class="text-red-500"> *</span>
 							{/if}
 						</td>
