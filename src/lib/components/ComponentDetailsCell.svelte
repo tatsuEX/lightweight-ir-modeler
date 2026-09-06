@@ -4,6 +4,12 @@
 	import TagsInput from '$lib/components/TagsInput.svelte';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
 	import {
+		isSelectEditorComponent,
+		toSelectItems,
+		type EditorComponent,
+		type SelectItem
+	} from '$lib/ir/elements/component-schema';
+	import {
 		closeDatepickerOnFocusOut,
 		formatDateString,
 		normalizeTimeString,
@@ -16,7 +22,7 @@
 	export type DetailsSlot = 0 | 1 | 2;
 
 	type Props = {
-		component: any;
+		component: EditorComponent;
 		rowIndex: number;
 		/** 固定スロット index（HTML slot とは別） */
 		slotId: DetailsSlot;
@@ -34,26 +40,6 @@
 		itemDelimiter !== '' ? itemDelimiter : DEFAULT_ITEM_DELIMITER
 	);
 
-	const ITEMS_TYPES = new Set(['radio', 'checkbox', 'dropdown', 'dropdown-multi']);
-	const FORMAT_TYPES = new Set(['datepicker', 'date-span', 'timepicker', 'datetimepicker']);
-
-	const DEFAULT_VALUE_TYPES_COMPONENTS = {
-		textline: ['textbox'],
-		number: ['number'],
-		multiline: ['textarea', 'label'],
-		date: ['datepicker'],
-		dateSpan: ['date-span'],
-		time: ['timepicker'],
-		datetime: ['datetimepicker'],
-		singleSelect: ['radio', 'dropdown'],
-		multiSelect: ['checkbox', 'dropdown-multi']
-	};
-	const DEFAULT_VALUE_TYPES_MAP = new Map(
-		Object.entries(DEFAULT_VALUE_TYPES_COMPONENTS).flatMap(([inputMethod, components]) =>
-			components.map((type) => [type, inputMethod])
-		)
-	);
-
 	const notSupportedClass = 'text-gray-300 dark:text-gray-700';
 	const fieldLabelClass = 'text-xs text-gray-500 dark:text-gray-400';
 
@@ -64,30 +50,16 @@
 	 *
 	 * WARN: label と value が異なるときだけ `${value}${delimiter}${label}` 形式にする。
 	 */
-	function itemsToTags(items: unknown, delimiter: string): string[] {
-		if (!Array.isArray(items)) {
-			return [];
-		}
-
+	function itemsToTags(items: ReadonlyArray<string | SelectItem>, delimiter: string): string[] {
 		const tags: string[] = [];
-		for (const entry of items) {
-			if (typeof entry === 'string') {
-				if (entry) {
-					tags.push(entry);
-				}
+		for (const entry of toSelectItems(items)) {
+			if (!entry.label && !entry.value) {
 				continue;
 			}
-			if (entry && typeof entry === 'object') {
-				const label = String((entry as { label?: unknown }).label ?? '');
-				const value = String((entry as { value?: unknown }).value ?? '');
-				if (!label && !value) {
-					continue;
-				}
-				if (label === value || !value || !label) {
-					tags.push(label || value);
-				} else {
-					tags.push(`${value}${delimiter}${label}`);
-				}
+			if (entry.label === entry.value || !entry.value || !entry.label) {
+				tags.push(entry.label || entry.value);
+			} else {
+				tags.push(`${entry.value}${delimiter}${entry.label}`);
 			}
 		}
 		return tags;
@@ -98,7 +70,7 @@
 	 *
 	 * WARN: 区切りは先頭一致のみ（value / label 自体に delimiter を含めない前提）。
 	 */
-	function tagsToItems(tags: string[], delimiter: string): { label: string; value: string }[] {
+	function tagsToItems(tags: string[], delimiter: string): SelectItem[] {
 		return tags.map((tag) => {
 			const sep = tag.indexOf(delimiter);
 			if (sep === -1) {
@@ -117,14 +89,20 @@
 	 * multiSelect の defaultValue（string[]）に値が含まれるか判定する
 	 */
 	function isMultiSelected(itemValue: string): boolean {
-		return Array.isArray(component.defaultValue) && component.defaultValue.includes(itemValue);
+		if (component.type !== 'checkbox' && component.type !== 'dropdown-multi') {
+			return false;
+		}
+		return component.defaultValue.includes(itemValue);
 	}
 
 	/**
 	 * multiSelect の defaultValue（string[]）を更新する
 	 */
 	function toggleMultiValue(itemValue: string, checked: boolean): void {
-		const current = Array.isArray(component.defaultValue) ? [...component.defaultValue] : [];
+		if (component.type !== 'checkbox' && component.type !== 'dropdown-multi') {
+			return;
+		}
+		const current = [...component.defaultValue];
 		if (checked) {
 			if (!current.includes(itemValue)) {
 				current.push(itemValue);
@@ -139,6 +117,9 @@
 	 * datetime 初期値の日付部分を更新する
 	 */
 	function setDefaultDateTimeDate(date: Date | undefined): void {
+		if (component.type !== 'datetimepicker') {
+			return;
+		}
 		if (!date) {
 			component.defaultValue = null;
 			return;
@@ -158,6 +139,9 @@
 	 * WARN: 日付未設定のときは IR に書かない（日付が SSOT の先頭）。
 	 */
 	function setDefaultDateTimeTime(time: string): void {
+		if (component.type !== 'datetimepicker') {
+			return;
+		}
 		const prev = parseDateTimeParts(component.defaultValue);
 		const dateStr = formatDateString(prev.date);
 		if (!dateStr) {
@@ -169,79 +153,117 @@
 	const fieldName = $derived(`details-${slotId}`);
 	const timeFieldName = $derived(`${fieldName}-time`);
 	const dateSpanToFieldName = $derived(`${fieldName}-to`);
-	const defaultValueInputMethod = $derived(DEFAULT_VALUE_TYPES_MAP.get(component.type));
 
-	// 列位置に混ぜる: 0 = defaultValue、1 = items | format | cols、2 = rows
-	const showDefaultValue = $derived(slotId === 0);
-	const showItems = $derived(slotId === 1 && ITEMS_TYPES.has(component.type));
-	const showFormat = $derived(slotId === 1 && FORMAT_TYPES.has(component.type));
+	const showDefaultValue = $derived(slotId === 0 && component.type !== 'unsupported');
+	const showItems = $derived(slotId === 1 && isSelectEditorComponent(component));
+	const showFormat = $derived(
+		slotId === 1 &&
+			(component.type === 'datepicker' ||
+				component.type === 'date-span' ||
+				component.type === 'timepicker' ||
+				component.type === 'datetimepicker')
+	);
 	const showCols = $derived(slotId === 1 && component.type === 'textarea');
 	const showRows = $derived(slotId === 2 && component.type === 'textarea');
 	const supported = $derived(showDefaultValue || showItems || showFormat || showCols || showRows);
+	const selectItems = $derived(isSelectEditorComponent(component) ? toSelectItems(component.items) : []);
 </script>
 
 {#if !supported}
 	<span class={notSupportedClass}>- not supported -</span>
-{:else if showDefaultValue}
-	{#if defaultValueInputMethod === 'textline'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
-			<span
-				class="contents"
-				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-			>
-				<Input
-					size="sm"
-					placeholder="初期値"
-					aria-label="{component.type} のデフォルト値"
-					bind:value={component.defaultValue}
-				/>
-			</span>
-		</div>
-	{:else if defaultValueInputMethod === 'number'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
-			<span
-				class="contents"
-				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-			>
-				<Input
-					type="text"
-					size="sm"
-					placeholder="初期値"
-					pattern="-?[0-9]+(\.[0-9]+)?"
-					aria-label="{component.type} のデフォルト値"
-					bind:value={
-						() => component.defaultValue ?? '',
-						(value) => {
+{:else if showDefaultValue && component.type === 'textbox'}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Input
+				size="sm"
+				placeholder="初期値"
+				aria-label="{component.type} のデフォルト値"
+				bind:value={component.defaultValue}
+			/>
+		</span>
+	</div>
+{:else if showDefaultValue && component.type === 'number'}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Input
+				type="text"
+				size="sm"
+				placeholder="初期値"
+				pattern="-?[0-9]+(\.[0-9]+)?"
+				aria-label="{component.type} のデフォルト値"
+				bind:value={
+					() => component.defaultValue ?? '',
+					(value) => {
+						if (component.type === 'number') {
 							component.defaultValue = parseOptionalNumber(value) ?? null;
 						}
 					}
-				/>
-			</span>
-		</div>
-	{:else if defaultValueInputMethod === 'multiline'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
+				}
+			/>
+		</span>
+	</div>
+{:else if showDefaultValue && (component.type === 'textarea' || component.type === 'label')}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Textarea
+				placeholder="初期値"
+				aria-label="{component.type} のデフォルト値"
+				class="w-full"
+				rows={3}
+				bind:value={component.defaultValue}
+			/>
+			<Tooltip>
+				{component.defaultValue}
+			</Tooltip>
+		</span>
+	</div>
+{:else if showDefaultValue && component.type === 'datepicker'}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div onfocusout={closeDatepickerOnFocusOut}>
 			<span
 				class="contents"
 				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
 			>
-				<Textarea
+				<Datepicker
 					placeholder="初期値"
+					inputClass="text-sm"
+					showActionButtons
 					aria-label="{component.type} のデフォルト値"
-					class="w-full"
-					rows={3}
-					bind:value={component.defaultValue}
+					bind:value={
+						() => parseDateString(component.defaultValue),
+						(date) => {
+							if (component.type === 'datepicker') {
+								component.defaultValue = formatDateString(date) ?? null;
+							}
+						}
+					}
+					onclear={() => {
+						if (component.type === 'datepicker') {
+							component.defaultValue = null;
+						}
+					}}
 				/>
-				<Tooltip>
-					{component.defaultValue ?? ''}
-				</Tooltip>
 			</span>
 		</div>
-	{:else if defaultValueInputMethod === 'date'}
+	</div>
+{:else if showDefaultValue && component.type === 'date-span'}
+	<div class="flex flex-col gap-2">
 		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
+			<p class={fieldLabelClass}>defaultValueFrom</p>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div onfocusout={closeDatepickerOnFocusOut}>
 				<span
@@ -249,206 +271,192 @@
 					use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
 				>
 					<Datepicker
-						placeholder="初期値"
+						placeholder="開始日"
 						inputClass="text-sm"
 						showActionButtons
-						aria-label="{component.type} のデフォルト値"
+						aria-label="{component.type} の開始日初期値"
 						bind:value={
-							() => parseDateString(component.defaultValue),
+							() => parseDateString(component.defaultValueFrom),
 							(date) => {
-								component.defaultValue = formatDateString(date) ?? null;
+								if (component.type === 'date-span') {
+									component.defaultValueFrom = formatDateString(date) ?? null;
+								}
 							}
 						}
 						onclear={() => {
-							component.defaultValue = null;
+							if (component.type === 'date-span') {
+								component.defaultValueFrom = null;
+							}
 						}}
 					/>
 				</span>
 			</div>
 		</div>
-	{:else if defaultValueInputMethod === 'dateSpan'}
-		<div class="flex flex-col gap-2">
-			<div>
-				<p class={fieldLabelClass}>defaultValueFrom</p>
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div onfocusout={closeDatepickerOnFocusOut}>
-					<span
-						class="contents"
-						use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-					>
-						<Datepicker
-							placeholder="開始日"
-							inputClass="text-sm"
-							showActionButtons
-							aria-label="{component.type} の開始日初期値"
-							bind:value={
-								() => parseDateString(component.defaultValueFrom),
-								(date) => {
-									component.defaultValueFrom = formatDateString(date) ?? null;
-								}
-							}
-							onclear={() => {
-								component.defaultValueFrom = null;
-							}}
-						/>
-					</span>
-				</div>
-			</div>
-			<div>
-				<p class={fieldLabelClass}>defaultValueTo</p>
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div onfocusout={closeDatepickerOnFocusOut}>
-					<span
-						class="contents"
-						use:arrowNavigation={{
-							field: dateSpanToFieldName,
-							row: rowIndex,
-							fieldGroup: FIELD_GROUP
-						}}
-					>
-						<Datepicker
-							placeholder="終了日"
-							inputClass="text-sm"
-							showActionButtons
-							aria-label="{component.type} の終了日初期値"
-							bind:value={
-								() => parseDateString(component.defaultValueTo),
-								(date) => {
+		<div>
+			<p class={fieldLabelClass}>defaultValueTo</p>
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div onfocusout={closeDatepickerOnFocusOut}>
+				<span
+					class="contents"
+					use:arrowNavigation={{
+						field: dateSpanToFieldName,
+						row: rowIndex,
+						fieldGroup: FIELD_GROUP
+					}}
+				>
+					<Datepicker
+						placeholder="終了日"
+						inputClass="text-sm"
+						showActionButtons
+						aria-label="{component.type} の終了日初期値"
+						bind:value={
+							() => parseDateString(component.defaultValueTo),
+							(date) => {
+								if (component.type === 'date-span') {
 									component.defaultValueTo = formatDateString(date) ?? null;
 								}
 							}
-							onclear={() => {
+						}
+						onclear={() => {
+							if (component.type === 'date-span') {
 								component.defaultValueTo = null;
-							}}
-						/>
-					</span>
-				</div>
+							}
+						}}
+					/>
+				</span>
 			</div>
 		</div>
-	{:else if defaultValueInputMethod === 'time'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
+	</div>
+{:else if showDefaultValue && component.type === 'timepicker'}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Timepicker
+				id="default-time-{component.id}"
+				size="sm"
+				required={false}
+				aria-label="{component.type} のデフォルト値"
+				bind:value={
+					() => normalizeTimeString(component.defaultValue) ?? '',
+					(time) => {
+						if (component.type === 'timepicker') {
+							component.defaultValue = normalizeTimeString(time) ?? null;
+						}
+					}
+				}
+			/>
+		</span>
+	</div>
+{:else if showDefaultValue && component.type === 'datetimepicker'}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		<div class="flex items-start gap-2">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="min-w-0 flex-1" onfocusout={closeDatepickerOnFocusOut}>
+				<span
+					class="contents"
+					use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+				>
+					<Datepicker
+						placeholder="date"
+						inputClass="text-sm"
+						showActionButtons
+						aria-label="{component.type} の日付初期値"
+						bind:value={
+							() => parseDateTimeParts(component.defaultValue).date,
+							(date) => {
+								setDefaultDateTimeDate(date);
+							}
+						}
+						onclear={() => {
+							if (component.type === 'datetimepicker') {
+								component.defaultValue = null;
+							}
+						}}
+					/>
+				</span>
+			</div>
 			<span
-				class="contents"
-				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+				class="contents w-28 shrink-0"
+				use:arrowNavigation={{ field: timeFieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
 			>
 				<Timepicker
-					id="default-time-{component.id}"
+					id="default-datetime-time-{component.id}"
 					size="sm"
 					required={false}
-					aria-label="{component.type} のデフォルト値"
+					aria-label="{component.type} の時刻初期値"
 					bind:value={
-						() => normalizeTimeString(component.defaultValue) ?? '',
+						() => parseDateTimeParts(component.defaultValue).time ?? '',
 						(time) => {
-							component.defaultValue = normalizeTimeString(time) ?? null;
+							setDefaultDateTimeTime(time);
 						}
 					}
 				/>
 			</span>
 		</div>
-	{:else if defaultValueInputMethod === 'datetime'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
-			<div class="flex items-start gap-2">
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="min-w-0 flex-1" onfocusout={closeDatepickerOnFocusOut}>
-					<span
-						class="contents"
-						use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+	</div>
+{:else if showDefaultValue && (component.type === 'radio' || component.type === 'dropdown')}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		{#if selectItems.length > 0}
+			<span
+				class="contents"
+				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+			>
+				{#each selectItems as item (item.value)}
+					<Radio
+						aria-label="{component.type} のデフォルト値: {item.label}"
+						value={item.value}
+						bind:group={component.defaultValue}
+						onclick={() => {
+							if (
+								(component.type === 'radio' || component.type === 'dropdown') &&
+								component.defaultValue === item.value
+							) {
+								component.defaultValue = '';
+							}
+						}}
 					>
-						<Datepicker
-							placeholder="date"
-							inputClass="text-sm"
-							showActionButtons
-							aria-label="{component.type} の日付初期値"
-							bind:value={
-								() => parseDateTimeParts(component.defaultValue).date,
-								(date) => {
-									setDefaultDateTimeDate(date);
-								}
+						{item.label}
+					</Radio>
+				{/each}
+			</span>
+		{:else}
+			<span class={notSupportedClass}>- no items -</span>
+		{/if}
+	</div>
+{:else if showDefaultValue && (component.type === 'checkbox' || component.type === 'dropdown-multi')}
+	<div>
+		<p class={fieldLabelClass}>defaultValue</p>
+		{#if selectItems.length > 0}
+			<span
+				class="contents"
+				use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+			>
+				{#each selectItems as item (item.value)}
+					<Checkbox
+						aria-label="{component.type} のデフォルト値: {item.label}"
+						checked={isMultiSelected(item.value)}
+						onchange={(e: Event) => {
+							if (e.target instanceof HTMLInputElement) {
+								toggleMultiValue(item.value, e.target.checked);
 							}
-							onclear={() => {
-								component.defaultValue = null;
-							}}
-						/>
-					</span>
-				</div>
-				<span
-					class="contents w-28 shrink-0"
-					use:arrowNavigation={{ field: timeFieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-				>
-					<Timepicker
-						id="default-datetime-time-{component.id}"
-						size="sm"
-						required={false}
-						aria-label="{component.type} の時刻初期値"
-						bind:value={
-							() => parseDateTimeParts(component.defaultValue).time ?? '',
-							(time) => {
-								setDefaultDateTimeTime(time);
-							}
-						}
-					/>
-				</span>
-			</div>
-		</div>
-	{:else if defaultValueInputMethod === 'singleSelect'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
-			{#if Array.isArray(component.items) && component.items.length > 0}
-				<span
-					class="contents"
-					use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-				>
-					{#each component.items as item (item.value)}
-						<Radio
-							aria-label="{component.type} のデフォルト値: {item.label}"
-							value={item.value}
-							bind:group={component.defaultValue}
-							onclick={(e: MouseEvent) => {
-								if (component.defaultValue === item.value) {
-									component.defaultValue = '';
-								}
-							}}
-						>
-							{item.label}
-						</Radio>
-					{/each}
-				</span>
-			{:else}
-				<span class={notSupportedClass}>- no items -</span>
-			{/if}
-		</div>
-	{:else if defaultValueInputMethod === 'multiSelect'}
-		<div>
-			<p class={fieldLabelClass}>defaultValue</p>
-			{#if Array.isArray(component.items) && component.items.length > 0}
-				<span
-					class="contents"
-					use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
-				>
-					{#each component.items as item (item.value)}
-						<Checkbox
-							aria-label="{component.type} のデフォルト値: {item.label}"
-							checked={isMultiSelected(item.value)}
-							onchange={(e: Event) => {
-								if (e.target instanceof HTMLInputElement) {
-									toggleMultiValue(item.value, e.target.checked);
-								}
-							}}
-						>
-							{item.label}
-						</Checkbox>
-					{/each}
-				</span>
-			{:else}
-				<span class={notSupportedClass}>- no items -</span>
-			{/if}
-		</div>
-	{:else}
-		<span class={notSupportedClass}>- not supported -</span>
-	{/if}
-{:else if showItems}
+						}}
+					>
+						{item.label}
+					</Checkbox>
+				{/each}
+			</span>
+		{:else}
+			<span class={notSupportedClass}>- no items -</span>
+		{/if}
+	</div>
+{:else if showDefaultValue}
+	<span class={notSupportedClass}>- not supported -</span>
+{:else if showItems && isSelectEditorComponent(component)}
 	<div class="w-full">
 		<p class={fieldLabelClass}>items</p>
 		<div
@@ -463,13 +471,15 @@
 				bind:value={
 					() => itemsToTags(component.items, resolvedDelimiter),
 					(tags) => {
-						component.items = tagsToItems(tags, resolvedDelimiter);
+						if (isSelectEditorComponent(component)) {
+							component.items = tagsToItems(tags, resolvedDelimiter);
+						}
 					}
 				}
 			/>
 		</div>
 	</div>
-{:else if showFormat}
+{:else if showFormat && (component.type === 'datepicker' || component.type === 'date-span' || component.type === 'timepicker' || component.type === 'datetimepicker')}
 	<div>
 		<p class={fieldLabelClass}>format</p>
 		<span
@@ -484,7 +494,7 @@
 			/>
 		</span>
 	</div>
-{:else if showCols}
+{:else if showCols && component.type === 'textarea'}
 	<div>
 		<p class={fieldLabelClass}>cols</p>
 		<span
@@ -497,15 +507,17 @@
 				pattern="[1-9]\d+"
 				aria-label="{component.type} の列数"
 				bind:value={
-					() => component.cols ?? '',
+					() => component.cols,
 					(value) => {
-						component.cols = parseOptionalNumber(value) ?? null;
+						if (component.type === 'textarea') {
+							component.cols = parseOptionalNumber(value) ?? 30;
+						}
 					}
 				}
 			/>
 		</span>
 	</div>
-{:else if showRows}
+{:else if showRows && component.type === 'textarea'}
 	<div>
 		<p class={fieldLabelClass}>rows</p>
 		<span
@@ -518,9 +530,11 @@
 				pattern="[1-9]\d+"
 				aria-label="{component.type} の行数"
 				bind:value={
-					() => component.rows ?? '',
+					() => component.rows,
 					(value) => {
-						component.rows = parseOptionalNumber(value) ?? null;
+						if (component.type === 'textarea') {
+							component.rows = parseOptionalNumber(value) ?? 3;
+						}
 					}
 				}
 			/>

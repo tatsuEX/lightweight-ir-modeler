@@ -3,23 +3,26 @@
     import { Card } from 'flowbite-svelte';
     import { dndzone } from 'svelte-dnd-action';
 
+    import type { EditorComponent } from '$lib/ir/elements/component-schema';
     import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 
     const uiDefinition = getUIDefinitionContext();
-    let components = $state<any[]>([]);
+    let components = $state<EditorComponent[]>([]);
 
     // 初期化
     onMount(() => {
         components = [...uiDefinition.components];
     });
 
-    // ドラッグ&ドロップ
-    function handleDnD(e: CustomEvent, filalized: boolean = false) {
+    /**
+     * ドラッグ&ドロップの並びを反映する
+     */
+    function handleDnD(e: CustomEvent<{ items: EditorComponent[] }>, filalized: boolean = false) {
         components = [...e.detail.items];
 
         // ドロップが完了したら、コンポーネントを更新
         if (filalized) {
-            uiDefinition.replaceComponents(components as any[]);
+            uiDefinition.replaceComponents(components);
         }
     }
 </script>
@@ -27,7 +30,7 @@
 <!-- DnD action : コンポーネントをDrag&Dropで並べ替える -->
 <div class="w-3/4 mx-auto flex flex-col gap-2 items-center justify-center"
     use:dndzone={{
-        items: components as any[],
+        items: components,
         flipDurationMs: 200,
         dropTargetStyle: {
             backgroundColor: 'rgba(120, 90, 30, 0.1)',

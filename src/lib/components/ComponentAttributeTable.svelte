@@ -29,6 +29,7 @@
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { componentCommentKey } from '$lib/ir/snapshot-comment-map';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
+	import type { EditorComponent } from '$lib/ir/elements/component-schema';
 	import { isPropertyEditableType } from '$lib/ir/elements/factories';
 	import {
 		getUIDefinitionContext
@@ -137,8 +138,7 @@
 	const typeFilterOptions = $derived.by(() => {
 		const counts = new Map<string, number>();
 		for (const component of visibleComponents) {
-			const type = String(component.type ?? '');
-			counts.set(type, (counts.get(type) ?? 0) + 1);
+			counts.set(component.type, (counts.get(component.type) ?? 0) + 1);
 		}
 		return [...counts.entries()]
 			.map(([type, count]) => ({ type, count }))
@@ -172,7 +172,6 @@
 	const headCellClass = `${cellClass} sticky top-0 z-10 bg-gray-50 dark:bg-gray-700 align-top`;
 	const detailsCellClass = '';
 	const validationCellClass = '';
-	const notSupportedClass = 'text-gray-300 dark:text-gray-700';
 	const filterLabelClass = 'text-xs font-medium text-gray-700 dark:text-gray-200';
 	const activeFilterClass = 'ring-1 ring-primary-500 dark:ring-primary-400';
 
@@ -227,19 +226,11 @@
 	/**
 	 * 列フィルタをすべて満たすか判定する（列横断 AND、type は選択 OR）
 	 */
-	function matchesColumnFilters(component: {
-		logicalId?: unknown;
-		type?: unknown;
-		label?: unknown;
-		hint?: unknown;
-		readonly?: unknown;
-		disabled?: unknown;
-		validation?: { required?: unknown };
-	}): boolean {
+	function matchesColumnFilters(component: EditorComponent): boolean {
 		if (!matchesText(component.logicalId, logicalIdQuery, logicalIdMode)) {
 			return false;
 		}
-		if (selectedTypes.size > 0 && !selectedTypes.has(String(component.type ?? ''))) {
+		if (selectedTypes.size > 0 && !selectedTypes.has(component.type)) {
 			return false;
 		}
 		if (!matchesText(component.label, labelQuery, 'contains')) {
@@ -248,7 +239,7 @@
 		if (!matchesText(component.hint, hintQuery, 'contains')) {
 			return false;
 		}
-		if (!matchesBooleanFilter(component.validation?.required, requiredFilter)) {
+		if (!matchesBooleanFilter(component.validation.required, requiredFilter)) {
 			return false;
 		}
 		if (!matchesBooleanFilter(component.readonly, readonlyFilter)) {
@@ -688,60 +679,44 @@
 						{#if columnGroup === 'basic'}
 							<!-- ヒント (placeholderなど) 列 -->
 							<TableBodyCell class={cellClass}>
-								{#if component.hint !== undefined}
-									<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
-										<Input
-											size="sm"
-											placeholder="補足説明"
-											aria-label="{component.type} のヒント"
-											bind:value={component.hint}
-										/>
-									</span>
-								{:else}
-									<span class={notSupportedClass}>- not supported -</span>
-								{/if}
+								<span class="contents" use:arrowNavigation={{ field: 'hint', row: rowIndex }}>
+									<Input
+										size="sm"
+										placeholder="補足説明"
+										aria-label="{component.type} のヒント"
+										bind:value={component.hint}
+									/>
+								</span>
 							</TableBodyCell>
 							<!-- 必須 列 -->
 							<TableBodyCell class={cellClass}>
-								{#if component.validation?.required !== undefined}
-									<span
-										class="contents"
-										use:arrowNavigation={{ field: 'validation-required', row: rowIndex }}
-									>
-										<Toggle
-											aria-label="{component.type} の必須指定"
-											bind:checked={component.validation.required}
-										/>
-									</span>
-								{:else}
-									<span class={notSupportedClass}>- not supported -</span>
-								{/if}
+								<span
+									class="contents"
+									use:arrowNavigation={{ field: 'validation-required', row: rowIndex }}
+								>
+									<Toggle
+										aria-label="{component.type} の必須指定"
+										bind:checked={component.validation.required}
+									/>
+								</span>
 							</TableBodyCell>
 							<!-- readonly 列 -->
 							<TableBodyCell class={cellClass}>
-								{#if component.readonly !== undefined}
-									<span class="contents" use:arrowNavigation={{ field: 'readonly', row: rowIndex }}>
-										<Toggle
-											aria-label="{component.type} の読み取り専用指定"
-											bind:checked={component.readonly}
-										/>
-									</span>
-								{:else}
-									<span class={notSupportedClass}>- not supported -</span>
-								{/if}
+								<span class="contents" use:arrowNavigation={{ field: 'readonly', row: rowIndex }}>
+									<Toggle
+										aria-label="{component.type} の読み取り専用指定"
+										bind:checked={component.readonly}
+									/>
+								</span>
 							</TableBodyCell>
 							<!-- disabled 列 -->
 							<TableBodyCell class={cellClass}>
-								{#if component.disabled !== undefined}
-									<span class="contents" use:arrowNavigation={{ field: 'disabled', row: rowIndex }}>
-										<Toggle
-											aria-label="{component.type} の無効化指定"
-											bind:checked={component.disabled}
-										/>
-									</span>
-								{:else}
-									<span class={notSupportedClass}>- not supported -</span>
-								{/if}
+								<span class="contents" use:arrowNavigation={{ field: 'disabled', row: rowIndex }}>
+									<Toggle
+										aria-label="{component.type} の無効化指定"
+										bind:checked={component.disabled}
+									/>
+								</span>
 							</TableBodyCell>
 						{:else if columnGroup === 'details'}
 							<!-- UIコンポーネントの詳細情報 列 -->

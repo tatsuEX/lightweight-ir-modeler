@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Datepicker, Input, Timepicker } from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
+	import type { EditorComponent } from '$lib/ir/elements/component-schema';
 	import {
 		closeDatepickerOnFocusOut,
 		formatDateString,
@@ -14,7 +15,7 @@
 	export type ValidationSlot = 0 | 1 | 2;
 
 	type Props = {
-		component: any;
+		component: EditorComponent;
 		rowIndex: number;
 		/** 固定スロット index（HTML slot とは別） */
 		slotId: ValidationSlot;
@@ -22,30 +23,22 @@
 
 	let { component, rowIndex, slotId }: Props = $props();
 
-	const DATE_BOUNDS_TYPES = new Set(['datepicker', 'date-span']);
-	const TIME_BOUNDS_TYPES = new Set(['timepicker']);
-	const DATETIME_BOUNDS_TYPES = new Set(['datetimepicker']);
-
 	const notSupportedClass = 'text-gray-300 dark:text-gray-700';
 	const fieldLabelClass = 'text-xs text-gray-500 dark:text-gray-400';
 	const FIELD_GROUP = 'validation';
-
-	const isTextbox = $derived(component.type === 'textbox');
-	const isTextarea = $derived(component.type === 'textarea');
-	const isNumber = $derived(component.type === 'number');
-	const hasDateBounds = $derived(DATE_BOUNDS_TYPES.has(component.type));
-	const hasTimeBounds = $derived(TIME_BOUNDS_TYPES.has(component.type));
-	const hasDateTimeBounds = $derived(DATETIME_BOUNDS_TYPES.has(component.type));
 
 	/**
 	 * minDateTime / maxDateTime の日付部分を更新する
 	 */
 	function setDateTimeDate(key: 'minDateTime' | 'maxDateTime', date: Date | undefined): void {
+		if (component.type !== 'datetimepicker') {
+			return;
+		}
 		if (!date) {
 			component.validation[key] = undefined;
 			return;
 		}
-		const prev = parseDateTimeParts(component.validation?.[key]);
+		const prev = parseDateTimeParts(component.validation[key]);
 		const dateStr = formatDateString(date);
 		if (!dateStr) {
 			component.validation[key] = undefined;
@@ -60,7 +53,10 @@
 	 * WARN: 日付未設定のときは IR に書かない（日付が SSOT の先頭）。
 	 */
 	function setDateTimeTime(key: 'minDateTime' | 'maxDateTime', time: string): void {
-		const prev = parseDateTimeParts(component.validation?.[key]);
+		if (component.type !== 'datetimepicker') {
+			return;
+		}
+		const prev = parseDateTimeParts(component.validation[key]);
 		const dateStr = formatDateString(prev.date);
 		if (!dateStr) {
 			return;
@@ -71,19 +67,23 @@
 	const fieldName = $derived(`validation-${slotId}`);
 	const timeFieldName = $derived(`${fieldName}-time`);
 
-	const showTextboxPattern = $derived(slotId === 0 && isTextbox);
-	const showTextboxMinlength = $derived(slotId === 1 && isTextbox);
-	const showTextboxMaxlength = $derived(slotId === 2 && isTextbox);
-	const showTextareaMaxlength = $derived(slotId === 0 && isTextarea);
-	const showNumberMin = $derived(slotId === 0 && isNumber);
-	const showNumberMax = $derived(slotId === 1 && isNumber);
-	const showNumberScale = $derived(slotId === 2 && isNumber);
-	const showDateMin = $derived(slotId === 0 && hasDateBounds);
-	const showDateMax = $derived(slotId === 1 && hasDateBounds);
-	const showTimeMin = $derived(slotId === 0 && hasTimeBounds);
-	const showTimeMax = $derived(slotId === 1 && hasTimeBounds);
-	const showDateTimeMin = $derived(slotId === 0 && hasDateTimeBounds);
-	const showDateTimeMax = $derived(slotId === 1 && hasDateTimeBounds);
+	const showTextboxPattern = $derived(slotId === 0 && component.type === 'textbox');
+	const showTextboxMinlength = $derived(slotId === 1 && component.type === 'textbox');
+	const showTextboxMaxlength = $derived(slotId === 2 && component.type === 'textbox');
+	const showTextareaMaxlength = $derived(slotId === 0 && component.type === 'textarea');
+	const showNumberMin = $derived(slotId === 0 && component.type === 'number');
+	const showNumberMax = $derived(slotId === 1 && component.type === 'number');
+	const showNumberScale = $derived(slotId === 2 && component.type === 'number');
+	const showDateMin = $derived(
+		slotId === 0 && (component.type === 'datepicker' || component.type === 'date-span')
+	);
+	const showDateMax = $derived(
+		slotId === 1 && (component.type === 'datepicker' || component.type === 'date-span')
+	);
+	const showTimeMin = $derived(slotId === 0 && component.type === 'timepicker');
+	const showTimeMax = $derived(slotId === 1 && component.type === 'timepicker');
+	const showDateTimeMin = $derived(slotId === 0 && component.type === 'datetimepicker');
+	const showDateTimeMax = $derived(slotId === 1 && component.type === 'datetimepicker');
 
 	const supported = $derived(
 		showTextboxPattern ||
@@ -104,7 +104,7 @@
 
 {#if !supported}
 	<span class={notSupportedClass}>- not supported -</span>
-{:else if showTextboxPattern}
+{:else if showTextboxPattern && component.type === 'textbox'}
 	<div>
 		<p class={fieldLabelClass}>pattern</p>
 		<span
@@ -119,7 +119,7 @@
 			/>
 		</span>
 	</div>
-{:else if showTextboxMinlength}
+{:else if showTextboxMinlength && component.type === 'textbox'}
 	<div>
 		<p class={fieldLabelClass}>minlength</p>
 		<span
@@ -135,7 +135,7 @@
 			/>
 		</span>
 	</div>
-{:else if showTextboxMaxlength || showTextareaMaxlength}
+{:else if (showTextboxMaxlength || showTextareaMaxlength) && (component.type === 'textbox' || component.type === 'textarea')}
 	<div>
 		<p class={fieldLabelClass}>maxlength</p>
 		<span
@@ -151,7 +151,7 @@
 			/>
 		</span>
 	</div>
-{:else if showNumberMin}
+{:else if showNumberMin && component.type === 'number'}
 	<div>
 		<p class={fieldLabelClass}>min</p>
 		<span
@@ -166,13 +166,15 @@
 				bind:value={
 					() => component.validation.min ?? '',
 					(value) => {
-						component.validation.min = parseOptionalNumber(value);
+						if (component.type === 'number') {
+							component.validation.min = parseOptionalNumber(value);
+						}
 					}
 				}
 			/>
 		</span>
 	</div>
-{:else if showNumberMax}
+{:else if showNumberMax && component.type === 'number'}
 	<div>
 		<p class={fieldLabelClass}>max</p>
 		<span
@@ -187,13 +189,15 @@
 				bind:value={
 					() => component.validation.max ?? '',
 					(value) => {
-						component.validation.max = parseOptionalNumber(value);
+						if (component.type === 'number') {
+							component.validation.max = parseOptionalNumber(value);
+						}
 					}
 				}
 			/>
 		</span>
 	</div>
-{:else if showNumberScale}
+{:else if showNumberScale && component.type === 'number'}
 	<div>
 		<p class={fieldLabelClass}>scale</p>
 		<span
@@ -206,15 +210,17 @@
 				pattern="[0-9]+"
 				aria-label="{component.type} の小数点以下の桁数"
 				bind:value={
-					() => component.validation.scale ?? '',
+					() => component.validation.scale,
 					(value) => {
-						component.validation.scale = parseOptionalNumber(value) ?? null;
+						if (component.type === 'number') {
+							component.validation.scale = parseOptionalNumber(value) ?? 0;
+						}
 					}
 				}
 			/>
 		</span>
 	</div>
-{:else if showDateMin}
+{:else if showDateMin && (component.type === 'datepicker' || component.type === 'date-span')}
 	<div>
 		<p class={fieldLabelClass}>minDate</p>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -228,19 +234,23 @@
 					inputClass="text-sm"
 					showActionButtons
 					bind:value={
-						() => parseDateString(component.validation?.minDate),
+						() => parseDateString(component.validation.minDate),
 						(date) => {
-							component.validation.minDate = formatDateString(date);
+							if (component.type === 'datepicker' || component.type === 'date-span') {
+								component.validation.minDate = formatDateString(date);
+							}
 						}
 					}
 					onclear={() => {
-						component.validation.minDate = undefined;
+						if (component.type === 'datepicker' || component.type === 'date-span') {
+							component.validation.minDate = undefined;
+						}
 					}}
 				/>
 			</span>
 		</div>
 	</div>
-{:else if showDateMax}
+{:else if showDateMax && (component.type === 'datepicker' || component.type === 'date-span')}
 	<div>
 		<p class={fieldLabelClass}>maxDate</p>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -254,19 +264,23 @@
 					inputClass="text-sm"
 					showActionButtons
 					bind:value={
-						() => parseDateString(component.validation?.maxDate),
+						() => parseDateString(component.validation.maxDate),
 						(date) => {
-							component.validation.maxDate = formatDateString(date);
+							if (component.type === 'datepicker' || component.type === 'date-span') {
+								component.validation.maxDate = formatDateString(date);
+							}
 						}
 					}
 					onclear={() => {
-						component.validation.maxDate = undefined;
+						if (component.type === 'datepicker' || component.type === 'date-span') {
+							component.validation.maxDate = undefined;
+						}
 					}}
 				/>
 			</span>
 		</div>
 	</div>
-{:else if showTimeMin}
+{:else if showTimeMin && component.type === 'timepicker'}
 	<div>
 		<p class={fieldLabelClass}>minTime</p>
 		<span
@@ -278,15 +292,17 @@
 				size="sm"
 				required={false}
 				bind:value={
-					() => normalizeTimeString(component.validation?.minTime) ?? '',
+					() => normalizeTimeString(component.validation.minTime) ?? '',
 					(time) => {
-						component.validation.minTime = normalizeTimeString(time);
+						if (component.type === 'timepicker') {
+							component.validation.minTime = normalizeTimeString(time);
+						}
 					}
 				}
 			/>
 		</span>
 	</div>
-{:else if showTimeMax}
+{:else if showTimeMax && component.type === 'timepicker'}
 	<div>
 		<p class={fieldLabelClass}>maxTime</p>
 		<span
@@ -298,15 +314,17 @@
 				size="sm"
 				required={false}
 				bind:value={
-					() => normalizeTimeString(component.validation?.maxTime) ?? '',
+					() => normalizeTimeString(component.validation.maxTime) ?? '',
 					(time) => {
-						component.validation.maxTime = normalizeTimeString(time);
+						if (component.type === 'timepicker') {
+							component.validation.maxTime = normalizeTimeString(time);
+						}
 					}
 				}
 			/>
 		</span>
 	</div>
-{:else if showDateTimeMin}
+{:else if showDateTimeMin && component.type === 'datetimepicker'}
 	<div>
 		<p class={fieldLabelClass}>minDateTime</p>
 		<div class="flex items-start gap-2">
@@ -321,13 +339,15 @@
 						inputClass="text-sm"
 						showActionButtons
 						bind:value={
-							() => parseDateTimeParts(component.validation?.minDateTime).date,
+							() => parseDateTimeParts(component.validation.minDateTime).date,
 							(date) => {
 								setDateTimeDate('minDateTime', date);
 							}
 						}
 						onclear={() => {
-							component.validation.minDateTime = undefined;
+							if (component.type === 'datetimepicker') {
+								component.validation.minDateTime = undefined;
+							}
 						}}
 					/>
 				</span>
@@ -341,7 +361,7 @@
 					size="sm"
 					required={false}
 					bind:value={
-						() => parseDateTimeParts(component.validation?.minDateTime).time ?? '',
+						() => parseDateTimeParts(component.validation.minDateTime).time ?? '',
 						(time) => {
 							setDateTimeTime('minDateTime', time);
 						}
@@ -350,7 +370,7 @@
 			</span>
 		</div>
 	</div>
-{:else if showDateTimeMax}
+{:else if showDateTimeMax && component.type === 'datetimepicker'}
 	<div>
 		<p class={fieldLabelClass}>maxDateTime</p>
 		<div class="flex items-start gap-2">
@@ -365,13 +385,15 @@
 						inputClass="text-sm"
 						showActionButtons
 						bind:value={
-							() => parseDateTimeParts(component.validation?.maxDateTime).date,
+							() => parseDateTimeParts(component.validation.maxDateTime).date,
 							(date) => {
 								setDateTimeDate('maxDateTime', date);
 							}
 						}
 						onclear={() => {
-							component.validation.maxDateTime = undefined;
+							if (component.type === 'datetimepicker') {
+								component.validation.maxDateTime = undefined;
+							}
 						}}
 					/>
 				</span>
@@ -385,7 +407,7 @@
 					size="sm"
 					required={false}
 					bind:value={
-						() => parseDateTimeParts(component.validation?.maxDateTime).time ?? '',
+						() => parseDateTimeParts(component.validation.maxDateTime).time ?? '',
 						(time) => {
 							setDateTimeTime('maxDateTime', time);
 						}
