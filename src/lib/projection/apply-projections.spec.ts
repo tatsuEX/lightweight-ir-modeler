@@ -5,7 +5,7 @@ import { unknownProjectionPluginError } from '$lib/projection/registry';
 import type { RestoredIrSnapshot } from '$lib/ir/snapshot';
 
 const snapshot: RestoredIrSnapshot = {
-	version: 1,
+	schemaVersion: '1.0',
 	savedAt: '2026-09-01T00:00:00.000Z',
 	uiDefinition: {
 		logicalId: 'userRegistration',

@@ -9,8 +9,8 @@ import { ensureZodLocaleJa } from '$lib/schema/zod-locale';
  * WARN: YAML を使う場合は拡張子をレジストリに明示する（.yaml / .yml）。暗黙の自動探索はしない。
  */
 const RAW_SCHEMA_FILENAMES: Record<string, string> = {
-	primefaces: 'primefaces.schema.yaml',
-	'im-forma': 'im-forma.schema.yaml'
+	primefaces: 'primefaces.schema.json',
+	'im-forma': 'im-forma.schema.json'
 };
 
 const compiledSchemaCache = new Map<string, z.ZodType>();

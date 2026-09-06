@@ -31,7 +31,7 @@ export function applyProjections(
 	if (orderedIds.length === 0) {
 		return {
 			view: {
-				version: snapshot.version,
+				schemaVersion: snapshot.schemaVersion,
 				savedAt: snapshot.savedAt,
 				uiDefinition: snapshot.uiDefinition,
 				components: snapshot.components
@@ -41,7 +41,7 @@ export function applyProjections(
 	}
 
 	let view: IrProjectionView = {
-		version: snapshot.version,
+		schemaVersion: snapshot.schemaVersion,
 		savedAt: snapshot.savedAt,
 		uiDefinition: snapshot.uiDefinition,
 		components: snapshot.components.map(cloneComponent)

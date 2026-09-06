@@ -8,7 +8,7 @@
   npm run arcane:summon -- --target primefaces --template ./templates/cli/summon/primefaces/create-table.sql.hbs --source ./path/to/ir-snapshot.yaml --projection db-maxlength
 --}}
 -- {{target}} / {{uiDefinition.name}} ({{uiDefinition.logicalId}})
--- snapshot version={{version}} savedAt={{savedAt}}
+-- snapshot schemaVersion={{schemaVersion}} version={{uiDefinition.version}} savedAt={{savedAt}}
 
 CREATE TABLE {{uiDefinition.logicalId}} (
 	id VARCHAR(32) NOT NULL PRIMARY KEY
