@@ -394,6 +394,7 @@ export function createNumber(info: any): any {
             required: false,
             min: undefined,
             max: undefined,
+            scale: 0,
             step: 1,
             customErrorMessages: {
                 required: '必須項目です',

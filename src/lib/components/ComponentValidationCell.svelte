@@ -77,6 +77,7 @@
 	const showTextareaMaxlength = $derived(slotId === 0 && isTextarea);
 	const showNumberMin = $derived(slotId === 0 && isNumber);
 	const showNumberMax = $derived(slotId === 1 && isNumber);
+	const showNumberScale = $derived(slotId === 2 && isNumber);
 	const showDateMin = $derived(slotId === 0 && hasDateBounds);
 	const showDateMax = $derived(slotId === 1 && hasDateBounds);
 	const showTimeMin = $derived(slotId === 0 && hasTimeBounds);
@@ -91,6 +92,7 @@
 			showTextareaMaxlength ||
 			showNumberMin ||
 			showNumberMax ||
+			showNumberScale ||
 			showDateMin ||
 			showDateMax ||
 			showTimeMin ||
@@ -186,6 +188,27 @@
 					() => component.validation.max ?? '',
 					(value) => {
 						component.validation.max = parseOptionalNumber(value);
+					}
+				}
+			/>
+		</span>
+	</div>
+{:else if showNumberScale}
+	<div>
+		<p class={fieldLabelClass}>scale</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Input
+				type="text"
+				size="sm"
+				pattern="[0-9]+"
+				aria-label="{component.type} の小数点以下の桁数"
+				bind:value={
+					() => component.validation.scale ?? '',
+					(value) => {
+						component.validation.scale = parseOptionalNumber(value) ?? null;
 					}
 				}
 			/>
