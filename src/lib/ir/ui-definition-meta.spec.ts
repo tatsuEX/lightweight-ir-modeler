@@ -7,7 +7,10 @@ import {
 	isUiDefinitionMetaReady,
 	isValidLogicalId,
 	toEditorMeta,
-	buildPublishedSnapshotMeta
+	buildPublishedSnapshotMeta,
+	toEditorMetaFromLive,
+	toLiveMeta,
+	toVendorExportMeta
 } from '$lib/ir/ui-definition-meta';
 
 describe('ui-definition-meta', () => {
@@ -101,6 +104,67 @@ describe('ui-definition-meta', () => {
 		);
 
 		expect(published).not.toHaveProperty('releasedAt');
+	});
+
+	it('toEditorMetaFromLive omits empty optional strings', () => {
+		const editor = toEditorMetaFromLive({
+			logicalId: 'screenA',
+			name: 'Screen A',
+			description: '',
+			version: '1.0',
+			basedOn: '',
+			changeReason: '',
+			releasedAt: '',
+			closedAt: '',
+			closedReason: ''
+		});
+
+		expect(editor).toEqual({
+			logicalId: 'screenA',
+			name: 'Screen A',
+			description: '',
+			version: '1.0'
+		});
+	});
+
+	it('toLiveMeta fills empty strings for omitted editor keys', () => {
+		const live = toLiveMeta({
+			logicalId: 'screenA',
+			name: 'Screen A',
+			description: '',
+			version: '1.0'
+		});
+
+		expect(live.basedOn).toBe('');
+		expect(live.changeReason).toBe('');
+		expect(live.releasedAt).toBe('');
+		expect(live).not.toHaveProperty('external');
+	});
+
+	it('toVendorExportMeta keeps lineage and drops lifecycle dates', () => {
+		const exported = toVendorExportMeta({
+			logicalId: 'screenA',
+			name: 'Screen A',
+			description: 'desc',
+			version: '1.1',
+			basedOn: '1.0',
+			changeReason: 'メタ修正',
+			releasedAt: '2026-08-31',
+			closedAt: '2026-09-01',
+			closedReason: '後継'
+		});
+
+		expect(exported).toEqual({
+			logicalId: 'screenA',
+			name: 'Screen A',
+			description: 'desc',
+			version: '1.1',
+			basedOn: '1.0',
+			changeReason: 'メタ修正'
+		});
+		expect(exported).not.toHaveProperty('releasedAt');
+		expect(exported).not.toHaveProperty('closedAt');
+		expect(exported).not.toHaveProperty('closedReason');
 	});
 
 	it('buildSnapshotMetaForWrite preserves createdAt and updates modifiedAt', () => {

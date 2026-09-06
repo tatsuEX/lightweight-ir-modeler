@@ -36,6 +36,39 @@ export type UiDefinitionSnapshotMeta = UiDefinitionEditorMeta & {
 };
 
 /**
+ * GUI / 集約が持つライブメタ（任意項目は空文字でもよい）
+ *
+ * WARN: YAML や API に出す前に `toEditorMetaFromLive` でキー省略する。
+ */
+export type UiDefinitionLiveMeta = {
+	logicalId: string;
+	name: string;
+	description: string;
+	version: string;
+	basedOn: string;
+	changeReason: string;
+	releasedAt: string;
+	closedAt: string;
+	closedReason: string;
+	external?: ExternalResidual;
+};
+
+/**
+ * transform → Raw → Writer に載せる IR 由来メタ（系統を含む）
+ *
+ * WARN: `releasedAt` / `closedAt` / `closedReason` は snapshot 用であり、ベンダー Raw には載せない。
+ */
+export type UiDefinitionVendorExportMeta = {
+	logicalId: string;
+	name: string;
+	description: string;
+	version: string;
+	basedOn?: string;
+	changeReason?: string;
+	external?: ExternalResidual;
+};
+
+/**
  * 空でない文字列だけを返す
  */
 function optionalNonEmptyString(value: unknown): string | undefined {
@@ -113,7 +146,9 @@ export function createEmptyUiDefinitionMeta(): UiDefinitionEditorMeta {
 /**
  * snapshot 用メタデータからエディタ編集フィールドのみを取り出す
  */
-export function toEditorMeta(meta: UiDefinitionSnapshotMeta | UiDefinitionEditorMeta): UiDefinitionEditorMeta {
+export function toEditorMeta(
+	meta: UiDefinitionSnapshotMeta | UiDefinitionEditorMeta | UiDefinitionLiveMeta
+): UiDefinitionEditorMeta {
 	const external = normalizeExternalResidual(meta.external);
 
 	// WARN: 任意キーは無い場合キー自体を落とす。YAML dump / 比較ハッシュに undefined を混ぜない。
@@ -124,6 +159,53 @@ export function toEditorMeta(meta: UiDefinitionSnapshotMeta | UiDefinitionEditor
 		version: meta.version,
 		...pickOptionalEditorFields(meta),
 		...(external ? { external } : {})
+	};
+}
+
+/**
+ * ライブメタ（空文字可）をエディタ DTO（空キー省略）へ正規化する
+ */
+export function toEditorMetaFromLive(live: UiDefinitionLiveMeta): UiDefinitionEditorMeta {
+	return toEditorMeta(live);
+}
+
+/**
+ * エディタ DTO をライブメタ（空文字埋め）へ正規化する
+ */
+export function toLiveMeta(editor: UiDefinitionEditorMeta): UiDefinitionLiveMeta {
+	const live: UiDefinitionLiveMeta = {
+		logicalId: editor.logicalId,
+		name: editor.name,
+		description: editor.description,
+		version: editor.version,
+		basedOn: editor.basedOn ?? '',
+		changeReason: editor.changeReason ?? '',
+		releasedAt: editor.releasedAt ?? '',
+		closedAt: editor.closedAt ?? '',
+		closedReason: editor.closedReason ?? ''
+	};
+	if (editor.external) {
+		live.external = editor.external;
+	}
+	return live;
+}
+
+/**
+ * ベンダー Export / transform 用に系統つきメタを取り出す
+ */
+export function toVendorExportMeta(
+	meta: UiDefinitionSnapshotMeta | UiDefinitionEditorMeta | UiDefinitionLiveMeta
+): UiDefinitionVendorExportMeta {
+	const editor = toEditorMeta(meta);
+
+	return {
+		logicalId: editor.logicalId,
+		name: editor.name,
+		description: editor.description,
+		version: editor.version,
+		...(editor.basedOn ? { basedOn: editor.basedOn } : {}),
+		...(editor.changeReason ? { changeReason: editor.changeReason } : {}),
+		...(editor.external ? { external: editor.external } : {})
 	};
 }
 
