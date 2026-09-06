@@ -3,6 +3,7 @@ import { applyProjections } from '$lib/projection/apply-projections';
 import { duplicateLogicalIdWarning } from '$lib/projection/plugins/by-logical-id';
 import { unknownProjectionPluginError } from '$lib/projection/registry';
 import type { RestoredIrSnapshot } from '$lib/ir/snapshot';
+import { hydrateEditorComponent } from '$lib/ir/elements/component-schema';
 
 const snapshot: RestoredIrSnapshot = {
 	schemaVersion: '1.0',
@@ -16,23 +17,26 @@ const snapshot: RestoredIrSnapshot = {
 		modifiedAt: '2026-09-01T00:00:00.000Z'
 	},
 	components: [
-		{
+		hydrateEditorComponent({
+			id: 'c1',
 			logicalId: 'userName',
 			type: 'textbox',
 			label: '氏名',
 			validation: { required: true, maxlength: 30 }
-		},
-		{
+		}),
+		hydrateEditorComponent({
+			id: 'c2',
 			logicalId: 'age',
 			type: 'number',
 			label: '年齢',
 			validation: { required: false }
-		},
-		{
+		}),
+		hydrateEditorComponent({
+			id: 'c3',
 			logicalId: '',
 			type: 'label',
 			label: '空 id'
-		}
+		})
 	]
 };
 
@@ -65,8 +69,8 @@ describe('applyProjections', () => {
 		const duplicated: RestoredIrSnapshot = {
 			...snapshot,
 			components: [
-				{ logicalId: 'userName', type: 'textbox', label: 'first' },
-				{ logicalId: 'userName', type: 'textbox', label: 'second' }
+				hydrateEditorComponent({ id: 'd1', logicalId: 'userName', type: 'textbox', label: 'first' }),
+				hydrateEditorComponent({ id: 'd2', logicalId: 'userName', type: 'textbox', label: 'second' })
 			]
 		};
 
@@ -78,10 +82,10 @@ describe('applyProjections', () => {
 
 	it('adds dbMaxlength without removing maxlength', () => {
 		const { view } = applyProjections(snapshot, { projectionIds: ['db-maxlength'] });
-		const userName = view.components[0] as {
+		const userName = view.components[0] as unknown as {
 			validation: { maxlength: number; dbMaxlength: number; required: boolean };
 		};
-		const age = view.components[1] as { validation: { dbMaxlength?: number } };
+		const age = view.components[1] as unknown as { validation: { dbMaxlength?: number } };
 
 		expect(userName.validation.maxlength).toBe(30);
 		expect(userName.validation.dbMaxlength).toBe(90);
@@ -93,7 +97,7 @@ describe('applyProjections', () => {
 			projectionIds: ['db-maxlength'],
 			pluginOptions: { 'db-maxlength': { bytesPerChar: 4 } }
 		});
-		const userName = view.components[0] as { validation: { dbMaxlength: number } };
+		const userName = view.components[0] as unknown as { validation: { dbMaxlength: number } };
 
 		expect(userName.validation.dbMaxlength).toBe(120);
 	});
@@ -112,9 +116,13 @@ describe('applyProjections', () => {
 			projectionIds: ['db-maxlength', 'by-logical-id']
 		});
 
-		const original = snapshot.components[0] as { validation: Record<string, unknown> };
-		expect(original.validation).toEqual({ required: true, maxlength: 30 });
-		expect(original.validation.dbMaxlength).toBeUndefined();
+		const original = snapshot.components[0];
+		if (original.type !== 'textbox') {
+			throw new Error('expected textbox');
+		}
+		expect(original.validation.maxlength).toBe(30);
+		expect(original.validation.required).toBe(true);
+		expect(original.validation).not.toHaveProperty('dbMaxlength');
 	});
 
 	it('applies transform before index regardless of request order', () => {

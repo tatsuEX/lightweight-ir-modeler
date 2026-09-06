@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RestoredIrSnapshot } from '$lib/ir/snapshot';
+import { hydrateEditorComponent } from '$lib/ir/elements/component-schema';
 import { summonFromSnapshot } from './summon';
 
 const SAMPLE_DIR = resolve('templates/cli/summon/primefaces');
@@ -19,35 +20,32 @@ const sampleSnapshot: RestoredIrSnapshot = {
 		external: { formId: 'userForm' }
 	},
 	components: [
-		{
+		hydrateEditorComponent({
 			id: 'cmp-1',
 			logicalId: 'userName',
 			type: 'textbox',
 			label: '氏名',
 			validation: { required: true, maxlength: 64 },
 			external: { primefaces: { widgetVar: 'userNameWv' } }
-		},
-		{
+		}),
+		hydrateEditorComponent({
 			id: 'cmp-2',
 			logicalId: 'age',
 			type: 'number',
-			label: '年齢',
-			external: {}
-		},
-		{
+			label: '年齢'
+		}),
+		hydrateEditorComponent({
 			id: 'cmp-3',
 			logicalId: 'sectionTitle',
 			type: 'label',
-			label: '見出し',
-			external: {}
-		},
-		{
+			label: '見出し'
+		}),
+		hydrateEditorComponent({
 			id: 'cmp-4',
 			logicalId: 'birthDate',
 			type: 'datepicker',
-			label: '生年月日',
-			external: {}
-		}
+			label: '生年月日'
+		})
 	]
 };
 

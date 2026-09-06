@@ -1,3 +1,4 @@
+import type { PersistedComponent } from '$lib/ir/elements/component-schema';
 import type { ImportedDefinition } from '$lib/transform/imported-definition';
 
 /**
@@ -37,7 +38,7 @@ export class HttpUiImportClient implements UiImportClient {
 		const payload = (await response.json().catch(() => ({}))) as {
 			error?: string;
 			uiDefinition?: ImportedDefinition['uiDefinition'];
-			components?: unknown[];
+			components?: PersistedComponent[];
 			issues?: { path: string; message: string }[];
 		};
 

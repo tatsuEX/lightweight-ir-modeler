@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RestoredIrSnapshot } from '$lib/ir/snapshot';
+import { hydrateEditorComponent } from '$lib/ir/elements/component-schema';
 import {
 	buildSummonContext,
 	missingTargetResidualWarning,
@@ -22,7 +23,7 @@ const snapshotWithPrimefaces: RestoredIrSnapshot = {
 		}
 	},
 	components: [
-		{
+		hydrateEditorComponent({
 			id: 'cmp-1',
 			type: 'textbox',
 			label: '名前',
@@ -30,7 +31,7 @@ const snapshotWithPrimefaces: RestoredIrSnapshot = {
 				primefaces: { widgetVar: 'nameWv' },
 				'im-forma': { itemId: 'name' }
 			}
-		}
+		})
 	]
 };
 
@@ -82,7 +83,7 @@ describe('summonFromSnapshot', () => {
 		const snapshot: RestoredIrSnapshot = {
 			...snapshotWithPrimefaces,
 			components: [
-				{
+				hydrateEditorComponent({
 					id: 'cmp-1',
 					logicalId: 'userName',
 					type: 'textbox',
@@ -91,7 +92,7 @@ describe('summonFromSnapshot', () => {
 						primefaces: { widgetVar: 'nameWv' },
 						'im-forma': { itemId: 'name' }
 					}
-				}
+				})
 			]
 		};
 
