@@ -13,6 +13,7 @@ import {
 	stripByExcludeTree,
 	stripSnapshotComponents
 } from '$lib/ir/snapshot';
+import { SYSTEM_ID_LENGTH } from './elements/factories';
 
 /**
  * YAML Map ノードのキー順を取り出す
@@ -52,20 +53,38 @@ describe('ir snapshot', () => {
 
 	it('restoreSnapshotComponents assigns generated values', () => {
 		const restored = restoreSnapshotComponents([{ type: 'textbox', label: 'A' }]);
-		const component = restored[0] as Record<string, unknown>;
+		const component = restored[0];
 
 		expect(component.type).toBe('textbox');
 		expect(component.label).toBe('A');
 		expect(typeof component.id).toBe('string');
-		expect((component.id as string).length).toBe(16);
+		expect(component.id.length).toBe(SYSTEM_ID_LENGTH);
+		expect(component).not.toHaveProperty('tooltip');
+		if (component.type !== 'textbox') {
+			throw new Error('expected textbox');
+		}
+		expect(component.hint).toBe('');
+		expect(component.validation.required).toBe(false);
 	});
 
 	it('restoreSnapshotComponents replaces legacy persisted excluded keys', () => {
 		const restored = restoreSnapshotComponents([{ id: 'legacy-id', type: 'textbox' }]);
-		const component = restored[0] as Record<string, unknown>;
+		const component = restored[0];
 
 		expect(component.id).not.toBe('legacy-id');
-		expect((component.id as string).length).toBe(16);
+		expect(component.id.length).toBe(SYSTEM_ID_LENGTH);
+	});
+
+	it('restoreSnapshotComponents normalizes unknown types to unsupported', () => {
+		const restored = restoreSnapshotComponents([{ type: 'product_72_shape', label: '図形' }]);
+		const component = restored[0];
+
+		expect(component.type).toBe('unsupported');
+		if (component.type !== 'unsupported') {
+			throw new Error('expected unsupported');
+		}
+		expect(component.sourceType).toBe('product_72_shape');
+		expect(component.label).toBe('図形');
 	});
 
 	it('normalize ignores excluded key differences', () => {
@@ -172,7 +191,7 @@ describe('ir snapshot', () => {
 		});
 
 		const restored = restoreIrSnapshotFromYaml(yamlText);
-		const component = restored.components[0] as Record<string, unknown>;
+		const component = restored.components[0];
 
 		expect(restored.uiDefinition.logicalId).toBe('userRegistration');
 		expect(restored.uiDefinition.external).toEqual({
@@ -182,7 +201,7 @@ describe('ir snapshot', () => {
 		expect(component.type).toBe('textbox');
 		expect(component.external).toEqual({ primefaces: { widgetVar: 'nameWv' } });
 		expect(typeof component.id).toBe('string');
-		expect((component.id as string).length).toBe(16);
+		expect(component.id.length).toBe(SYSTEM_ID_LENGTH);
 	});
 
 	it('reads a legacy envelope-version snapshot as the baseline schemaVersion', () => {

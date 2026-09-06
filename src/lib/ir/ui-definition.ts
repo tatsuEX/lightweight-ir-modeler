@@ -11,13 +11,19 @@ import {
 	type UiDefinitionEditorMeta,
 	type UiDefinitionLiveMeta
 } from '$lib/ir/ui-definition-meta';
+import {
+	hydrateEditorComponent,
+	hydrateEditorComponents,
+	type EditorComponent
+} from '$lib/ir/elements/component-schema';
+import { SYSTEM_ID_LENGTH } from './elements/factories';
 
 /**
  * 集約が保持するライブ document
  */
 export type UIDefinitionData = {
 	meta: UiDefinitionLiveMeta;
-	components: any[];
+	components: EditorComponent[];
 };
 
 /**
@@ -53,11 +59,25 @@ function clonePlainData<T>(value: T): T {
 }
 
 /**
+ * component 用 id を読む。無ければ採番する
+ */
+function resolveEditorComponentId(value: unknown): string {
+	if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+		const id = (value as { id?: unknown }).id;
+		if (typeof id === 'string' && id.trim() !== '') {
+			return id;
+		}
+	}
+
+	return nanoid(SYSTEM_ID_LENGTH);
+}
+
+/**
  * 画面定義（UI 定義 IR）を管理する
  */
 export class UIDefinition {
 	readonly meta: UiDefinitionLiveMeta;
-	readonly components: any[];
+	readonly components: EditorComponent[];
 
 	/**
 	 * 注入された meta / components で画面定義を初期化する
@@ -70,17 +90,15 @@ export class UIDefinition {
 	/**
 	 * 画面定義のコンポーネントを追加する
 	 */
-	append(info: any): void {
-		if (info.id == null || info.id.trim() === '') {
-			info.id = nanoid(16);
-		}
-		this.components.push(info);
+	append(info: unknown): void {
+		const id = resolveEditorComponentId(info);
+		this.components.push(hydrateEditorComponent(info, id));
 	}
 
 	/**
 	 * 画面定義のコンポーネントを削除する
 	 */
-	remove(info: any): void {
+	remove(info: { id: string }): void {
 		const index = this.components.findIndex((elm) => elm.id === info.id);
 
 		if (index !== -1) {
@@ -107,8 +125,12 @@ export class UIDefinition {
 	/**
 	 * 画面定義のコンポーネントを全件置き換える
 	 */
-	replaceComponents(items: any[]): void {
-		this.components.splice(0, this.components.length, ...items);
+	replaceComponents(items: unknown[]): void {
+		this.components.splice(
+			0,
+			this.components.length,
+			...hydrateEditorComponents(items, resolveEditorComponentId)
+		);
 	}
 
 	/**
@@ -120,6 +142,6 @@ export class UIDefinition {
 			delete this.meta.external;
 			Object.assign(this.meta, live);
 		}
-		this.replaceComponents(clonePlainData(components) as any[]);
+		this.replaceComponents(clonePlainData(components));
 	}
 }

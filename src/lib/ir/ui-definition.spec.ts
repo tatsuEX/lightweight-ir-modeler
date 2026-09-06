@@ -46,6 +46,28 @@ describe('UIDefinition', () => {
 		expect(ui.meta.changeReason).toBe('読込');
 		expect(ui.meta.releasedAt).toBe('');
 		expect(ui.components).toHaveLength(1);
+		expect(ui.components[0].type).toBe('label');
+		expect(ui.components[0].id).toBe('a');
+	});
+
+	it('loadSnapshot hydrates vendor types to unsupported', () => {
+		const ui = new UIDefinition(
+			createUiDefinitionData({
+				logicalId: 's',
+				name: 'S',
+				description: '',
+				version: '1.0'
+			})
+		);
+
+		ui.loadSnapshot([{ id: 'v1', type: 'product_72_shape', label: '図形' }]);
+
+		expect(ui.components[0].type).toBe('unsupported');
+		const component = ui.components[0];
+		if (component.type !== 'unsupported') {
+			throw new Error('expected unsupported');
+		}
+		expect(component.sourceType).toBe('product_72_shape');
 	});
 
 	it('removeByIds and moveItem update the list', () => {

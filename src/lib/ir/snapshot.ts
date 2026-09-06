@@ -13,6 +13,8 @@ import {
 	readRecordSchemaVersion,
 	type IrSnapshotMigrationOptions
 } from '$lib/ir/snapshot-migration';
+import { SYSTEM_ID_LENGTH } from './elements/factories';
+import { hydrateEditorComponent, type EditorComponent } from '$lib/ir/elements/component-schema';
 
 /**
  * IR snapshot YAML でシステムメタの次に置くドメインキー
@@ -30,6 +32,7 @@ export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
 	'description',
 	'basedOn',
 	'type',
+	'sourceType',
 	'label',
 	'hint',
 	'defaultValue',
@@ -97,7 +100,7 @@ export const SNAPSHOT_COMPONENT_EXCLUDE_TREE: SnapshotExcludeTree = {
  * components[] の各要素をルートとする
  */
 export const SNAPSHOT_RESTORE_GENERATORS: Record<string, () => unknown> = {
-	id: () => nanoid(16)
+	id: () => nanoid(SYSTEM_ID_LENGTH)
 };
 
 /**
@@ -123,7 +126,7 @@ export type RestoredIrSnapshot = {
 	schemaVersion: string;
 	savedAt: string;
 	uiDefinition: UiDefinitionSnapshotMeta;
-	components: unknown[];
+	components: EditorComponent[];
 };
 
 /**
@@ -210,7 +213,10 @@ export function stripSnapshotComponents(
 }
 
 /**
- * 復元時に除外属性を除去し、generator 指定の属性を再生成する
+ * 復元時に除外属性を除去し、generator 指定の属性を再生成して EditorComponent にする
+ *
+ * WARN: ここで Zod parse するので、既定値補完・`tooltip`/`autosize` 除去・未知 type の
+ * `unsupported` 正規化が走る。projection / summon は復元後 record を読む。
  */
 export function restoreSnapshotComponents(
 	components: unknown[],
@@ -218,16 +224,14 @@ export function restoreSnapshotComponents(
 		excludeTree?: SnapshotExcludeTree;
 		generators?: Record<string, () => unknown>;
 	} = {}
-): unknown[] {
+): EditorComponent[] {
 	const excludeTree = options.excludeTree ?? SNAPSHOT_COMPONENT_EXCLUDE_TREE;
 	const generators = options.generators ?? SNAPSHOT_RESTORE_GENERATORS;
 
 	return components.map((component) => {
-		if (!isPlainObject(component)) {
-			return component;
-		}
-
-		const record = structuredClone(component) as Record<string, unknown>;
+		const record = isPlainObject(component)
+			? (structuredClone(component) as Record<string, unknown>)
+			: {};
 		const stripped = stripByExcludeTree(record, excludeTree) as Record<string, unknown>;
 
 		for (const path of Object.keys(generators)) {
@@ -238,7 +242,11 @@ export function restoreSnapshotComponents(
 			setByPath(stripped, path, generate());
 		}
 
-		return stripped;
+		const generatedId =
+			typeof stripped.id === 'string' && stripped.id.trim() !== ''
+				? stripped.id
+				: nanoid(SYSTEM_ID_LENGTH);
+		return hydrateEditorComponent(stripped, generatedId);
 	});
 }
 

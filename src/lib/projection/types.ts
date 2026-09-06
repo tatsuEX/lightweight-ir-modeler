@@ -10,7 +10,9 @@ export const DEFAULT_PROJECTION_IDS: readonly string[] = [];
  *
  * WARN: snapshot / store に書き戻さない。SSOT は `components[]` のまま。
  */
-export type IrProjectionView = RestoredIrSnapshot & {
+export type IrProjectionView = Omit<RestoredIrSnapshot, 'components'> & {
+	/** 射影は record 操作。IR live 型（EditorComponent[]）とは別物 */
+	components: unknown[];
 	componentsByLogicalId?: Record<string, unknown>;
 };
 
