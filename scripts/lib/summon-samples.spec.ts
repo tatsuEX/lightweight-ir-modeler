@@ -7,7 +7,7 @@ import { summonFromSnapshot } from './summon';
 const SAMPLE_DIR = resolve('templates/cli/summon/primefaces');
 
 const sampleSnapshot: RestoredIrSnapshot = {
-	version: 1,
+	schemaVersion: '1.0',
 	savedAt: '2026-08-25T00:00:00.000Z',
 	uiDefinition: {
 		logicalId: 'userRegistration',

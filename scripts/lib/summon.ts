@@ -16,7 +16,8 @@ handlebars.registerHelper('eq', (left: unknown, right: unknown) => left === righ
  */
 export type SummonTemplateContext = {
 	target: string;
-	version: number;
+	/** UI IR 定義の構造版。画面定義の製品版は `uiDefinition.version` を参照する */
+	schemaVersion: string;
 	savedAt: string;
 	uiDefinition: Record<string, unknown>;
 	components: unknown[];
@@ -105,7 +106,7 @@ export function buildSummonContext(
 	return {
 		context: {
 			target: targetId,
-			version: snapshot.version,
+			schemaVersion: snapshot.schemaVersion,
 			savedAt: snapshot.savedAt,
 			uiDefinition: {
 				...snapshot.uiDefinition,

@@ -85,7 +85,7 @@ describe('parseSummonCliArgs', () => {
 describe('runSummonCli', () => {
 	it('renders from snapshot and template files', () => {
 		const yamlText = serializeIrSnapshot({
-			version: 1,
+			schemaVersion: '1.0',
 			savedAt: '2026-08-25T00:00:00.000Z',
 			uiDefinition: {
 				...createEmptyUiDefinitionMeta(),
@@ -123,7 +123,7 @@ describe('runSummonCli', () => {
 
 	it('warns when the target residual is missing', () => {
 		const yamlText = serializeIrSnapshot({
-			version: 1,
+			schemaVersion: '1.0',
 			savedAt: '2026-08-25T00:00:00.000Z',
 			components: [{ type: 'textbox' }]
 		});
@@ -147,7 +147,7 @@ describe('runSummonCli', () => {
 
 	it('applies by-logical-id when --projection is set', () => {
 		const yamlText = serializeIrSnapshot({
-			version: 1,
+			schemaVersion: '1.0',
 			savedAt: '2026-08-25T00:00:00.000Z',
 			uiDefinition: {
 				...createEmptyUiDefinitionMeta(),
