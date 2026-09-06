@@ -12,7 +12,11 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 	}
 
 	const source = component as Record<string, unknown>;
-	const type = typeof source.type === 'string' && source.type.trim() !== '' ? source.type : 'unknown';
+	const rawType = typeof source.type === 'string' && source.type.trim() !== '' ? source.type : 'unknown';
+	// WARN: hydrate が未知 type を unsupported に正規化する。Export では元のベンダー type を戻す。
+	const sourceType =
+		typeof source.sourceType === 'string' && source.sourceType.trim() !== '' ? source.sourceType : '';
+	const type = rawType === 'unsupported' ? sourceType || 'unknown' : rawType;
 	const validation =
 		source.validation !== null && typeof source.validation === 'object' && !Array.isArray(source.validation)
 			? (source.validation as Record<string, unknown>)

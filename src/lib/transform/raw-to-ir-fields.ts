@@ -1,4 +1,8 @@
 import { normalizeExternalResidual } from '$lib/ir/external-residual';
+import {
+	parsePersistedComponent,
+	type PersistedComponent
+} from '$lib/ir/elements/component-schema';
 
 /**
  * プレーン object かどうかを判定する
@@ -10,11 +14,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /**
  * Raw 用フィールドオブジェクトから IR component を組み立てる（mapComponentToRawField の逆）
  *
- * WARN: エディタ用 `id` はここでは採番しない。store のファクトリが付与する。
+ * WARN: エディタ用 `id` はここでは採番しない。store の hydrate が付与する。
+ * WARN: 未知 type は `parsePersistedComponent` が `unsupported` + `sourceType` に正規化する。
  */
-export function mapRawFieldToComponent(field: unknown): Record<string, unknown> {
+export function mapRawFieldToComponent(field: unknown): PersistedComponent {
 	if (!isPlainObject(field)) {
-		return { logicalId: '', type: 'unknown', label: '' };
+		return parsePersistedComponent({ logicalId: '', type: '', label: '' });
 	}
 
 	const validation = isPlainObject(field.validation) ? { ...field.validation } : {};
@@ -24,7 +29,7 @@ export function mapRawFieldToComponent(field: unknown): Record<string, unknown> 
 
 	const component: Record<string, unknown> = {
 		logicalId: typeof field.logicalId === 'string' ? field.logicalId : '',
-		type: typeof field.type === 'string' && field.type.trim() !== '' ? field.type : 'unknown',
+		type: typeof field.type === 'string' && field.type.trim() !== '' ? field.type : '',
 		label: typeof field.label === 'string' ? field.label : '',
 		hint: typeof field.hint === 'string' ? field.hint : '',
 		disabled: field.disabled === true,
@@ -33,6 +38,9 @@ export function mapRawFieldToComponent(field: unknown): Record<string, unknown> 
 		validation
 	};
 
+	if (typeof field.sourceType === 'string' && field.sourceType.trim() !== '') {
+		component.sourceType = field.sourceType;
+	}
 	if (Array.isArray(field.items)) {
 		component.items = field.items;
 	}
@@ -57,5 +65,5 @@ export function mapRawFieldToComponent(field: unknown): Record<string, unknown> 
 		component.external = external;
 	}
 
-	return component;
+	return parsePersistedComponent(component);
 }

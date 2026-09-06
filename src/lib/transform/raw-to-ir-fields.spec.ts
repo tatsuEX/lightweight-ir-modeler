@@ -11,7 +11,7 @@ describe('mapRawFieldToComponent', () => {
 				label: 'Name',
 				required: true
 			}).validation
-		).toEqual({ required: true });
+		).toMatchObject({ required: true });
 	});
 
 	it('carries type specific keys and residual', () => {
@@ -23,15 +23,52 @@ describe('mapRawFieldToComponent', () => {
 			external: { 'im-forma': { itemSystemId: 'IMF-ITEM-1' } }
 		});
 
+		expect(component.type).toBe('radio');
+		if (component.type !== 'radio') {
+			throw new Error('expected radio');
+		}
 		expect(component.items).toEqual([{ label: 'A', value: 'a' }]);
 		expect(component.external).toEqual({ 'im-forma': { itemSystemId: 'IMF-ITEM-1' } });
 	});
 
-	it('falls back to unknown for malformed input', () => {
-		expect(mapRawFieldToComponent(null)).toEqual({ logicalId: '', type: 'unknown', label: '' });
+	it('falls back to unsupported for malformed input', () => {
+		const component = mapRawFieldToComponent(null);
+		expect(component.type).toBe('unsupported');
+		if (component.type !== 'unsupported') {
+			throw new Error('expected unsupported');
+		}
+		expect(component.logicalId).toBe('');
+		expect(component.label).toBe('');
+		expect(component.sourceType).toBe('');
+		expect(component).not.toHaveProperty('id');
 	});
 
-	it('round-trips through mapComponentToRawField', () => {
+	it('normalizes a vendor type to unsupported and restores it on Raw', () => {
+		const component = mapRawFieldToComponent({
+			logicalId: 'shape',
+			type: 'product_72_shape',
+			label: '図形'
+		});
+		expect(component.type).toBe('unsupported');
+		if (component.type !== 'unsupported') {
+			throw new Error('expected unsupported');
+		}
+		expect(component.sourceType).toBe('product_72_shape');
+		expect(mapComponentToRawField(component).type).toBe('product_72_shape');
+	});
+
+	it('restores unsupported sourceType as the Raw type', () => {
+		expect(
+			mapComponentToRawField({
+				logicalId: 'shape',
+				type: 'unsupported',
+				sourceType: 'product_72_shape',
+				label: '図形'
+			}).type
+		).toBe('product_72_shape');
+	});
+
+	it('round-trips allowlisted Raw keys through mapComponentToRawField', () => {
 		const field = {
 			logicalId: 'name',
 			type: 'textbox',
@@ -45,6 +82,6 @@ describe('mapRawFieldToComponent', () => {
 			external: { 'im-forma': { itemSystemId: 'IMF-ITEM-1' } }
 		};
 
-		expect(mapComponentToRawField(mapRawFieldToComponent(field))).toEqual(field);
+		expect(mapComponentToRawField(mapRawFieldToComponent(field))).toMatchObject(field);
 	});
 });
