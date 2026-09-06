@@ -40,24 +40,24 @@
 	let listingReady = $state(false);
 
 	const canMutate = $derived(
-		listingReady && isUiDefinitionMetaReady(uiDefinition) && isValidLogicalId(uiDefinition.logicalId)
+		listingReady && isUiDefinitionMetaReady(uiDefinition.meta) && isValidLogicalId(uiDefinition.meta.logicalId)
 	);
-	const publishContext = $derived(getPublishContext(listing.versions, uiDefinition.basedOn));
-	const workingChangeReason = $derived(uiDefinition.changeReason);
+	const publishContext = $derived(getPublishContext(listing.versions, uiDefinition.meta.basedOn));
+	const workingChangeReason = $derived(uiDefinition.meta.changeReason);
 	/**
 	 * パッチ版を取得する
 	 */
 	const patchVersion = $derived(
 		publishContext === 'first'
 			? ''
-			: resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'patch')
+			: resolveNextPublishedVersion(listing.versions, uiDefinition.meta.basedOn, 'patch')
 	);
 	/**
 	 * 新たな正本版を取得する
 	 */
 	const newHeadVersion = $derived(
 		publishContext === 'past'
-			? resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'new-head')
+			? resolveNextPublishedVersion(listing.versions, uiDefinition.meta.basedOn, 'new-head')
 			: ''
 	);
 	/**
@@ -66,7 +66,7 @@
 	const revisionVersion = $derived(
 		publishContext === 'past'
 			? ''
-			: resolveNextPublishedVersion(listing.versions, uiDefinition.basedOn, 'revision')
+			: resolveNextPublishedVersion(listing.versions, uiDefinition.meta.basedOn, 'revision')
 	);
 	/**
 	 * 過去版一覧を取得する
@@ -100,7 +100,7 @@
 	}
 
 	const loadedSelectableVersion = $derived(
-		resolveLoadedSelectableVersion(listing, uiDefinition.basedOn, uiDefinition.version)
+		resolveLoadedSelectableVersion(listing, uiDefinition.meta.basedOn, uiDefinition.meta.version)
 	);
 	/**
 	 * Select が作業中の版と違い、まだ読込していない
@@ -123,10 +123,10 @@
 	 * 読込元版のラベルを取得する
 	 */
 	const basedOnLabel = $derived(
-		uiDefinition.basedOn
+		uiDefinition.meta.basedOn
 			? formatPublishedVersionLabel(
-					uiDefinition.basedOn,
-					findPublishedChangeReason(listing.summaries, uiDefinition.basedOn)
+					uiDefinition.meta.basedOn,
+					findPublishedChangeReason(listing.summaries, uiDefinition.meta.basedOn)
 				)
 			: ''
 	);
@@ -135,7 +135,7 @@
 	 * UI 定義の logicalId が変更されたら確定版一覧を再取得する
 	 */
 	$effect(() => {
-		const logicalId = uiDefinition.logicalId;
+		const logicalId = uiDefinition.meta.logicalId;
 		if (!isValidLogicalId(logicalId)) {
 			listing = { ...EMPTY_PUBLISHED_VERSIONS_LISTING };
 			selectedVersion = '';
@@ -151,8 +151,8 @@
 	 * 作業中メタが変わったら Select を作業中の版へ合わせる（ユーザの未読込選択は basedOn が変わらない限り維持する）
 	 */
 	$effect(() => {
-		const basedOn = uiDefinition.basedOn;
-		const version = uiDefinition.version;
+		const basedOn = uiDefinition.meta.basedOn;
+		const version = uiDefinition.meta.version;
 		const preferred = untrack(() =>
 			resolveLoadedSelectableVersion(listing, basedOn, version)
 		);
@@ -175,8 +175,8 @@
 			// WARN: logicalId 切替時は作業中の版へ合わせる。未読込の Select 操作は一覧再取得より前だけ有効。
 			selectedVersion = resolveLoadedSelectableVersion(
 				listing,
-				uiDefinition.basedOn,
-				uiDefinition.version
+				uiDefinition.meta.basedOn,
+				uiDefinition.meta.version
 			);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
@@ -210,10 +210,10 @@
 
 		busy = true;
 		try {
-			const result = await publishWorkingSnapshot(uiDefinition.logicalId, kind);
+			const result = await publishWorkingSnapshot(uiDefinition.meta.logicalId, kind);
 			const publishedLabel = formatPublishedVersionLabel(result.version, workingChangeReason);
 			applyLoadedSnapshot(result.snapshot);
-			await refreshListing(uiDefinition.logicalId, result.version);
+			await refreshListing(uiDefinition.meta.logicalId, result.version);
 			toast.info('確定しました', publishedLabel);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
@@ -250,9 +250,9 @@
 				selectedVersion,
 				findPublishedChangeReason(listing.summaries, selectedVersion)
 			);
-			const snapshot = await loadWorkingSnapshotFromVersion(uiDefinition.logicalId, selectedVersion);
+			const snapshot = await loadWorkingSnapshotFromVersion(uiDefinition.meta.logicalId, selectedVersion);
 			applyLoadedSnapshot(snapshot);
-			await refreshListing(uiDefinition.logicalId, selectedVersion);
+			await refreshListing(uiDefinition.meta.logicalId, selectedVersion);
 			toast.info('過去版を読み込みました', `${loadedLabel}（history をリセット）`);
 		} catch (error) {
 			const detail = error instanceof Error ? error.message : String(error);
@@ -301,7 +301,7 @@
 	{#if listing.head}
 		<p class="text-xs text-gray-500 dark:text-gray-400">最新版: {latestLabel}</p>
 	{/if}
-	{#if showBasedOn && uiDefinition.basedOn}
+	{#if showBasedOn && uiDefinition.meta.basedOn}
 		<p class="text-xs text-gray-500 dark:text-gray-400">読込元: {basedOnLabel}</p>
 	{/if}
 </div>

@@ -29,9 +29,9 @@
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { componentCommentKey } from '$lib/ir/snapshot-comment-map';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
+	import { isPropertyEditableType } from '$lib/ir/elements/factories';
 	import {
-		getUIDefinitionContext,
-		isPropertyEditableType
+		getUIDefinitionContext
 	} from '$lib/store/layout-editor/layout-editor.svelte';
 	import { matchesText, type TextMatchMode } from '$lib/utils/text-match';
 

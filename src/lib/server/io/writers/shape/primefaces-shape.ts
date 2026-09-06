@@ -106,6 +106,10 @@ export type PrimeFacesFieldShape =
 export type PrimeFacesShape = {
 	formId: string;
 	name: string;
+	description?: string;
+	version?: string;
+	basedOn?: string;
+	changeReason?: string;
 	fields: PrimeFacesFieldShape[];
 	[key: string]: unknown;
 };
@@ -286,18 +290,37 @@ function shapePrimeFacesField(field: Record<string, unknown>): PrimeFacesFieldSh
 }
 
 /**
+ * 空でない文字列だけを返す
+ */
+function optionalNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== 'string') {
+		return undefined;
+	}
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
  * 検証済み Raw を PrimeFaces テンプレート用 context へ整形する
  *
  * WARN: 文字列の HTML escape は行わない。Handlebars の {{ }} に委譲する。
  */
 export function shapePrimeFaces(raw: RawDefinition): PrimeFacesShape {
 	const fields = Array.isArray(raw.fields) ? raw.fields : [];
+	const description = optionalNonEmptyString(raw.description);
+	const version = optionalNonEmptyString(raw.version);
+	const basedOn = optionalNonEmptyString(raw.basedOn);
+	const changeReason = optionalNonEmptyString(raw.changeReason);
 
 	// WARN: 残余を先に spread する。IR が所有するキーは必ず後勝ちにする。
 	return {
 		...readTargetResidual(raw.external, PRIMEFACES_TARGET_ID),
 		formId: typeof raw.logicalId === 'string' ? raw.logicalId : 'form',
 		name: typeof raw.name === 'string' ? raw.name : 'form',
+		...(description ? { description } : {}),
+		...(version ? { version } : {}),
+		...(basedOn ? { basedOn } : {}),
+		...(changeReason ? { changeReason } : {}),
 		fields: fields
 			.filter(
 				(field): field is Record<string, unknown> =>

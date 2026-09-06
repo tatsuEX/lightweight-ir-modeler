@@ -3,7 +3,7 @@
 	import MarkdownCommentModal from '$lib/components/MarkdownCommentModal.svelte';
 	import { attachIrAutoSave } from '$lib/store/layout-editor/ir-auto-save.svelte';
 	import {
-		UIDefinition,
+		createReactiveUIDefinition,
 		setUIDefinitionContext
 	} from '$lib/store/layout-editor/layout-editor.svelte';
 	import {
@@ -23,7 +23,7 @@
 	let { data, children } = $props();
 
 	/** layout-editor の状態は Context API 経由でのみ参照する */
-	const uiDefinition = new UIDefinition(data.uiDefinition.logicalId, data.uiDefinition.name, data.uiDefinition.description, data.uiDefinition.version);
+	const uiDefinition = createReactiveUIDefinition(data.uiDefinition.logicalId, data.uiDefinition.name, data.uiDefinition.description, data.uiDefinition.version);
 	setUIDefinitionContext(uiDefinition);
 
 	const previewTheme = createPreviewTheme(data.preview.theme);

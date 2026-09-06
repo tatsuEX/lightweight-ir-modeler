@@ -13,7 +13,7 @@
 	import { isValidLogicalId } from '$lib/ir/ui-definition-meta';
 	import type { ImportedDefinition } from '$lib/transform/imported-definition';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
-	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
+	import { getUIDefinitionContext, loadImported } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import { getTransformTargetContext } from '$lib/store/layout-editor/transform-target.svelte';
 	import { resolveUiImportClient } from '$lib/store/layout-editor/ui-import-client';
@@ -69,7 +69,7 @@
 		open = false;
 		pendingImported = null;
 		try {
-			uiDefinition.loadImported(imported);
+			loadImported(uiDefinition, imported);
 			snapshotComments.clear();
 			toast.info('定義を取り込みました', imported.uiDefinition.logicalId);
 		} catch (error) {

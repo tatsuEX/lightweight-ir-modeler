@@ -79,6 +79,22 @@ describe('DefinitionWriter', () => {
 		expect(artifact.content).toContain('id="myForm"');
 	});
 
+	it('PrimeFacesWriter embeds IR lineage in the form comment', () => {
+		const writer = new PrimeFacesWriter();
+		const artifact = writer.toArtifact({
+			target: 'primefaces',
+			logicalId: 'myForm',
+			name: 'My Form',
+			description: 'Screen',
+			version: '1.1',
+			basedOn: '1.0',
+			changeReason: 'メタ修正',
+			fields: []
+		});
+
+		expect(artifact.content).toContain('logicalId=myForm version=1.1 basedOn=1.0 changeReason=メタ修正');
+	});
+
 	it('PrimeFacesWriter escapes user strings via Handlebars default', () => {
 		const writer = new PrimeFacesWriter();
 		const artifact = writer.toArtifact({

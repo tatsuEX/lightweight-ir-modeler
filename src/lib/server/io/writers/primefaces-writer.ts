@@ -57,7 +57,11 @@ export class PrimeFacesWriter implements DefinitionWriter {
 				'serializeHandlebarsTemplate',
 				{ targetId: this.targetId, template: PRIMEFACES_FORM_TEMPLATE, fieldCount: fields.length },
 				() =>
-					serializeHandlebarsTemplate(this.targetId, { formId, name, fields }, PRIMEFACES_FORM_TEMPLATE)
+					serializeHandlebarsTemplate(
+						this.targetId,
+						{ ...shaped, formId, name, fields },
+						PRIMEFACES_FORM_TEMPLATE
+					)
 			);
 
 			return {

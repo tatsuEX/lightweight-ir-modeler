@@ -33,7 +33,7 @@
 	let selectedTarget = $state<string>(transformTarget.selected.value);
 
 	const previewRootClass = $derived(`${PREVIEW_ROOT} ${previewThemeClass(selectedTheme)}`);
-	const metaReady = $derived(isUiDefinitionMetaReady(uiDefinition));
+	const metaReady = $derived(isUiDefinitionMetaReady(uiDefinition.meta));
 	const exportClient = $derived(resolveUiExportClient(selectedTarget));
 
 	let busy = $state(false);
@@ -75,7 +75,7 @@
 
 		busy = true;
 		try {
-			const result = await exportClient.download(uiDefinition.logicalId);
+			const result = await exportClient.download(uiDefinition.meta.logicalId);
 			saveBlobAsFile(result.blob, result.filename);
 			if (result.autoExported) {
 				toast.info(

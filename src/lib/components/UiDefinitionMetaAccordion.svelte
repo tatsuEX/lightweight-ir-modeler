@@ -40,12 +40,12 @@
 
 	/** 非編集中は store を表示し、import / loadSnapshot 後の値をそのまま反映する */
 	const logicalIdField = $derived(
-		editingLogicalId ? logicalIdDraft : uiDefinition.logicalId
+		editingLogicalId ? logicalIdDraft : uiDefinition.meta.logicalId
 	);
 
 	const accordionHeader = $derived(
-		isUiDefinitionMetaReady(uiDefinition)
-			? `${uiDefinition.name} (${uiDefinition.logicalId}) - ${formatPublishedVersionLabel(uiDefinition.version, uiDefinition.changeReason)}`
+		isUiDefinitionMetaReady(uiDefinition.meta)
+			? `${uiDefinition.meta.name} (${uiDefinition.meta.logicalId}) - ${formatPublishedVersionLabel(uiDefinition.meta.version, uiDefinition.meta.changeReason)}`
 			: '画面の基本情報を入力'
 	);
 
@@ -79,7 +79,7 @@
 		if (editingLogicalId || confirmOpen) {
 			return;
 		}
-		logicalIdDraft = uiDefinition.logicalId;
+		logicalIdDraft = uiDefinition.meta.logicalId;
 		editingLogicalId = true;
 	}
 
@@ -152,7 +152,7 @@
 	 * 新しい画面 ID を確定する（既存 snapshot があれば復元）
 	 */
 	async function applyLogicalIdChange(nextId: string, previousId: string): Promise<void> {
-		uiDefinition.logicalId = nextId;
+		uiDefinition.meta.logicalId = nextId;
 		if (nextId === previousId) {
 			return;
 		}
@@ -168,7 +168,7 @@
 			return;
 		}
 
-		const previousId = uiDefinition.logicalId;
+		const previousId = uiDefinition.meta.logicalId;
 		const trimmed = logicalIdDraft.trim();
 		logicalIdDraft = trimmed;
 		editingLogicalId = false;
@@ -181,7 +181,7 @@
 
 		// 入力中のlogicalIdが有効でない場合はメモリ上のUIDefinitionにのみ反映し、snapshot API へは反映しない
 		if (!isValidLogicalId(trimmed)) {
-			uiDefinition.logicalId = trimmed;
+			uiDefinition.meta.logicalId = trimmed;
 			return;
 		}
 
@@ -284,7 +284,7 @@
 					required
 					placeholder="画面名"
 					aria-label="画面名"
-					bind:value={uiDefinition.name}
+					bind:value={uiDefinition.meta.name}
 				/>
 			</div>
 
@@ -299,7 +299,7 @@
 					size="sm"
 					placeholder="版の識別名・変更点"
 					aria-label="変更概要"
-					bind:value={uiDefinition.changeReason}
+					bind:value={uiDefinition.meta.changeReason}
 				/>
 			</div>
 
@@ -314,13 +314,13 @@
 						showActionButtons
 						aria-label="リリース日"
 						bind:value={
-							() => parseDateString(uiDefinition.releasedAt),
+							() => parseDateString(uiDefinition.meta.releasedAt),
 							(date) => {
-								uiDefinition.releasedAt = formatDateString(date) ?? '';
+								uiDefinition.meta.releasedAt = formatDateString(date) ?? '';
 							}
 						}
 						onclear={() => {
-							uiDefinition.releasedAt = '';
+							uiDefinition.meta.releasedAt = '';
 						}}
 					/>
 				</div>
@@ -337,13 +337,13 @@
 						showActionButtons
 						aria-label="廃止日"
 						bind:value={
-							() => parseDateString(uiDefinition.closedAt),
+							() => parseDateString(uiDefinition.meta.closedAt),
 							(date) => {
-								uiDefinition.closedAt = formatDateString(date) ?? '';
+								uiDefinition.meta.closedAt = formatDateString(date) ?? '';
 							}
 						}
 						onclear={() => {
-							uiDefinition.closedAt = '';
+							uiDefinition.meta.closedAt = '';
 						}}
 					/>
 				</div>
@@ -356,7 +356,7 @@
 					size="sm"
 					placeholder="廃止理由"
 					aria-label="廃止理由"
-					bind:value={uiDefinition.closedReason}
+					bind:value={uiDefinition.meta.closedReason}
 				/>
 			</div>
 
@@ -368,7 +368,7 @@
 					rows={4}
 					placeholder="画面の説明"
 					aria-label="画面の説明"
-					bind:value={uiDefinition.description}
+					bind:value={uiDefinition.meta.description}
 				/>
 			</div>
 		</div>

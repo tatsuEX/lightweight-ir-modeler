@@ -180,4 +180,27 @@ describe('shapePrimeFaces', () => {
 			}
 		]);
 	});
+
+	it('copies IR lineage keys onto form context when present', () => {
+		expect(
+			shapePrimeFaces({
+				target: 'primefaces',
+				logicalId: 'myForm',
+				name: 'My Form',
+				description: 'Screen',
+				version: '1.1',
+				basedOn: '1.0',
+				changeReason: 'メタ修正',
+				fields: []
+			})
+		).toMatchObject({
+			formId: 'myForm',
+			name: 'My Form',
+			description: 'Screen',
+			version: '1.1',
+			basedOn: '1.0',
+			changeReason: 'メタ修正',
+			fields: []
+		});
+	});
 });

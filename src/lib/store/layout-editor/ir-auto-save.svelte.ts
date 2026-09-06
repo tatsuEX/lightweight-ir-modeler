@@ -1,9 +1,9 @@
 import type { IrAutoSaveConfig } from '$lib/config/application-types';
 import { untrack } from 'svelte';
 import { debounce } from '$lib/utils/debounce';
-import { isUiDefinitionMetaReady, toEditorMeta, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
+import { isUiDefinitionMetaReady, toEditorMetaFromLive, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
+import type { UIDefinition } from '$lib/ir/ui-definition';
 import { getToastContext } from '$lib/store/toast/toast.svelte';
-import type { UIDefinition } from './layout-editor.svelte';
 import type { SnapshotComments } from './snapshot-comments.svelte';
 
 // WARN: logger は ブラウザから利用できない。
@@ -28,18 +28,7 @@ type SnapshotSavePayload = {
  * WARN: external を落とすと import 由来のベンダー固有キーが snapshot 経由で失われる。
  */
 function buildSaveMeta(uiDefinition: UIDefinition): UiDefinitionEditorMeta {
-	return toEditorMeta({
-		logicalId: uiDefinition.logicalId,
-		name: uiDefinition.name,
-		description: uiDefinition.description,
-		version: uiDefinition.version,
-		basedOn: uiDefinition.basedOn,
-		changeReason: uiDefinition.changeReason,
-		releasedAt: uiDefinition.releasedAt,
-		closedAt: uiDefinition.closedAt,
-		closedReason: uiDefinition.closedReason,
-		...(uiDefinition.external ? { external: uiDefinition.external } : {})
-	});
+	return toEditorMetaFromLive(uiDefinition.meta);
 }
 
 /**

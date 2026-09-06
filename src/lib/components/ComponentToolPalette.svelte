@@ -5,7 +5,7 @@
 		Sidebar, SidebarWrapper, SidebarGroup, SidebarItem,
 	} from 'flowbite-svelte';
 	import {
-	createCheckbox,
+		createCheckbox,
 		createDatepicker,
 		createDateSpan,
 		createDatetimepicker,
@@ -16,9 +16,9 @@
 		createRadio,
 		createTextarea,
 		createTextbox,
-		createTimepicker,
-		getUIDefinitionContext
-	} from '$lib/store/layout-editor/layout-editor.svelte';
+		createTimepicker
+	} from '$lib/ir/elements/factories';
+	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 
 	/** 画面定義の状態は Context API 経由でのみ参照する */
 	const uiDefinition = getUIDefinitionContext();

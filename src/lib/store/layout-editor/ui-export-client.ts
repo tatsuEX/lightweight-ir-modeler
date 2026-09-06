@@ -1,4 +1,5 @@
-import type { UIDefinition } from '$lib/store/layout-editor/layout-editor.svelte';
+import type { UIDefinition } from '$lib/ir/ui-definition';
+import { toVendorExportMeta } from '$lib/ir/ui-definition-meta';
 
 /**
  * 明示出力 API の成功レスポンス
@@ -54,14 +55,7 @@ export class HttpUiExportClient implements UiExportClient {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				target: this.targetId,
-				uiDefinition: {
-					logicalId: ui.logicalId,
-					name: ui.name,
-					description: ui.description,
-					version: ui.version,
-					// WARN: external を送らないと import 由来のベンダー固有キーが出力で復元されない。
-					...(ui.external ? { external: ui.external } : {})
-				},
+				uiDefinition: toVendorExportMeta(ui.meta),
 				components: ui.components
 			})
 		});
@@ -85,7 +79,7 @@ export class HttpUiExportClient implements UiExportClient {
 
 		return {
 			target: payload.target ?? this.targetId,
-			logicalId: payload.logicalId ?? ui.logicalId,
+			logicalId: payload.logicalId ?? ui.meta.logicalId,
 			relativePath: payload.relativePath ?? '',
 			filename: payload.filename ?? '',
 			writtenAt: payload.writtenAt ?? ''

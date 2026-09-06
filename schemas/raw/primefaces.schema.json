@@ -25,6 +25,14 @@
 		"version": {
 			"type": "string"
 		},
+		"basedOn": {
+			"type": "string",
+			"description": "IR snapshot lineage (source published version). Not vendor vocabulary."
+		},
+		"changeReason": {
+			"type": "string",
+			"description": "IR snapshot lineage label. Not vendor vocabulary."
+		},
 		"fields": {
 			"type": "array",
 			"items": {

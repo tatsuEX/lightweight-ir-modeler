@@ -1,5 +1,5 @@
 import { normalizeExternalResidual } from '$lib/ir/external-residual';
-import type { UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
+import { toVendorExportMeta, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
 import type { RawDefinition } from '$lib/raw/raw-definition';
 import type { ImportedDefinition } from '$lib/transform/imported-definition';
 import { mapComponentToRawField } from '$lib/transform/ir-to-raw-fields';
@@ -12,14 +12,12 @@ export function transformToPrimeFacesRaw(
 	meta: UiDefinitionEditorMeta,
 	components: unknown[]
 ): RawDefinition {
+	const exported = toVendorExportMeta(meta);
+
 	return {
 		target: 'primefaces',
-		logicalId: meta.logicalId,
-		name: meta.name,
-		description: meta.description,
-		version: meta.version,
-		fields: components.map(mapComponentToRawField),
-		...(meta.external ? { external: meta.external } : {})
+		...exported,
+		fields: components.map(mapComponentToRawField)
 	};
 }
 

@@ -11,6 +11,7 @@
 		isUiDefinitionOwnerKey,
 		parseComponentIdFromOwnerKey
 	} from '$lib/ir/snapshot-comment-map';
+	import { toEditorMetaFromLive } from '$lib/ir/ui-definition-meta';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 
@@ -27,12 +28,8 @@
 		}
 		if (isUiDefinitionOwnerKey(editor.ownerKey)) {
 			return buildUiDefinitionCommentTree({
-				logicalId: uiDefinition.logicalId,
-				name: uiDefinition.name,
-				description: uiDefinition.description,
-				version: uiDefinition.version,
-				...(uiDefinition.external ? { external: uiDefinition.external } : {})
-			});
+				...toEditorMetaFromLive(uiDefinition.meta)
+			} as Record<string, unknown>);
 		}
 		const componentId = parseComponentIdFromOwnerKey(editor.ownerKey);
 		if (componentId == null) {
