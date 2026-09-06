@@ -2,12 +2,12 @@
 /**
  * JSON Schema の JSON ↔ YAML 相互変換 CLI。
  *
- * WARN: 意味の正規化はしない（コメント付き YAML は js-yaml の挙動に従う）。
+ * WARN: 意味の正規化はしない（コメント付き YAML は parse → JS → stringify でコメントが落ちる）。
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, isAbsolute, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 
 /**
  * @typedef {'json' | 'yaml'} SchemaFileFormat
@@ -166,7 +166,7 @@ function displayPath(absolutePath, cwd) {
  */
 function readSchemaObject(filePath, format) {
 	const text = readFileSync(filePath, 'utf8');
-	const parsed = format === 'yaml' ? yamlLoad(text) : JSON.parse(text);
+	const parsed = format === 'yaml' ? yamlParse(text) : JSON.parse(text);
 
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error(`schema はオブジェクトである必要があります: ${filePath}`);
@@ -186,11 +186,10 @@ function serializeSchemaObject(schemaObject, format) {
 		return `${JSON.stringify(schemaObject, null, '\t')}\n`;
 	}
 
-	return yamlDump(schemaObject, {
+	return yamlStringify(schemaObject, {
 		indent: 2,
 		lineWidth: 120,
-		noRefs: true,
-		sortKeys: false
+		aliasDuplicateObjects: false
 	});
 }
 
@@ -242,14 +241,14 @@ function main(argv) {
 		const intermediate = serializeSchemaObject(schemaObject, outputFormat);
 		const roundTrip =
 			outputFormat === 'yaml'
-				? yamlLoad(intermediate)
+				? yamlParse(intermediate)
 				: JSON.parse(intermediate);
 		const back = serializeSchemaObject(
 			/** @type {Record<string, unknown>} */ (roundTrip),
 			inputFormat
 		);
 		const restored =
-			inputFormat === 'yaml' ? yamlLoad(back) : JSON.parse(back);
+			inputFormat === 'yaml' ? yamlParse(back) : JSON.parse(back);
 
 		if (!deepEqualJson(schemaObject, restored)) {
 			throw new Error(`check failed: round-trip mismatch for ${shownIn} via ${outputFormat}`);

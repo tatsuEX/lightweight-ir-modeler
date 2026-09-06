@@ -1,4 +1,3 @@
-import { load } from 'js-yaml';
 import {
 	DEFAULT_IR_AUTO_SAVE_COMMENT_DELAY_EXTRA,
 	DEFAULT_IR_AUTO_SAVE_DELAY,
@@ -26,6 +25,7 @@ import {
 	type PreviewSelectConfig,
 	type PreviewSelectOption
 } from '$lib/config/preview-config';
+import { parseYaml } from '$lib/utils/yaml-document';
 
 /**
  * ir.autoSave ブロックをパースする
@@ -493,7 +493,7 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
  * YAML 文字列を ApplicationConfig としてパースする
  */
 export function parseApplicationConfig(yamlText: string): ApplicationConfig {
-	const parsed = load(yamlText);
+	const parsed = parseYaml(yamlText);
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error('application config YAML must be a mapping object');
 	}

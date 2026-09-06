@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { extname, isAbsolute, join, resolve } from 'node:path';
-import { load as yamlLoad } from 'js-yaml';
+import { parseYaml } from '$lib/utils/yaml-document';
 import * as z from 'zod';
 import { ensureZodLocaleJa } from '$lib/schema/zod-locale';
 
@@ -57,7 +57,7 @@ export function resolveRawSchemaFilePath(targetId: string): string {
  * テキストを JSON Schema オブジェクトとしてパースする
  */
 function parseSchemaText(absolutePath: string, text: string): Record<string, unknown> {
-	const parsed: unknown = isYamlSchemaPath(absolutePath) ? yamlLoad(text) : JSON.parse(text);
+	const parsed: unknown = isYamlSchemaPath(absolutePath) ? parseYaml(text) : JSON.parse(text);
 
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error(`raw JSON Schema must be an object: ${absolutePath}`);

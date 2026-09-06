@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path';
-import { load } from 'js-yaml';
+import { parseYaml } from '$lib/utils/yaml-document';
 
 /**
  * 相対パスを process.cwd() 基準の絶対パスへ解決する
@@ -67,7 +67,7 @@ export function deepMergeConfig(
  * YAML ファイルを mapping オブジェクトとして読み込む
  */
 function readYamlMapping(absolutePath: string): Record<string, unknown> {
-	const parsed = load(readFileSync(absolutePath, 'utf8'));
+	const parsed = parseYaml(readFileSync(absolutePath, 'utf8'));
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error(`application config YAML must be a mapping object: ${absolutePath}`);
 	}

@@ -9,7 +9,7 @@
 import { existsSync, globSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { InputData, jsonInputForTargetLanguage, quicktype } from 'quicktype-core';
 
 const DEFAULT_OUT_DIR = 'schemas/drafts';
@@ -492,7 +492,7 @@ function readSampleAsJsonString(filePath, options = {}) {
 	const ext = extname(filePath).toLowerCase();
 
 	if (ext === '.yaml' || ext === '.yml') {
-		const data = yamlLoad(text);
+		const data = yamlParse(text);
 		if (data === undefined || data === null) {
 			throw new Error(`YAML が空です`);
 		}
@@ -635,11 +635,10 @@ function serializeSchemaObject(schemaObject, format) {
 		return `${JSON.stringify(schemaObject, null, '\t')}\n`;
 	}
 
-	return yamlDump(schemaObject, {
+	return yamlStringify(schemaObject, {
 		indent: 2,
 		lineWidth: 120,
-		noRefs: true,
-		sortKeys: false
+		aliasDuplicateObjects: false
 	});
 }
 
