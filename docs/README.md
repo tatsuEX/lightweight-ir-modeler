@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T01:10:00"
-summary: "docs 索引。UIDefinition は meta/components 公開、メタ投影と Export 系統"
+updated: "2026-09-07T03:31:00"
+summary: "docs 索引。UIDefinition は meta/components 公開、メタ投影と Export 系統、snapshot schemaVersion"
 features:
   - docs
   - architecture
@@ -21,7 +21,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-07 01:10
+最終更新: 2026-09-07 03:31
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -76,4 +76,5 @@ features:
 | Global Toast | 実装済み（Preview / Import 成功 / 自動保存失敗 / snapshot 復元） |
 | First-party 射影プラグイン（`by-logical-id` / `db-maxlength`） | MVP 実装済み（[プラグイン](./architecture/plugins.md)）。`arcane:summon --projection` |
 | writer-filter / adapter-target 契約化 | 方針のみ（`.cursor/rules/16-plugins.mdc`）。未着手 |
+| IR snapshot `schemaVersion` と migration seam | MVP 実装済み（[自動保存](./use-cases/ir-snapshot-auto-save.md)）。root `schemaVersion` + 4 分類 + step 空の seam。migration *エンジン*ではない |
 | ドメイン検証エンジン / Undo / event bus / IR スキーマ移行エンジン | 対象外（`.cursor/rules/03-out-of-scope.mdc`） |

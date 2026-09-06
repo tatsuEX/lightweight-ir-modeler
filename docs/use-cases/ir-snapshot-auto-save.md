@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-01T06:45:00"
-summary: "current / history / versions による IR YAML snapshot 自動保存と確定版"
+updated: "2026-09-07T03:31:00"
+summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion と atomic write"
 features:
   - ir-snapshot
   - auto-save
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-01 06:45
+最終更新: 2026-09-07 03:31
 
 ## 概要
 
@@ -113,7 +113,29 @@ sequenceDiagram
 - 復元時: component `id` を除去して保存 → 読込時に再採番
 - `uiDefinition.version` の既定は `1.0`（`<main>.<sub>`。第 3 段は使わない）
 
-## YAML envelope (version = 1)
+## YAML envelope (schemaVersion)
+
+Root は UI IR 定義の**構造版** `schemaVersion`（`<main>.<sub>`。現行 `1.0`）を持つ。廃止した envelope `version: 1` は機能していなかったため撤去した。
+
+- `schemaVersion` は構造の版。`uiDefinition.version` は**ユーザ意図の画面定義の製品版**で、別概念（混ぜない）
+- `schemaVersion` キーが無い既存資産は baseline `1.0` として読む（migration step 不要）
+- 読込は `deserializeIrSnapshotDocument` が唯一の choke point。`current/` と `versions/<v>/` のどちらから読んでも同じ分類・migration が走る
+
+| snapshot の schemaVersion | 挙動 |
+|---|---|
+| 現行ビルドより新しい | エラー。読まない・上書きしない（既存 snapshot を壊さない） |
+| 一致 | schemaVersion に関する処理なし |
+| main 同一・sub が古い | 最新 sub まで自動 migration |
+| main が古い | 破壊的。ユーザー同意が取れてから migration |
+| `<main>.<sub>` として不正 | エラー |
+
+書き込み側（`current/snapshot.yml`）:
+
+- temp ファイル + `rename` による atomic 置換。書き込み途中の中断で `current` を半端な内容にしない
+- ディスク側が現行ビルドより**新しい**場合は 409 で上書き拒否（古いサーバ / stale なタブによる破壊を防ぐ）
+- ディスク側が**古い**場合はその書き込みが migration の commit なので、元ファイルを `history/ir-snapshot-<ts>-premigration-<schemaVersion>.yml` へ退避してから書く
+
+migration step は plain record → record の関数（`snapshot-migration.ts`）。Domain 型を import しないので、過去 schema の知識が Domain Model に入らない。現行 schema は `1.0` のみなので登録 step は空。
 
 Output uses eemeli/yaml Document (not js-yaml). Operational Markdown comments are stored as YAML `#` (`commentBefore`):
 
@@ -128,13 +150,15 @@ Skip compare includes both IR content and the comment map. Comment-only edits cr
 
 Key order for every mapping:
 
-1. System meta: version, createdAt, modifiedAt, savedAt
+1. System meta: schemaVersion, version, createdAt, modifiedAt, savedAt
 2. Snapshot preferred keys (SNAPSHOT_YAML_PREFERRED_KEYS)
 3. Remaining keys in ASCII (UTF-16 code unit) order. This is not natural numeric order.
 
+`schemaVersion` は root だけ、`version` は `uiDefinition` だけに出る（同じ system meta 表に載るが別概念）。
+
 Envelope shape:
 
-- root: version, savedAt, uiDefinition, components
+- root: schemaVersion, savedAt, uiDefinition, components
 - uiDefinition: logicalId, name, version, changeReason / releasedAt / closedAt / closedReason（ある場合）, description, basedOn（ある場合）, external last if present, then createdAt, modifiedAt
 - components[]: logicalId, type, label, then type-specific keys, then external
 

@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T01:10:00"
-summary: "モジュール境界・UIDefinition は meta/components 公開・メタ投影・Export 系統キー"
+updated: "2026-09-07T03:31:00"
+summary: "モジュール境界・UIDefinition は meta/components 公開・メタ投影・Export 系統キー・snapshot schemaVersion"
 features:
   - architecture
   - ir
@@ -21,7 +21,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-09-07 01:10
+最終更新: 2026-09-07 03:31
 
 ## 目的
 
@@ -150,7 +150,7 @@ classDiagram
   }
 
   class IrSnapshot {
-    +version number
+    +schemaVersion string
     +savedAt string
     +uiDefinition
     +components[]

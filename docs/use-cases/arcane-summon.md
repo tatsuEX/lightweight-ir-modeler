@@ -1,6 +1,6 @@
 ---
 created: "2026-08-25T08:32:00"
-updated: "2026-09-01T08:20:00"
+updated: "2026-09-07T03:31:00"
 summary: "IR snapshot YAML から Handlebars で簡易コード生成する CLI（arcane:summon）と opt-in 射影"
 features:
   - arcane
@@ -11,7 +11,7 @@ features:
 
 # ユースケース: IR snapshot からの簡易コード生成（`arcane:summon`）
 
-最終更新: 2026-09-01 08:20
+最終更新: 2026-09-07 03:31
 
 ## 概要
 
@@ -74,7 +74,7 @@ flowchart LR
 | キー | 内容 |
 |---|---|
 | `target` | `--target` |
-| `version` / `savedAt` | snapshot envelope |
+| `schemaVersion` / `savedAt` | snapshot envelope（`schemaVersion` は IR 構造版。画面定義の製品版は `uiDefinition.version`） |
 | `uiDefinition` | メタ。`external` は **その target の袋だけ** |
 | `components` | restore 済み（`id` 再採番）。各要素の `external` も target 袋だけ |
 | `external` | `uiDefinition.external` と同じ（画面レベルの target 袋） |
