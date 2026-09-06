@@ -1,7 +1,7 @@
 ---
 created: "2026-09-07T04:46:00"
 summary: "新 adapter target の Import パイプラインを実装する手順。unshape / Reader / Raw→IR transform / registry"
-updated: "2026-09-07T04:46:00"
+updated: "2026-09-07T06:40:00"
 features:
   - maintenance
   - adapter-target
@@ -10,7 +10,7 @@ features:
 
 # 保守手順: target 追加（Import パイプライン）
 
-最終更新: 2026-09-07 04:46
+最終更新: 2026-09-07 06:40
 
 新しい adapter target の**取り込み**を実装する手順です。横断仕様は [外部 UI 定義の取り込み](../use-cases/ui-import.md) を参照してください。schema / config / UI / docs は [その他対応](./add-target-other.md) にあります。
 
@@ -87,8 +87,9 @@ export interface DefinitionReader {
 
 - フィールド配列は unshape で決めたキーから読みます
 - 各フィールドの写像は共有の `mapRawFieldToComponent`（`src/lib/transform/raw-to-ir-fields.ts`）に委譲します。**target 固有の写像をここに足さないこと**
+- `mapRawFieldToComponent` は `parsePersistedComponent` で `PersistedComponent` にする（`id` は付けない）。未知の Raw `type` は `unsupported` + `sourceType`
 - 残余は `normalizeExternalResidual` で正規化します
-- 戻り値型は `src/lib/transform/imported-definition.ts` の `ImportedDefinition`
+- 戻り値型は `src/lib/transform/imported-definition.ts` の `ImportedDefinition`（`components: PersistedComponent[]`）
 
 ベンダー type → IR type の対応表が必要なら、target 専用ファイル（`src/lib/server/io/forma/im-forma-type-map.ts` に相当）に切り出します。
 

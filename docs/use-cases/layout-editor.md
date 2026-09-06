@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T01:10:00"
-summary: "Property 属性テーブル、UIDefinition.meta / components を GUI が bind"
+updated: "2026-09-07T06:50:00"
+summary: "Property 属性テーブルは EditorComponent を bind。Preview registry は ComponentType"
 features:
   - layout-editor
   - ui-definition
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-07 01:10
+最終更新: 2026-09-07 06:50
 
 ## 概要
 
@@ -119,8 +119,12 @@ flowchart TB
   Reg -->|textbox| PreviewTextbox
   Reg -->|textarea| PreviewTextarea
   Reg -->|number| PreviewNumber
-  Reg -->|その他| PreviewUnknown
+  Reg -->|checkbox / radio / dropdown| PreviewSelect
+  Reg -->|label| PreviewLabel
+  Reg -->|datepicker / date-span / datetimepicker / timepicker / unsupported| PreviewUnknown
 ```
+
+`PREVIEW_COMPONENT_REGISTRY` は IR の `ComponentType` 全件をキーにする。未実装 type と `unsupported` は `PreviewUnknown`（`sourceType` があればそれを表示）。Preview は `EditorComponent` をそのまま渡す（`Record<string, unknown>` 交差は使わない）。
 
 - テーマは `preview-theme--{value}` クラス + `preview-theme-styles.ts`
 - Export / Download ボタンは `isUiDefinitionMetaReady` かつ非 busy のときのみ有効。結果は Global Toast（成功 `info` / 失敗 `error`）
@@ -139,7 +143,7 @@ flowchart TB
 
 | グループ | 追加列 | 編集対象（列位置に type 別フィールドを載せる） |
 |---|---|---|
-| Basic | hint / required / readonly / disabled | 共通フラグ・hint。非対応は `- not supported -` |
+| Basic | hint / required / readonly / disabled | 全 `EditorComponent` 共通（`bind:`。presence guard なし） |
 | Details | details-0..2（3 固定） | 0: defaultValue、1: items \| format \| cols、2: rows |
 | Validation | validation-0..2（3 固定） | 0: pattern \| maxlength \| min \| minDate / minDateTime(date)…、1: minlength \| max \| maxDate / maxDateTime(date)…、2: textbox maxlength。datetime は同セル内に Datepicker + Timepicker（時刻は `validation-N-time`） |
 

@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T03:31:00"
-summary: "モジュール境界・UIDefinition は meta/components 公開・メタ投影・Export 系統キー・snapshot schemaVersion"
+updated: "2026-09-07T06:40:00"
+summary: "モジュール境界・UIDefinition は meta/components 公開・EditorComponent discriminated union・snapshot schemaVersion"
 features:
   - architecture
   - ir
@@ -21,7 +21,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-09-07 03:31
+最終更新: 2026-09-07 06:40
 
 ## 目的
 
@@ -32,7 +32,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 
 | Path | 役割 | 現状の主な成果物 |
 |---|---|---|
-| `ir/` | ドメイン SSOT（種類ごと） | `ui-definition.ts`（`UIDefinition`）、`ui-definition-meta.ts`（用途別投影）、`elements/factories.ts`、`snapshot.ts`、`snapshot-comment-map.ts`、`external-residual.ts` |
+| `ir/` | ドメイン SSOT（種類ごと） | `ui-definition.ts`（`UIDefinition`）、`ui-definition-meta.ts`（用途別投影）、`elements/component-schema.ts`（`EditorComponent` discriminated union）、`elements/factories.ts`、`snapshot.ts`、`snapshot-comment-map.ts`、`external-residual.ts` |
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
 | `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | 共有フィールド変換 + target 固有 `*-transform.ts` |
@@ -72,8 +72,8 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 アップロードされた外部 UI 定義ファイル
   → DefinitionReader（parse → unshape）→ RawDefinition
   → SchemaValidator（JSON Schema / Zod）
-  → Transformer → UIDefinition（editor meta + components）
-  → GUI（store の `loadImported`）
+  → Transformer → IR（editor meta + PersistedComponent[]。未知 type は unsupported + sourceType）
+  → GUI（store の `loadImported` が hydrate して UIDefinition）
 ```
 
 形式固有の未モデル化データは `external['<targetId>']` に退避する。  
@@ -116,7 +116,7 @@ classDiagram
 
   class UIDefinition {
     +meta UiDefinitionLiveMeta
-    +components any[]
+    +components EditorComponent[]
     +append()
     +loadSnapshot()
   }

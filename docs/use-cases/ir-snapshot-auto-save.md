@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T03:31:00"
-summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion と atomic write"
+updated: "2026-09-07T06:22:00"
+summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion、component hydrate"
 features:
   - ir-snapshot
   - auto-save
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-07 03:31
+最終更新: 2026-09-07 06:22
 
 ## 概要
 
@@ -110,7 +110,7 @@ sequenceDiagram
 - ファイル内 `savedAt` は ISO UTC
 - 画面 ID を変えると別ディレクトリへ保存される。過剰なディレクトリ生成は許容する（復元は ID 単位）
 - 世代のソート・prune は **history のファイル名** 基準（mtime ではない）
-- 復元時: component `id` を除去して保存 → 読込時に再採番
+- 復元時: component `id` を除去して保存 → 読込時に再採番し、`EditorComponent` として hydrate する（欠落キーの既定値補完、`tooltip` / `autosize` 除去、未知 `type` は `unsupported` + `sourceType`）
 - `uiDefinition.version` の既定は `1.0`（`<main>.<sub>`。第 3 段は使わない）
 
 ## YAML envelope (schemaVersion)
@@ -160,7 +160,8 @@ Envelope shape:
 
 - root: schemaVersion, savedAt, uiDefinition, components
 - uiDefinition: logicalId, name, version, changeReason / releasedAt / closedAt / closedReason（ある場合）, description, basedOn（ある場合）, external last if present, then createdAt, modifiedAt
-- components[]: logicalId, type, label, then type-specific keys, then external
+- components[]: logicalId, type, sourceType（`unsupported` のとき）, label, then type-specific keys, then external
+- 読込後のライブ配列は `EditorComponent[]`。次回保存で既定値が YAML に埋まり、未使用だった `tooltip` / `autosize` は消える（schemaVersion は上げない）
 
 createdAt is preserved by buildSnapshotMetaForWrite on first save.
 

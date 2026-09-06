@@ -1,7 +1,7 @@
 ---
 created: "2026-08-10T05:10:00"
-updated: "2026-09-07T00:04:00"
-summary: "外部 UI 定義 Import の横断パイプライン・loadImported は store"
+updated: "2026-09-07T06:40:00"
+summary: "外部 UI 定義 Import の横断パイプライン。未知 type は PersistedComponent（unsupported）"
 features:
   - ui-import
   - primefaces
@@ -13,7 +13,7 @@ features:
 
 # 外部 UI 定義の取り込み（Import）
 
-最終更新: 2026-09-07 00:04
+最終更新: 2026-09-07 06:40
 
 外部 UI 定義ファイルをアップロードし、IR へ変換してエディタの編集状態を丸ごと置き換える。
 出力側は [UI Export](./ui-export.md) を参照。
@@ -36,7 +36,7 @@ Export の各段の鏡像として構成する。
 アップロードファイル
   → DefinitionReader（parse → unshape）→ RawDefinition
   → SchemaValidator（JSON Schema → Zod）
-  → Transformer → IR（uiDefinition + components）
+  → Transformer → IR（uiDefinition + PersistedComponent[]）
   → store `loadImported(ui, imported)`
 ```
 
@@ -87,12 +87,14 @@ sequenceDiagram
 
 ## エディタへの反映
 
+Transformer の `mapRawFieldToComponent` は `parsePersistedComponent` で `PersistedComponent` にする（エディタ用 `id` は付けない）。未知の Raw `type` は `unsupported` + `sourceType` に正規化する。
+
 store の `loadImported(ui, imported)` が
 
-1. `createComponentByType`（`$lib/ir/elements/factories`）で type 別ファクトリを適用（デフォルト値の補完 + エディタ用 `id` 採番）
-2. `UIDefinition.loadSnapshot` に委譲して components とメタを全置換
+1. `createComponentByType`（`$lib/ir/elements/factories`）で登録済み type にファクトリを適用（デフォルト補完 + エディタ用 `id` 採番）。`unsupported` は未登録のため `id` だけ付けて素通しする
+2. `UIDefinition.loadSnapshot` に委譲して hydrate し、components とメタを全置換
 
-を行う。未登録 type は `id` だけ付けて素通しする。
+を行う。
 
 取り込み後は `logicalId` が変わるため、debounce 後に **新しい logicalId のディレクトリへ
 snapshot が自動保存される**（既存世代は削除されない）。UI 側でその旨を警告する。  
