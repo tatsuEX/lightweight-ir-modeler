@@ -1,9 +1,10 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T03:31:00"
-summary: "docs 索引。UIDefinition は meta/components 公開、メタ投影と Export 系統、snapshot schemaVersion"
+updated: "2026-09-07T04:46:00"
+summary: "docs 索引。利用者向けと保守者向けの区別、メタ投影と Export 系統、snapshot schemaVersion"
 features:
   - docs
+  - maintenance
   - architecture
   - licensing
   - layout-editor
@@ -21,10 +22,19 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-07 03:31
+最終更新: 2026-09-07 04:46
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
+
+## 読者による使い分け
+
+| 読者 | 見る場所 | 内容 |
+|---|---|---|
+| **LIRM 利用者** | `use-cases/`・`api/`・`architecture/` | 何ができるか・API 契約・target ごとの取り込み / 出力仕様 |
+| **LIRM 保守者** | [`maintenance/`](./maintenance/README.md) | LIRM を拡張・改訂するときに**どこを何の順で触るか** |
+
+利用者向け文書は「**何が起きるか**」、保守運用ガイドは「**どのファイルをどう変えるか**」を書きます。同じ話題でも役割が違うので、片方に寄せずに両方更新してください。
 
 ## 読む順番（推奨）
 
@@ -49,19 +59,31 @@ features:
 14. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
 15. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
 
+### 保守運用（LIRM を改造する人向け）
+
+索引: [保守運用ガイド](./maintenance/README.md)
+
+16. [`schemaVersion` 改訂](./maintenance/schema-version-revision.md) — sub / main の判断・migration step・同意フロー
+17. [target 追加: Import パイプライン](./maintenance/add-target-import.md) — unshape / Reader / Raw→IR
+18. [target 追加: Export パイプライン](./maintenance/add-target-export.md) — IR→Raw / shape or merge / serialize / Writer
+19. [target 追加: その他対応](./maintenance/add-target-other.md) — Raw schema / registry 一覧 / `application.yml` / 既存 spec / UI
+20. [`arcane:summon` テンプレート新規作成](./maintenance/add-summon-template.md) — context / helper / projection
+
 ## ドキュメントの層
 
 | 層 | 例 | 書いてよいこと |
 |---|---|---|
 | **Core** | `architecture/`・`api/`・`ui-import.md` / `ui-export.md` 等 | IR・横断パイプライン・HTTP 契約・`external['<targetId>']`・shape/merge/serialize の一般概念・projection / writer-filter の契約 |
 | **Adapter target** | `primefaces-*.md`・`im-forma-*.md` | 語彙・type マップ・merge / writer-filter 段の中身・serialize 方言・文書族判定 |
+| **保守運用** | `maintenance/` | 作業手順・触る箇所の一覧・順序・チェックリスト。既存 target は「真似る雛形」として path 参照のみ（語彙の中身は書かない） |
 
 詳細は Cursor ルール `.cursor/rules/12-docs-maintenance.mdc` を参照。
 
 ## ドキュメントの更新方針
 
 詳細設計レベルの方針変更を実装したときは、**実装と同時に** 本ディレクトリの該当 `.md` を新規作成または更新する。  
-新 target を追加するときは横断文書を膨らませず、target 専用文書を追加して本索引からリンクする。
+新 target を追加するときは横断文書を膨らませず、target 専用文書を追加して本索引からリンクする（手順は [target 追加: その他対応](./maintenance/add-target-other.md)）。  
+触る箇所が変わる変更（registry の追加、パイプライン段の増減、CLI フラグ）を入れたときは `maintenance/` の該当手順も更新する。
 
 ## 現状スコープ（要約）
 
