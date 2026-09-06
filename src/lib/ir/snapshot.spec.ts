@@ -114,7 +114,12 @@ describe('ir snapshot', () => {
 			{ zebra: 1, type: 'textbox', label: 'A', logicalId: 'userName' }
 		]);
 		const doc = parseDocument(serializeIrSnapshot(snapshot));
-		expect(yamlMapKeys(doc.contents)).toEqual(['version', 'savedAt', 'uiDefinition', 'components']);
+		expect(yamlMapKeys(doc.contents)).toEqual([
+			'schemaVersion',
+			'savedAt',
+			'uiDefinition',
+			'components'
+		]);
 		expect(yamlMapKeys(doc.get('uiDefinition'))).toEqual([
 			'version',
 			'createdAt',
@@ -123,7 +128,7 @@ describe('ir snapshot', () => {
 			'name',
 			'description'
 		]);
-		const components = doc.get('components');
+		const components = doc.get('components') as { get: (index: number) => unknown };
 		expect(yamlMapKeys(components.get(0))).toEqual(['logicalId', 'type', 'label', 'zebra']);
 	});
 	it('documents current default exclude tree', () => {
@@ -148,7 +153,7 @@ describe('ir snapshot', () => {
 
 	it('restoreIrSnapshotFromYaml assigns ids and keeps full external bags', () => {
 		const yamlText = serializeIrSnapshot({
-			version: 1,
+			schemaVersion: '1.0',
 			savedAt: '2026-08-25T00:00:00.000Z',
 			uiDefinition: {
 				...sampleSnapshotMeta,
@@ -180,9 +185,40 @@ describe('ir snapshot', () => {
 		expect((component.id as string).length).toBe(16);
 	});
 
+	it('reads a legacy envelope-version snapshot as the baseline schemaVersion', () => {
+		const yamlText = [
+			'version: 1',
+			"savedAt: '2026-08-25T00:00:00.000Z'",
+			'components:',
+			'  - type: textbox'
+		].join('\n');
+
+		const restored = restoreIrSnapshotFromYaml(yamlText);
+		expect(restored.schemaVersion).toBe('1.0');
+		expect(restored.components).toHaveLength(1);
+	});
+
+	it('refuses a snapshot newer than this build', () => {
+		const yamlText = [
+			"schemaVersion: '99.0'",
+			"savedAt: '2026-08-25T00:00:00.000Z'",
+			'components: []'
+		].join('\n');
+
+		expect(() => restoreIrSnapshotFromYaml(yamlText)).toThrow(/newer than this build/);
+	});
+
+	it('keeps uiDefinition.version separate from the envelope schemaVersion', () => {
+		const snapshot = createIrSnapshot({ ...sampleSnapshotMeta, version: '2.5' }, []);
+		const restored = restoreIrSnapshotFromYaml(serializeIrSnapshot(snapshot));
+
+		expect(restored.schemaVersion).toBe('1.0');
+		expect(restored.uiDefinition.version).toBe('2.5');
+	});
+
 	it('restoreIrSnapshotFromYaml fills uiDefinition when omitted', () => {
 		const yamlText = serializeIrSnapshot({
-			version: 1,
+			schemaVersion: '1.0',
 			savedAt: '2026-08-25T00:00:00.000Z',
 			components: [{ type: 'textbox' }]
 		});

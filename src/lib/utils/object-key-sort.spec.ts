@@ -9,8 +9,15 @@ import {
 
 describe('object-key-sort', () => {
 	it('places system meta keys first in fixed order', () => {
-		expect(SYSTEM_META_OBJECT_KEYS).toEqual(['version', 'createdAt', 'modifiedAt', 'savedAt']);
+		expect(SYSTEM_META_OBJECT_KEYS).toEqual([
+			'schemaVersion',
+			'version',
+			'createdAt',
+			'modifiedAt',
+			'savedAt'
+		]);
 		expect(mergePreferredObjectKeys(['logicalId', 'version', 'type'])).toEqual([
+			'schemaVersion',
 			'version',
 			'createdAt',
 			'modifiedAt',

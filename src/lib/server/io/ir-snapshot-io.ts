@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Dirent } from 'node:fs';
 import {
@@ -31,6 +31,8 @@ import {
 	type PublishedVersionsListing,
 	type PublishKind
 } from '$lib/ir/snapshot-version';
+import { classifyIrSchemaVersion } from '$lib/ir/snapshot-schema-version';
+import { readRecordSchemaVersion } from '$lib/ir/snapshot-migration';
 import { parseYaml } from '$lib/utils/yaml-document';
 import {
 	loadApplicationConfig,
@@ -171,6 +173,42 @@ function peekChangeReasonFromSnapshotYaml(yamlText: string): string | undefined 
 		return trimmed.length > 0 ? trimmed : undefined;
 	} catch {
 		return undefined;
+	}
+}
+
+/**
+ * snapshot YAML から schemaVersion だけ読む（失敗時は null）
+ *
+ * WARN: migration を通さない緩い読み。書き込み前にディスク側の世代を確認するためだけに使う。
+ */
+function peekSchemaVersionFromSnapshotYaml(yamlText: string): string | null {
+	try {
+		const root = parseYaml(yamlText);
+		if (root === null || typeof root !== 'object' || Array.isArray(root)) {
+			return null;
+		}
+
+		return readRecordSchemaVersion(root as Record<string, unknown>);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * UTF-8 テキストを同一ディレクトリの一時ファイル経由で atomic に置き換える
+ *
+ * WARN: 書き込み途中でプロセスが落ちても `current` を半端な内容にしない。
+ * rename は同一ボリューム内でのみ atomic なので、一時ファイルは必ず同じディレクトリに作る。
+ */
+async function writeFileAtomic(filePath: string, text: string): Promise<void> {
+	const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+
+	try {
+		await writeFile(tempPath, text, { encoding: 'utf8', flag: 'wx' });
+		await rename(tempPath, filePath);
+	} catch (error) {
+		await unlink(tempPath).catch(() => undefined);
+		throw error;
 	}
 }
 
@@ -378,6 +416,52 @@ async function isSameAsCurrentSnapshot(
 }
 
 /**
+ * 書き込み前にディスク側 `current` の schemaVersion を検査する
+ *
+ * - 現行ビルドより新しい → 上書き拒否（stale なタブ / 古いサーバが新しいファイルを潰す事故を防ぐ）
+ * - 現行ビルドより古い → この書き込みが migration の commit なので、元ファイルを history へ退避する
+ *
+ * WARN: read 側で migration 済みのモデルを書き戻すため、退避はここでしか行えない。
+ */
+async function guardCurrentSchemaVersionBeforeWrite(
+	currentFile: string,
+	historyDir: string
+): Promise<void> {
+	const yamlText = await readUtf8IfExists(currentFile);
+	if (yamlText === null) {
+		return;
+	}
+
+	const diskSchemaVersion = peekSchemaVersionFromSnapshotYaml(yamlText);
+	if (diskSchemaVersion === null) {
+		return;
+	}
+
+	const classification = classifyIrSchemaVersion(diskSchemaVersion);
+
+	if (classification.kind === 'future') {
+		throw new IrSnapshotRequestError(
+			409,
+			`current snapshot schemaVersion ${diskSchemaVersion} is newer than this build (${classification.latest}); refusing to overwrite`
+		);
+	}
+
+	if (classification.kind === 'current' || classification.kind === 'unreadable') {
+		return;
+	}
+
+	// WARN: migration commit の直前バックアップ。history の既存 retention（pruneSnapshots）に乗せる。
+	const filename = buildSnapshotFilename(new Date(), `-premigration-${diskSchemaVersion}`);
+	await writeFile(join(historyDir, filename), yamlText, { encoding: 'utf8', flag: 'wx' }).catch(
+		(error) => {
+			if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+				throw error;
+			}
+		}
+	);
+}
+
+/**
  * components を logicalId 別ディレクトリへ YAML snapshot として書き込む
  */
 export async function writeSnapshot(
@@ -410,6 +494,8 @@ async function writeSnapshotUnchecked(
 	await mkdir(currentDir, { recursive: true });
 	await mkdir(historyDir, { recursive: true });
 
+	await guardCurrentSchemaVersionBeforeWrite(currentFile, historyDir);
+
 	if (await isSameAsCurrentSnapshot(logicalIdDir, editorMeta, components, comments)) {
 		const yamlText = await readFile(currentFile, 'utf8');
 		const { snapshot } = deserializeIrSnapshotDocument(yamlText);
@@ -423,7 +509,7 @@ async function writeSnapshotUnchecked(
 	const snapshot = createIrSnapshot(uiDefinition, components, savedAt);
 	const yamlText = serializeIrSnapshot(snapshot, comments);
 
-	await writeFile(currentFile, yamlText, { encoding: 'utf8' });
+	await writeFileAtomic(currentFile, yamlText);
 
 	for (let attempt = 1; attempt <= MAX_SNAPSHOT_WRITE_ATTEMPTS; attempt += 1) {
 		const suffix = attempt === 1 ? '' : `-${attempt}`;
@@ -655,7 +741,7 @@ async function publishSnapshotUnchecked(
 	const currentMeta = buildSnapshotMetaForWrite(currentEditor, loaded.uiDefinition, savedAt);
 	const currentSnapshot = createIrSnapshot(currentMeta, loaded.components, savedAt);
 	const currentYaml = serializeIrSnapshot(currentSnapshot, loaded.comments);
-	await writeFile(resolveCurrentFile(logicalIdDir), currentYaml, { encoding: 'utf8' });
+	await writeFileAtomic(resolveCurrentFile(logicalIdDir), currentYaml);
 
 	return { version: nextVersion, snapshot: toLoadedIrSnapshot(logicalId, currentYaml) };
 }
@@ -714,7 +800,7 @@ async function loadPublishedVersionUnchecked(
 	await mkdir(currentDir, { recursive: true });
 	await mkdir(historyDir, { recursive: true });
 	await clearHistoryDir(historyDir);
-	await writeFile(resolveCurrentFile(logicalIdDir), currentYaml, { encoding: 'utf8' });
+	await writeFileAtomic(resolveCurrentFile(logicalIdDir), currentYaml);
 
 	return toLoadedIrSnapshot(logicalId, currentYaml);
 }

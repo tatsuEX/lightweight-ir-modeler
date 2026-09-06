@@ -12,7 +12,7 @@ describe('loadRestoredIrSnapshotFile', () => {
 		writeFileSync(
 			filePath,
 			serializeIrSnapshot({
-				version: 1,
+				schemaVersion: '1.0',
 				savedAt: '2026-08-25T00:00:00.000Z',
 				components: [{ type: 'textbox', label: 'A' }]
 			}),

@@ -1,7 +1,16 @@
 /**
  * YAML / JSON オブジェクトで常に先頭へ置くシステムメタキー
+ *
+ * WARN: `schemaVersion` は snapshot root の構造版、`version` は `uiDefinition` の製品版。
+ * 別概念なので両方載せる（root には `version` を書かない）。
  */
-export const SYSTEM_META_OBJECT_KEYS = ['version', 'createdAt', 'modifiedAt', 'savedAt'] as const;
+export const SYSTEM_META_OBJECT_KEYS = [
+	'schemaVersion',
+	'version',
+	'createdAt',
+	'modifiedAt',
+	'savedAt'
+] as const;
 
 const SYSTEM_META_OBJECT_KEY_SET: ReadonlySet<string> = new Set(SYSTEM_META_OBJECT_KEYS);
 
