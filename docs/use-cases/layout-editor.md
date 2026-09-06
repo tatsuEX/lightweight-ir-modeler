@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-01T07:08:00"
-summary: "Property 属性テーブル、Preview 固定スクロール、画面メタの版操作表示"
+updated: "2026-09-07T01:10:00"
+summary: "Property 属性テーブル、UIDefinition.meta / components を GUI が bind"
 features:
   - layout-editor
   - ui-definition
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-01 07:08
+最終更新: 2026-09-07 01:10
 
 ## 概要
 
@@ -32,7 +32,7 @@ features:
 ## アクターと成功条件
 
 - **アクター**: プロトタイプ作成者（ローカル開発者）
-- **成功**: メタ（`logicalId` / `name` 等）とコンポーネント列が Context 上の `UIDefinition` に反映され、他タブ・自動保存・Export から参照できる
+- **成功**: メタ（`logicalId` / `name` 等）は Context 上の `UIDefinition.meta` に、コンポーネント列は `UIDefinition.components` に反映され、他タブ・自動保存・Export から参照できる。クラスにフィールドごとの get/set は無い（`$lib/ir/ui-definition`。store が `$state` を注入）
 
 ## 画面構成データフロー
 
@@ -60,6 +60,8 @@ flowchart LR
 ```
 
 ## メタ編集と既存画面の読込
+
+画面メタの入力は `bind:value={uiDefinition.meta.*}`。`UIDefinition` は `meta` / `components` と操作（`loadSnapshot` 等）だけを公開する。
 
 `UiDefinitionMetaAccordion` で画面 ID（内部名 `logicalId`）を blur / オートコンプリート確定したとき:
 
@@ -99,7 +101,8 @@ flowchart LR
 ## Property: 編集可能な項目のみ
 
 属性表上部の Toggle「編集可能な項目のみ」（既定 ON）で、ファクトリ登録済み type だけを一覧表示する。  
-OFF にすると非対応 type（パススルー）も含めて全件表示する。Layout / Preview の表示方針とは独立。
+OFF にすると非対応 type（パススルー）も含めて全件表示する。Layout / Preview の表示方針とは独立。  
+ファクトリは `$lib/ir/elements/factories`。パレットはそこを直接 import する。
 
 ## プレビュー描画
 
@@ -208,6 +211,7 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | App shell | `src/routes/+layout.svelte` |
 | Global Toast | `src/lib/store/toast/toast.svelte.ts` / `GlobalToast.svelte`（[Global Toast](./global-toast.md)） |
 | Store | `src/lib/store/layout-editor/layout-editor.svelte.ts` |
+| 画面定義集約 | `src/lib/ir/ui-definition.ts` |
 | Layout shell | `src/routes/layout-editor/+layout.svelte` |
 | Property 画面 | `src/routes/layout-editor/property/+page.svelte` |
 | 初期読込 | `src/routes/layout-editor/+layout.server.ts` |

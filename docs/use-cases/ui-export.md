@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-28T07:36:00"
-summary: "Export 横断パイプライン・API・shape/merge/serialize・Raw 検証"
+updated: "2026-09-07T00:04:00"
+summary: "Export 横断パイプライン・ベンダー投影・IR 系統キー"
 features:
   - ui-export
   - raw-validation
@@ -14,7 +14,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-08-28 07:36
+最終更新: 2026-09-07 00:04
 
 ## 概要
 
@@ -29,6 +29,8 @@ Preview の「出力」「ダウンロード」から、編集中 IR（store）�
 | `im-forma` | [im-forma Export](./im-forma-export.md) |
 
 クライアントは `targetId` だけを選ぶ。json / yaml / Handlebars の戦略は各 `DefinitionWriter` の内部事情。  
+明示出力の `uiDefinition` body は `toVendorExportMeta`（`logicalId` / `name` / `description` / `version` / `basedOn` / `changeReason` / `external`）。`releasedAt` 等のライフサイクル日付は載せない。  
+transform は同投影を Raw にコピーする。系統キーは IR 由来でありベンダー語彙ではない。成果物コメントへの埋め込み可否は各 target 文書。  
 **target 固有のコンポーネント対応・shape フィールド・テンプレート規約・serialize 方言**は各 target ドキュメントに分離する（本稿は横断パイプラインに留める）。
 
 ## API 形状（重要）
@@ -190,6 +192,7 @@ classDiagram
 | merge | `src/lib/server/io/writers/merge/` |
 | serialize | `src/lib/server/io/writers/serialize/` |
 | Templates | `templates/export/<targetId>/`（config で差し替え可） |
+| Meta 投影 | `src/lib/ir/ui-definition-meta.ts`（`toVendorExportMeta`） |
 | Client | `src/lib/store/layout-editor/ui-export-client.ts` |
 | API | `src/routes/api/ui/export/+server.ts` |
 | Download API | `src/routes/api/ui/download/[target]/[logicalId]/+server.ts` |

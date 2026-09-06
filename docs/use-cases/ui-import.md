@@ -1,7 +1,7 @@
 ---
 created: "2026-08-10T05:10:00"
-updated: "2026-08-28T07:36:00"
-summary: "外部 UI 定義 Import の横断パイプライン・層責務・エディタ反映"
+updated: "2026-09-07T00:04:00"
+summary: "外部 UI 定義 Import の横断パイプライン・loadImported は store"
 features:
   - ui-import
   - primefaces
@@ -13,7 +13,7 @@ features:
 
 # 外部 UI 定義の取り込み（Import）
 
-最終更新: 2026-08-28 07:36
+最終更新: 2026-09-07 00:04
 
 外部 UI 定義ファイルをアップロードし、IR へ変換してエディタの編集状態を丸ごと置き換える。
 出力側は [UI Export](./ui-export.md) を参照。
@@ -37,7 +37,7 @@ Export の各段の鏡像として構成する。
   → DefinitionReader（parse → unshape）→ RawDefinition
   → SchemaValidator（JSON Schema → Zod）
   → Transformer → IR（uiDefinition + components）
-  → UIDefinition.loadImported()
+  → store `loadImported(ui, imported)`
 ```
 
 ```mermaid
@@ -87,10 +87,10 @@ sequenceDiagram
 
 ## エディタへの反映
 
-`UIDefinition.loadImported(imported)` が
+store の `loadImported(ui, imported)` が
 
-1. `createComponentByType` で type 別ファクトリを適用（デフォルト値の補完 + エディタ用 `id` 採番）
-2. `loadSnapshot` に委譲して components とメタを全置換
+1. `createComponentByType`（`$lib/ir/elements/factories`）で type 別ファクトリを適用（デフォルト値の補完 + エディタ用 `id` 採番）
+2. `UIDefinition.loadSnapshot` に委譲して components とメタを全置換
 
 を行う。未登録 type は `id` だけ付けて素通しする。
 

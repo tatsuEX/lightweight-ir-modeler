@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-01T08:20:00"
-summary: "モジュール境界・データフロー・射影プラグイン・CLI 配置・Global Toast・autoSave delay"
+updated: "2026-09-07T01:10:00"
+summary: "モジュール境界・UIDefinition は meta/components 公開・メタ投影・Export 系統キー"
 features:
   - architecture
   - ir
@@ -21,7 +21,7 @@ features:
 
 # アーキテクチャ概要
 
-最終更新: 2026-09-01 08:20
+最終更新: 2026-09-07 01:10
 
 ## 目的
 
@@ -32,7 +32,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 
 | Path | 役割 | 現状の主な成果物 |
 |---|---|---|
-| `ir/` | ドメイン SSOT 周辺 | `ui-definition-meta.ts`, `snapshot.ts`（`RestoredIrSnapshot` / `restoreIrSnapshotFromYaml` 含む）, `snapshot-comment-map.ts`, `external-residual.ts`（`IRDefinition` / `Component` クラス階層は今後） |
+| `ir/` | ドメイン SSOT（種類ごと） | `ui-definition.ts`（`UIDefinition`）、`ui-definition-meta.ts`（用途別投影）、`elements/factories.ts`、`snapshot.ts`、`snapshot-comment-map.ts`、`external-residual.ts` |
 | `raw/` | 外部形式との中間モデル | `RawDefinition = Record<string, unknown>` |
 | `schema/` | 境界での JSON Schema → Zod 検証 | `validate-raw.ts`, `json-schema-loader.ts` |
 | `transform/` | Raw ⇄ IR | 共有フィールド変換 + target 固有 `*-transform.ts` |
@@ -42,7 +42,7 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 | `server/ui/` | Import / Export オーケストレーション | `export-pipeline.ts`, `export-target-registry.ts`, `import-pipeline.ts`, `import-target-registry.ts` |
 | `server/config/` | `application.yml` のサーバ側ロード | `application-config.ts`（公開 API）, `application-config-yaml.ts`, `application-config-parse.ts` |
 | `server/logging/` | Winston ロガー | `logger.ts`（`getLogger` / `runLogged`）, `winston-factory.ts` |
-| `store/layout-editor/` | 画面向け状態 | `layout-editor.svelte.ts` ほか |
+| `store/layout-editor/` | 画面向け状態 | `createReactiveUIDefinition` / Context、`ir-auto-save.svelte.ts` ほか |
 | `store/toast/` | アプリ全体の Toast メッセージ | `toast.svelte.ts`（`ToastMessages` / Context） |
 | `utils/` | YAML key sort / Document / comments | `object-key-sort.ts`, `yaml-document.ts`, `yaml-comments.ts` (IR snapshot; application.yml still js-yaml) |
 | `components/` | Svelte UI ウィジェット | Preview / 属性表 / パレット等 |
@@ -60,6 +60,9 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 - 射影 view は IR を置き換えない（[プラグイン](./plugins.md)）
 - `schema/` は `server/config` を import しない（SvelteKit private env を引かない）
 - IR がモデル化しないベンダー固有キーは `external['<targetId>']`（不透明な残余バッグ）にのみ置く
+- メタの用途別投影（live / editor / snapshot / vendor export）は `ui-definition-meta.ts` に置く
+- IR 系統キー（`basedOn` / `changeReason`）はベンダー語彙ではなく、Export 時に Raw へ載る
+- 種類名のない `IRDefinition` クラスは置かない
 
 ## データフロー
 
@@ -69,8 +72,8 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 アップロードされた外部 UI 定義ファイル
   → DefinitionReader（parse → unshape）→ RawDefinition
   → SchemaValidator（JSON Schema / Zod）
-  → Transformer → IR
-  → GUI（UIDefinition.loadImported）
+  → Transformer → UIDefinition（editor meta + components）
+  → GUI（store の `loadImported`）
 ```
 
 形式固有の未モデル化データは `external['<targetId>']` に退避する。  
@@ -80,11 +83,11 @@ GUI 上の編集結果は IR として保持し、形式固有知識は Reader /
 ### Export（実装済み）
 
 ```text
-GUI 編集（IR 相当の store 状態）
-  → Transformer → RawDefinition
+GUI 編集（`UIDefinition`）
+  → toVendorExportMeta → Transformer → RawDefinition（系統キーを含む）
   → SchemaValidator（JSON Schema / Zod）
   → shape / merge（target 向け transport payload）
-  → serialize（target 固有: JSON / Handlebars 等）※ DefinitionWriter 内部
+  → serialize（target 固有: JSON / Handlebars 等）※ DefinitionWriter 内部。コメント埋め込みは方言が許すとき
   → 外部 UI 定義ファイル（definition-export-io）
 ```
 
@@ -112,11 +115,18 @@ classDiagram
   direction TB
 
   class UIDefinition {
-    +logicalId string
-    +name string
+    +meta UiDefinitionLiveMeta
     +components any[]
     +append()
     +loadSnapshot()
+  }
+
+  class UiDefinitionLiveMeta {
+    +logicalId string
+    +name string
+    +version string
+    +basedOn string
+    +changeReason string
   }
 
   class UiDefinitionEditorMeta {
@@ -130,6 +140,13 @@ classDiagram
     +description string
     +basedOn string
     +external ExternalResidual
+  }
+
+  class UiDefinitionVendorExportMeta {
+    +logicalId string
+    +version string
+    +basedOn string
+    +changeReason string
   }
 
   class IrSnapshot {
@@ -176,7 +193,9 @@ classDiagram
 
   class IMFormaReader
   class PrimeFacesReader
-  UIDefinition --> UiDefinitionEditorMeta : meta fields
+  UIDefinition --> UiDefinitionLiveMeta : meta
+  UiDefinitionLiveMeta --> UiDefinitionEditorMeta : toEditorMetaFromLive
+  UiDefinitionEditorMeta --> UiDefinitionVendorExportMeta : toVendorExportMeta
   IrSnapshot --> UiDefinitionEditorMeta : uiDefinition
   ExportTargetBundle --> DefinitionWriter
   PrimeFacesWriter ..|> DefinitionWriter
@@ -188,13 +207,13 @@ classDiagram
   IMFormaReader ..|> DefinitionReader
   PrimeFacesReader ..|> DefinitionReader
   DefinitionReader ..> RawDefinition : toRaw 結果
-  ImportTargetBundle ..> UIDefinition : loadImported 入力
+  ImportTargetBundle ..> UIDefinition : store loadImported
 ```
 
 補足:
 
 - クラス図の具象 Writer / Reader は **登録済み adapter の存在示し**。語彙・merge・serialize の詳細は各 target 文書
-- 画面間の store 共有は **Svelte Context のみ**（`setUIDefinitionContext` / `getUIDefinitionContext`）。Toast も同様（`setToastContext` はルート `+layout.svelte`）
+- 画面間の store 共有は **Svelte Context のみ**（`createReactiveUIDefinition` + `setUIDefinitionContext` / `getUIDefinitionContext`）。Toast も同様（`setToastContext` はルート `+layout.svelte`）
 - Export の target 解決はサーバ側 `EXPORT_TARGET_REGISTRY` とクライアント側 `UI_EXPORT_CLIENT_REGISTRY` の二系統（薄い HTTP アダプタ）
 - Import も同様に `IMPORT_TARGET_REGISTRY` / `UI_IMPORT_CLIENT_REGISTRY` の二系統。Reader 未実装 target は UI に出さない
 

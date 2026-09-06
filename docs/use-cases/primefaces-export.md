@@ -1,7 +1,7 @@
 ---
 created: "2026-08-09T22:40:58"
-updated: "2026-08-09T23:50:00"
-summary: "PrimeFaces Export: shape union・component hbs・日付 placeholder マスク導出"
+updated: "2026-09-07T00:04:00"
+summary: "PrimeFaces Export: shape union・form.hbs の IR 系統コメント"
 features:
   - ui-export
   - primefaces
@@ -10,7 +10,7 @@ features:
 
 # PrimeFaces Export（Facelet / Handlebars）
 
-最終更新: 2026-08-09 23:50
+最終更新: 2026-09-07 00:04
 
 Export 全体のパイプライン・API・検証境界は [外部 UI 定義の出力（Export）](./ui-export.md) を参照。  
 本稿は **target `primefaces` 固有** の shape・テンプレート合成・コンポーネント対応をまとめる。
@@ -34,6 +34,16 @@ Export 全体のパイプライン・API・検証境界は [外部 UI 定義の�
 4. `form.hbs` の `{{{markup}}}` でレイアウトへ統合
 
 HTML escape は **component / form テンプレートの `{{ }}`** に委譲する。独自 `escapeHtml` は使わない。
+
+## IR 系統コメント
+
+`form.hbs` 先頭コメントに、snapshot.yaml を追うための IR 系統を書く（ベンダー語彙ではない）。
+
+```text
+logicalId=<id> version=<ver> basedOn=<ver> changeReason=<label>
+```
+
+`basedOn` / `changeReason` が空ならそのトークンは出さない。パスは環境依存のため書かない。`shapePrimeFaces` が Raw の系統キーを form context へ渡し、Writer は shape をテンプレへフォワードする。
 
 ## 責務分担
 

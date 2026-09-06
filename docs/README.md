@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-01T08:20:00"
-summary: "docs 索引と現行スコープ、core / adapter 分離、射影プラグイン MVP"
+updated: "2026-09-07T01:10:00"
+summary: "docs 索引。UIDefinition は meta/components 公開、メタ投影と Export 系統"
 features:
   - docs
   - architecture
@@ -21,7 +21,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-01 08:20
+最終更新: 2026-09-07 01:10
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
