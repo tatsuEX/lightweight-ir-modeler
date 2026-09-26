@@ -1,7 +1,7 @@
 ---
 created: "2026-09-07T04:46:00"
 summary: "target 追加の残り作業。Raw JSON Schema / registry 一覧 / application.yml / 既存 spec 修正 / UI / docs"
-updated: "2026-09-07T04:46:00"
+updated: "2026-09-27T04:45:00"
 features:
   - maintenance
   - adapter-target
@@ -11,7 +11,7 @@ features:
 
 # 保守手順: target 追加（その他対応）
 
-最終更新: 2026-09-07 04:46
+最終更新: 2026-09-27 04:45
 
 [Import パイプライン](./add-target-import.md) と [Export パイプライン](./add-target-export.md) に含まれない残りの作業です。**ここを飛ばすと「コードは全部あるのに GUI に出ない」「テストが落ちる」状態になります。**
 
@@ -145,7 +145,7 @@ IR はこれを型の付かないバッグとして扱い、中身を解釈し�
 
 ## docs（省略不可）
 
-`.cursor/rules/12-docs-maintenance.mdc` により、target 専用文書の追加は実装の一部です。
+`.cursor/rules/docs-format.mdc` により、target 専用文書の追加は実装の一部です。
 
 1. `docs/use-cases/<t>-import.md` と `docs/use-cases/<t>-export.md` を作る（雛形は `primefaces-import.md` / `im-forma-export.md`）
 2. frontmatter（`created` / `updated` / `summary` / `features`）と本文の `最終更新: YYYY-MM-DD HH:mm` を入れる。`updated` と分まで一致させる

@@ -1,7 +1,7 @@
 ---
 created: "2026-09-07T04:46:00"
 summary: "LIRM 保守者向け運用手順の索引。schemaVersion 改訂・target 追加・summon テンプレート追加"
-updated: "2026-09-07T04:46:00"
+updated: "2026-09-27T04:45:00"
 features:
   - maintenance
   - adapter-target
@@ -11,7 +11,7 @@ features:
 
 # LIRM 保守運用ガイド（保守者向け）
 
-最終更新: 2026-09-07 04:46
+最終更新: 2026-09-27 04:45
 
 本ディレクトリは **LIRM 自体を改造する人向け** の手順書です。`docs/` の他のディレクトリとは読者が違います。
 
@@ -57,4 +57,4 @@ flowchart TD
 
 本ディレクトリには**手順**だけを書きます。既存 target を「真似る雛形」として file path で参照するのは構いませんが、ベンダー語彙・type マップ・serialize 方言・文書族判定の**中身**は書きません。それらは `docs/use-cases/<targetId>-import.md` / `<targetId>-export.md` に書きます。
 
-この境界は `.cursor/rules/12-docs-maintenance.mdc` の Core / adapter target 分離と同じ考え方です。
+この境界は `.cursor/rules/02-architecture-boundaries.mdc` の Core / adapter target 分離と同じ考え方です。

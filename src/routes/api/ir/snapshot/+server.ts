@@ -1,10 +1,10 @@
-	import { json } from '@sveltejs/kit';
-	import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
-	import { loadApplicationConfig } from '$lib/server/config/application-config';
-	import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
-	import { getLogger } from '$lib/server/logging/logger';
-	import { parseYamlCommentMap } from '$lib/utils/yaml-comments';
-	import type { RequestHandler } from './$types';
+import { json } from '@sveltejs/kit';
+import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
+import { loadApplicationConfig } from '$lib/server/config/application-config';
+import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
+import { getLogger } from '$lib/server/logging/logger';
+import { parseYamlCommentMap } from '$lib/utils/yaml-comments';
+import type { RequestHandler } from './$types';
 
 const logger = getLogger(import.meta.url);
 

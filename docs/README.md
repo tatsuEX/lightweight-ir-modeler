@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T04:46:00"
-summary: "docs 索引。利用者向けと保守者向けの区別、メタ投影と Export 系統、snapshot schemaVersion"
+updated: "2026-09-27T04:45:00"
+summary: "docs 索引。利用者向けと保守者向けの区別、現行スコープ（プラグイン多段・domain validation・IR migration）"
 features:
   - docs
   - maintenance
@@ -22,7 +22,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-07 04:46
+最終更新: 2026-09-27 04:45
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -77,7 +77,7 @@ features:
 | **Adapter target** | `primefaces-*.md`・`im-forma-*.md` | 語彙・type マップ・merge / writer-filter 段の中身・serialize 方言・文書族判定 |
 | **保守運用** | `maintenance/` | 作業手順・触る箇所の一覧・順序・チェックリスト。既存 target は「真似る雛形」として path 参照のみ（語彙の中身は書かない） |
 
-詳細は Cursor ルール `.cursor/rules/12-docs-maintenance.mdc` を参照。
+層の境界は Cursor ルール `.cursor/rules/02-architecture-boundaries.mdc`、ファイル形式は `.cursor/rules/docs-format.mdc` を参照。
 
 ## ドキュメントの更新方針
 
@@ -96,7 +96,10 @@ features:
 | Import（Reader → Raw → validate → IR） | 実装済み（ファイルアップロード。`importDir` は未使用のまま） |
 | サーバロギング（Winston） | 実装済み（`logging` YAML、HTTP hook + パイプライン追跡） |
 | Global Toast | 実装済み（Preview / Import 成功 / 自動保存失敗 / snapshot 復元） |
-| First-party 射影プラグイン（`by-logical-id` / `db-maxlength`） | MVP 実装済み（[プラグイン](./architecture/plugins.md)）。`arcane:summon --projection` |
-| writer-filter / adapter-target 契約化 | 方針のみ（`.cursor/rules/16-plugins.mdc`）。未着手 |
-| IR snapshot `schemaVersion` と migration seam | MVP 実装済み（[自動保存](./use-cases/ir-snapshot-auto-save.md)）。root `schemaVersion` + 4 分類 + step 空の seam。migration *エンジン*ではない |
-| ドメイン検証エンジン / Undo / event bus / IR スキーマ移行エンジン | 対象外（`.cursor/rules/03-out-of-scope.mdc`） |
+| First-party 射影プラグイン（`by-logical-id` / `db-maxlength`） | MVP 実装済み（[プラグイン](./architecture/plugins.md)）。複数段の指定・実行。`arcane:summon --projection` |
+| writer-filter | スコープ内。複数段を指定順に実行。実装は未着手（契約は `.cursor/rules/16-plugins.mdc`） |
+| adapter-target | スコープ内。Import / Export は選んだ target を一度だけ実行。Reader / Writer は実装済み |
+| IR snapshot `schemaVersion` | MVP 実装済み（[自動保存](./use-cases/ir-snapshot-auto-save.md)）。root `schemaVersion` + 4 分類 + step 空の seam |
+| IR schema migration | スコープ内。加算でない形の変更は版付き変換。移行ランナーは未着手 |
+| Domain validation | スコープ内。IR 種類ごとの不変条件。ルール DSL は作らない。専用モジュールは未着手 |
+| Undo コマンドスタック / event bus / 汎用 service 層 / リポジトリ外プラグイン | 対象外（`.cursor/rules/03-out-of-scope.mdc`） |
