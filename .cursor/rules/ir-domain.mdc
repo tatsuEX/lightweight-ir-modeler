@@ -7,9 +7,9 @@ alwaysApply: false
 # IR domain (`ir/`)
 
 - `ir/` holds **named IR kinds**. The current UI-definition aggregate is **`UIDefinition`**. Do **not** introduce a type or file named `IRDefinition` / `ir-definition`.
-- Treat breaking changes to a kind’s durable fields as high-risk; prefer additive changes. An IR schema migration *engine* is deferred (distinct from snapshot *product* versions under `versions/`).
+- Treat breaking changes to a kind’s durable fields as high-risk. An additive field needs no migration step. A non-additive snapshot or IR shape change uses a versioned transform for that kind. Snapshot product versions under `versions/` are a different mechanism. Do not put a second migration path inside `UIDefinition`.
 - `UIDefinition` public surface is `meta` / `components` plus operations (`append`, `loadSnapshot`, …). Do not add per-field get/set for live meta keys.
-- Plugin projection views (e.g. map by `logicalId`) are not IR. Do not persist them on the snapshot or import adapter types here. See `.cursor/rules/16-plugins.mdc`.
+- Plugin projection views (e.g. map by `logicalId`) are not IR. Do not persist them on the snapshot or import adapter types here.
 - Keep this package free of external UI-framework types, file I/O, and Svelte.
 - UI-definition meta **DTO projections** (live / editor / snapshot / vendor export) live in `ui-definition-meta.ts`.
 - Concrete UI kinds belong under `src/lib/ir/elements/`. Factories may return plain objects until a `Component` class hierarchy exists.

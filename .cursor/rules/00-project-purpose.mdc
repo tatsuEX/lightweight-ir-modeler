@@ -16,10 +16,6 @@ Durable meaning about a **UI definition** lives in **`UIDefinition`** (under `ir
 
 `ir/` may later hold other IR kinds (for example layout IR). Each kind has its **own type name**. Do **not** name a type or file `IRDefinition` / `ir-definition`.
 
-## Documentation implication
-
-Living docs under `docs/` keep the same split: **Core** documents IR and cross-cutting pipelines; **adapter target** details (vendor vocabulary, merge/serialize dialects, type maps) live in target-specific docs. See `.cursor/rules/12-docs-maintenance.mdc` (Core vs adapter target docs).
-
 ## Terminology in `.mdc` rules
 
 When writing or editing project rules (`.mdc`), spell out project acronyms on use:

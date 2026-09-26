@@ -1,0 +1,50 @@
+---
+description: Agent operating constraints — git, npm, home paths, unapproved review files
+alwaysApply: true
+---
+
+# Agent Operating Constraints
+
+## Git
+
+- **Do not** run any `git` / `git.exe` commands (commit, push, pull, add, status, etc.).
+- **Do not** use Cursor Source Control UI for commits — workspace has `git.enabled: false`.
+- Version control is done only with the user's **external VCS tool**.
+- A `beforeShellExecution` hook denies git; if a task seems to need git, stop and tell the user to do it outside Cursor.
+
+## npm and modules
+
+Treat installs as untrusted execution. Prefer locked, reproducible installs (`package-lock.json` committed; CI uses `npm ci`). Keep project `.npmrc` hardening (`ignore-scripts`, `min-release-age`, `allow-git=none`). After `ignore-scripts` installs, run needed trusted scripts explicitly (e.g. `npm run prepare`, targeted `npm rebuild`).
+
+The user gates installs and most scripts:
+
+- Allowed without asking: **read-only inspection of installed `node_modules`** (listing and reading source, `.d.ts`, theme, or config files).
+- Allowed without asking: **one-off Node scripts** whose only job is UTF-8 text file read/write/append. Prefer Write / StrReplace. PowerShell must not rewrite project text (see `15-utf8-text-editing.mdc`).
+- Allowed without asking: **`npm run test` and `npm run check`** after implementation in the same session. These may invoke their `node_modules/.bin` tools.
+- **Never** run autonomously: installs / upgrades (`npm install`, `npm add`, `npm ci`, `npm update`) and any binary or script under `node_modules` (including `node_modules/.bin`, `npx`), except as invoked by the allowed `test` / `check` scripts above.
+- **Ask every time** before other `package.json` scripts (`npm run dev` / `build` / `lint` / `format` / `test:unit` watch / …). State the exact command and why, then wait.
+- If verification needs a gated command, report what should be run.
+
+**Never** edit `package.json`, `package-lock.json`, `.npmrc`, `tsconfig*`, Vite/SvelteKit config, or similar without **explicit user approval**. When a change seems needed: stop, list the exact diff, and explain why. Wait. Exception: the user already authorized that specific config change in the same request.
+
+Use **ESM** (`"type": "module"`, `import`/`export`). Stick to **stable / LTS** Node APIs.
+
+## Home paths
+
+Do **not** write absolute paths that embed a Windows (or macOS/Linux) user name, e.g. `C:\Users\Someone\...` or `/Users/someone/...`.
+
+| Context | Use |
+|---|---|
+| Node / JS | `process.env.USERPROFILE` (Windows), `process.env.HOME`, or `os.homedir()` |
+| PowerShell | `$env:USERPROFILE` |
+| cmd | `%USERPROFILE%` |
+| Project files | Paths relative to the workspace / repo root |
+
+Cursor-injected paths in system context may contain a user home. Do **not** copy those absolute strings into project files, design logs, or articles. When a tool requires an absolute path, build it from `homedir()` / `USERPROFILE` plus relative segments, or from the workspace root.
+
+## Unapproved review files
+
+When a file is under review and **not yet approved**, treat edits to it as a conflict risk.
+
+- If the next change would touch an **unapproved (review-pending) file**, **do not implement** that change. Stop, tell the user that a conflicting file would result, and ask whether implementation may proceed.
+- If the same scope also includes **non-conflicting** files, **implement those first**. Do not block the whole scope on the pending review.

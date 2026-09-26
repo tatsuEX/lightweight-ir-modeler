@@ -27,7 +27,7 @@ If a task seems to need “edit this file in the shell”, use **Node** (or Writ
 ## Node scripted text IO
 
 - Allowed without asking for **one-off UTF-8 file read/write/append** helpers (temporary `.cjs` / `.mjs` under the repo, then delete when done).
-- Still subject to `.cursor/rules/06-npm-ecosystem.mdc` for `npm` / `npx` / `node_modules/.bin` / `package.json` scripts.
+- Still subject to `agent-ops.mdc` for `npm` / `npx` / `node_modules/.bin` / `package.json` scripts.
 - After scripted writes that include Japanese, verify with a UTF-8 read (e.g. `Buffer` / `fs.readFileSync(..., 'utf8')` contains an expected character), not with PowerShell console display alone.
 
 ## On encoding corruption / mixed encodings
@@ -50,4 +50,4 @@ Do not bury these in a long narrative — lead with the three items so the user 
 
 ## Articles / docs
 
-When appending `.articles/` or updating `docs/` via script, follow this rule. See also `.cursor/rules/09-dev-articles.mdc`.
+When appending `.articles/` or updating `docs/` via script, follow this rule. Journal format is in `articles-format.mdc`; docs format is in `docs-format.mdc`.

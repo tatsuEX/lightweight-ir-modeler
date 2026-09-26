@@ -11,9 +11,9 @@ alwaysApply: true
 |---|---|
 | `ir/` | Domain SSOT (Single Source Of Truth) by IR **kind** (`UIDefinition`, `ir/elements/`, snapshot helpers). Do not name a catch-all `IRDefinition` |
 | `raw/` | Temporary model between external files and IR |
-| `schema/` | Trust boundary (JSON Schema / Zod) |
+| `schema/` | Trust boundary for Raw (JSON Schema / Zod) |
 | `transform/` | Raw ⇄ IR |
-| `projection/` | Read-only IR views (opt-in first-party projection plugins) |
+| `projection/` | Read-only IR views (in-repo projection plugins) |
 | `io/` | External file read/write |
 | `config/` | Client-safe application config types, defaults, pure helpers |
 | `server/config/` | Server-only YAML load / merge / parse / path resolution |
@@ -27,7 +27,7 @@ alwaysApply: true
 - **DefinitionReader** — external UI file → `RawDefinition`
 - **DefinitionWriter** — `RawDefinition` → external UI file (create/overwrite)
 - **RawDefinition** — flexible intermediate for transform; not the SSOT (Single Source Of Truth)
-- **SchemaValidator** — validate at system boundaries (Raw via JSON Schema/Zod). A domain validation engine is deferred
+- **SchemaValidator** — validate Raw at system boundaries (JSON Schema / Zod). IR kind invariants are domain validation beside that kind, not a second check inside the Raw schema
 - **IRTransformer** — Raw ⇄ IR (per target)
 - **UIDefinition** — UI-definition aggregate (current IR kind); SSOT (Single Source Of Truth) for that kind; public surface is `meta` + `components` plus operations (`append`, `loadSnapshot`, …). No per-field accessors; handle breaking changes with extreme care
 - **Component** — base for concrete types under `ir/elements/` (hierarchy may still be incomplete)
@@ -39,7 +39,7 @@ alwaysApply: true
 - `UIDefinition` must not depend on external UI framework definitions or Svelte.
 - Format-specific logic stays in Reader / Writer / Transformer.
 - Purpose-specific **meta DTO projections** (live / editor / snapshot / vendor export) live in `ui-definition-meta.ts`, not as ad-hoc methods on the aggregate.
-- First-party plugins (projection, writer-filter, adapter-target) sit beside this layout. Plugin projections must not replace IR; writer-filters must not skip Raw validation. See `.cursor/rules/16-plugins.mdc`.
+- Projection views are not written back into IR. Writer-filters run after Raw validation and do not skip it.
 
 ## Dataflow
 
@@ -56,15 +56,25 @@ alwaysApply: true
 1. GUI edits `UIDefinition`
 2. Vendor-export meta projection → Transformer → `RawDefinition` (includes IR lineage keys such as `basedOn`)
 3. SchemaValidator validates Raw via `RawDefinitionSchema`
-4. Writer → external UI definition files (writer-filters may run after Raw validation, before serialize). Lineage may be embedded in artifact comments when the target dialect allows
+4. Writer-filters, then Writer → external UI definition files. Lineage may be embedded in artifact comments when the target dialect allows
 
-### Plugins (beside the flow)
+Plugin execution shape (multi-stage projection and writer-filter; one adapter-target run per target) is in `16-plugins.mdc`.
 
-- **projection** — read-only view of restored IR for templates / `arcane:summon` / optional writer lookup (not the same as meta DTO projections)
-- **writer-filter** — ordered `payload → filter → payload` on validated Raw (not an event bus)
+### Validation
 
-They must not replace IR as the SSOT (Single Source Of Truth).
+Raw is validated at the boundary with JSON Schema/Zod (`RawDefinitionSchema`). Domain validation checks invariants of one IR kind in a named module beside that kind. One does not replace the other.
 
-### Validation scope
+## Core vs adapter target docs
 
-Schema validation at boundaries (Raw via JSON Schema/Zod). A domain validation *engine* remains deferred; local IR checks are allowed when a concrete bug needs them.
+Living docs under `docs/` keep the same split as the code. Format details are in `docs-format.mdc`.
+
+| Layer | Paths (examples) | May document |
+|---|---|---|
+| **Core** | `docs/architecture/`、`docs/api/`、横断 use-case（`ui-import.md` / `ui-export.md` / `layout-editor.md` / `ir-snapshot-*.md`） | IR 種類、横断パイプライン、HTTP 契約、`external['<targetId>']`、IR 系統キーが Raw に残ること、shape / merge / serialize の一般概念、registry、projection / writer-filter の契約 |
+| **Adapter target** | `docs/use-cases/<targetId>-import.md`、`<targetId>-export.md` | ベンダー語彙、type マップ、文書族判定、merge / writer-filter 段の中身、serialize 方言、target 固有 WARN |
+| **保守運用** | `docs/maintenance/` | 作業手順。既存 target は path 参照のみ。語彙の中身は書かない |
+
+1. Vendor vocabulary, document-family rules, serialize dialects, and type maps belong in adapter target docs.
+2. Core may say that IR lineage keys travel on Raw and that some targets keep residuals for export merge. Comment embedding belongs in target docs.
+3. A new import/export target adds or updates target docs and links them from `docs/README.md` and the relevant Core use-case tables.
+4. Concrete Writer / Reader class names may appear in architecture diagrams as registered adapters. Their behavior belongs in target docs.

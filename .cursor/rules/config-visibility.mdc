@@ -1,0 +1,28 @@
+---
+description: Client-safe vs server-only config modules and the current application.yml file map
+globs: src/lib/config/**/*,src/lib/server/config/**/*
+alwaysApply: false
+---
+
+# Config module visibility
+
+Client code imports shared fragments from `src/lib/config/*`. Server loaders may use those fragments. The server module is not the client’s import path for the same constant or type (one public home).
+
+| Location | May contain | Must not contain |
+|---|---|---|
+| `src/lib/config/` | Client-safe types, defaults, pure helpers shared by client and server | `fs`, `$env/dynamic/private`, YAML load, absolute path I/O |
+| `src/lib/server/config/` | Server-only load, merge, normalize, path resolution | The only copy of values the **client** must import at runtime |
+
+## Application config layout (current)
+
+| Module | Responsibility |
+|---|---|
+| `src/lib/config/application-types.ts` | `application.yml` 静的構造の type |
+| `src/lib/config/layout-editor-config.ts` / `preview-config.ts` | クライアント共有の断片 type・既定値・純関数 |
+| `src/lib/server/config/application-config-yaml.ts` | ファイル読込・profile merge・パス解決 |
+| `src/lib/server/config/application-config-parse.ts` | mapping → `ApplicationConfig` 正規化 |
+| `src/lib/server/config/application-config.ts` | 公開 API（`loadApplicationConfig` 等）。yaml+parse を内部で統合 |
+
+Callers use `loadApplicationConfig()` (or other exports from `application-config.ts`). They must not be required to call yaml then parse as two public steps.
+
+Split further only for a different change reason, a different visibility, or independent reuse. Do not split a long file that still has one change reason (`application.yml` → `ApplicationConfig`), and do not split for a speculative future format.

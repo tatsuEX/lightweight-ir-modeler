@@ -5,33 +5,36 @@ alwaysApply: true
 
 # Plugins
 
-Implementations live in-repo and register by **id**. Selection/order may be injected through **static** inflow channels (config, CLI, optional args). Code is not loaded from untrusted paths.
+Implementations live in-repo and register by **id**. Selection and order come from **static** inflow (config, CLI, or optional call arguments). Code is not loaded from untrusted paths.
 
-## Kinds
+Core `ir/` stays the SSOT (Single Source Of Truth) for named IR kinds (`UIDefinition` today).
 
-| Kind | Does | Does not |
-|---|---|---|
-| projection | Build a read-only view from restored IR (`componentsByLogicalId`, …) | Mutate IR, persist the view, own vendor serialize |
-| writer-filter | Transform validated Raw / residual toward a target payload | Skip Raw validation, talk over an event bus |
-| adapter-target | Reader / Writer / Transformer / schema / target docs | Import into `ir/` |
+## Kinds and execution
 
-Core `ir/` stays the SSOT (Single Source Of Truth) for named IR kinds (`UIDefinition` today). Projection output is for templates, `arcane:summon`, and optional lookup inside writer-filters.
+| Kind | Execution | Does | Does not |
+|---|---|---|---|
+| projection | Several stages may be specified, and each specified stage runs | Build a read-only view from restored IR (`componentsByLogicalId`, …) | Mutate IR, persist the view, own vendor serialize |
+| writer-filter | Several stages may be specified. After Raw validation, they run in the specified order (`payload → filter → payload`) | Transform validated Raw / residual toward a target payload | Skip Raw validation, talk over an event bus |
+| adapter-target | Once per target on that import or export | Reader / Writer / Transformer / schema / target docs for that target | Import into `ir/`, run a second target as another stage |
+
+Several projections and several writer-filters are normal. Adapter-targets are not stages of one pipeline: the selected target runs once.
+
+Projection output is for templates, `arcane:summon`, and optional lookup inside writer-filters.
 
 ## Injection
 
 - Registry: `id` → implementation (compile-time)
-- Inflow: list of ids (and order) from `application.yml`, CLI, or optional call arguments. Do not freeze the product to one channel; add a channel only when a caller needs it
-- Public API applies the list internally (`applyProjections(snapshot, ids?)`). Callers do not resolve-then-apply as two required steps
-- Defaults must work with no override. CLI / args are overrides (see `.cursor/rules/13-api-encapsulation.mdc`)
-- Injection is **which registered plugins run**, not loading arbitrary user JS
+- Inflow: list of ids, and order where the kind uses order, from `application.yml`, CLI, or optional call arguments. Add a channel only when a caller needs it
+- The public API applies the list internally. Callers do not resolve ids and then apply as two required steps. Defaults work with no override; CLI and args override
+- Injection selects which registered plugins run. It does not load arbitrary user JS
 
 ## Do not
 
 ```typescript
-// ✅ GOOD — named in-repo projection; ids from config or CLI override
+// ✅ GOOD — named in-repo projections; the API applies the list
 const view = applyProjections(snapshot);
 
-// ✅ GOOD — target writer pipeline
+// ✅ GOOD — ordered writer-filter stages for one target
 const payload = applyWriterFilters(targetId, raw, view);
 
 // ❌ BAD — user JS / out-of-repo module as a plugin
@@ -39,4 +42,7 @@ const mod = await import(cliPluginPath);
 
 // ❌ BAD — write projection back into IR / snapshot
 snapshot.componentsByLogicalId = view.componentsByLogicalId;
+
+// ❌ BAD — chain another adapter-target as a second stage
+await exportTarget(otherTargetId, payload);
 ```

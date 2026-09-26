@@ -1,0 +1,25 @@
+---
+description: When to write .articles journals and when to update docs/
+alwaysApply: true
+---
+
+# Records
+
+Three note locations. Design-proposal snapshots follow `08-design-logs.mdc`. This file is when to write the other two. Full templates apply when those files are open (`articles-format.mdc`, `docs-format.mdc`).
+
+## Development journal (`.articles/`)
+
+After meaningful implementation, design follow-up, investigation, testing, or planning — including work the user did and reported in chat — append to the day’s file:
+
+- Path: `.articles/YYYY-MM-DD.md` (flat, one file per local calendar day, append to the end)
+- YAML frontmatter: `created`, `updated` (ISO 8601 with offset; refresh `updated` on each append), `summary`, `categories`
+- Work-unit heading: `## HH:mm <title>` (24-hour, local start time), then **背景**, **目的**, **作業手順**, and optional **変更ファイル**
+- Japanese, UTF-8. Do not rewrite these files with PowerShell (`15-utf8-text-editing.mdc`)
+
+Skip a trivial one-line answer with no durable project change.
+
+## Living docs (`docs/`)
+
+After implementing a detailed-design-level policy or behavior change, update the relevant markdown under `docs/` in the same work. Core vs adapter target split is in `02-architecture-boundaries.mdc`. File format is in `docs-format.mdc`.
+
+Usually skip docs for a pure refactor with the same external behavior, a typo or comment or test-only edit, or spike code discarded in the same session.

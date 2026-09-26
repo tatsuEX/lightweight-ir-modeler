@@ -1,5 +1,5 @@
 ---
-description: Design principles — YAGNI, KISS, MVP, delayed abstraction
+description: Design principles — change reasons, caller knowledge, and module placement
 alwaysApply: true
 ---
 
@@ -18,12 +18,42 @@ alwaysApply: true
 
 - Do not hide a mapping that serves GUI, snapshot persist, **and** vendor export behind a one-off class method or a call-site `Pick` / field list.
 - When the same domain data has two or more output paths, give the projection a name next to the domain type (for UI definition meta: `src/lib/ir/ui-definition-meta.ts`).
-- **YAGNI** still applies: do not add a projection with no caller, a fourth plugin kind, or unused extension points.
+- Do not add a projection with no caller, or an unused extension point.
 
-## When implementing
+## Caller knowledge
 
-- Prefer a direct solution that works for the current format/flow.
-- Do not add extension points “for later” unless required by an accepted boundary in architecture rules.
-- Accepted extension boundary: the closed plugin kinds in `.cursor/rules/16-plugins.mdc` (projection, writer-filter, adapter-target) and **static id/order injection** (config / CLI / optional args). Extract a contract from a real caller. Do not invent a generic plugin framework, load untrusted code, or add a fourth kind until the same idea appears in 3+ places.
-- For public/module APIs, also follow **API Encapsulation** (`.cursor/rules/13-api-encapsulation.mdc`): do not require callers to know internal structure when it is derivable from arguments already passed; optional overrides are OK.
-- For **where to put or split modules** (visibility, change reasons), follow **Module Boundaries vs API Encapsulation** (`.cursor/rules/14-module-vs-api-boundaries.mdc`). Do not split modules just to separate technical layers if that recreates a mandatory call sequence across imports.
+Do **not** design APIs that force callers to know or reconstruct a module’s internal structure (file layout, naming schemes, resolution steps, intermediate keys).
+
+1. If information can be derived from arguments the caller **already** passes, resolve it **inside** the module.
+2. Optional overrides are fine when the caller genuinely needs control. Defaults must work without those overrides.
+3. Do **not** split “resolve X” and “use X” into two mandatory public calls when the second call’s inputs already determine X, unless lifetime, reuse, or an independently useful result diverges.
+4. Keep escape hatches for tests or rare overrides; do not make the escape hatch the normal path.
+
+```typescript
+// ❌ BAD — caller must resolve plugin ids, then apply
+const ids = resolveProjectionIdsFromConfig();
+const view = applyProjections(snapshot, ids);
+
+// ✅ GOOD — apply loads defaults; optional ids are a static override
+const view = applyProjections(snapshot);
+```
+
+Leave a step visible when merging would couple unrelated change reasons, when the intermediate is a stable public concept used by multiple independent callers, or when hiding it would hide a trust decision.
+
+## Module placement
+
+Split a module when at least one holds:
+
+1. **Different change reason** — a second source with its own lifecycle.
+2. **Different visibility** — a type or helper the client must import, while the loader stays server-only. Shared fragments live under `src/lib/config/`. Server load, merge, and path resolution live under `src/lib/server/config/`. The server module is not the client’s import path for the same constant or type.
+3. **Independent reuse** — an intermediate is a stable public concept with multiple unrelated callers.
+
+Do **not** split because types and IO feel different, because a file is long, or for a speculative future format. A mandatory load→parse sequence stays behind one public API (`loadApplicationConfig()`). The current config file map is in `config-visibility.mdc`.
+
+## Two different cuts
+
+Caller knowledge is the argument list and call order of one operation. Module placement is where a file may live and who may import it. Use the caller-knowledge rules on a function’s parameters. Use the placement rules when choosing a file. A mandatory sequence of two public imports recreates a resolve-then-use API at import granularity — prefer one public module that owns that sequence.
+
+## Extension boundary
+
+Closed plugin kinds and static id/order injection are specified in `16-plugins.mdc`. Extract a contract from the first real caller. A later plugin of the same kind uses that contract. Do not add a fourth kind or load untrusted code. A shared Plugin base class or PluginHost waits until three hosts share the same code.
