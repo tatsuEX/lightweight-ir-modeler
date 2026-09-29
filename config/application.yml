@@ -20,6 +20,9 @@ layoutEditor:
     itemDelimiter: ":"
     # 未使用の画面 ID（新規 snapshot ディレクトリ）確定時に確認ダイアログを出す
     confirmSnapshotDirCreation: true
+  # ブラウザタブ内の編集セッション保持期限（ms）。既定は 12 時間
+  clientSession:
+    maxLifetimeMs: 43200000
 
 # プレビュー画面: テーマ選択と外部 UI 定義の出力先
 # =================================================================================================
