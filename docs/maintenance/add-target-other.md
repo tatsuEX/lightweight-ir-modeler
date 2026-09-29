@@ -1,7 +1,7 @@
 ---
 created: "2026-09-07T04:46:00"
 summary: "target 追加の残り作業。Raw JSON Schema / registry 一覧 / application.yml / 既存 spec 修正 / UI / docs"
-updated: "2026-09-27T04:45:00"
+updated: "2026-09-30T04:19:00"
 features:
   - maintenance
   - adapter-target
@@ -11,7 +11,7 @@ features:
 
 # 保守手順: target 追加（その他対応）
 
-最終更新: 2026-09-27 04:45
+最終更新: 2026-09-30 04:19
 
 [Import パイプライン](./add-target-import.md) と [Export パイプライン](./add-target-export.md) に含まれない残りの作業です。**ここを飛ばすと「コードは全部あるのに GUI に出ない」「テストが落ちる」状態になります。**
 
@@ -44,7 +44,7 @@ const RAW_SCHEMA_FILENAMES: Record<string, string> = {
 
 - `"target": { "const": "<t>" }`
 - `required` は `["target", "logicalId", "name", "<配列キー>"]`（配列キーは target 自身のもの。`primefaces` は `fields`、`im-forma` は `items`）
-- `logicalId` は `^[a-zA-Z][a-zA-Z0-9_-]*$`
+- `logicalId` は `^[A-Za-z0-9_#-]+$`
 - **すべての階層で `additionalProperties: true`。** 残余が生き残る必要があります
 - `basedOn` / `changeReason` は IR 系統キーとして宣言し、ベンダー語彙ではない旨を `description` に書く
 - `$defs.external` を `{ type: object, additionalProperties: true }` として定義し、文書と各フィールドから `$ref` する

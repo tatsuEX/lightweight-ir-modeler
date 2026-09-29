@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-27T04:45:00"
-summary: "docs 索引。利用者向けと保守者向けの区別、現行スコープ（プラグイン多段・domain validation・IR migration）"
+updated: "2026-09-30T04:19:00"
+summary: "docs 索引。利用者向けと保守者向けの区別、現行スコープ（プラグイン多段・UIDefinition 検証・IR migration）"
 features:
   - docs
   - maintenance
@@ -22,7 +22,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-27 04:45
+最終更新: 2026-09-30 04:19
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -101,5 +101,5 @@ features:
 | adapter-target | スコープ内。Import / Export は選んだ target を一度だけ実行。Reader / Writer は実装済み |
 | IR snapshot `schemaVersion` | MVP 実装済み（[自動保存](./use-cases/ir-snapshot-auto-save.md)）。root `schemaVersion` + 4 分類 + step 空の seam |
 | IR schema migration | スコープ内。加算でない形の変更は版付き変換。移行ランナーは未着手 |
-| Domain validation | スコープ内。IR 種類ごとの不変条件。ルール DSL は作らない。専用モジュールは未着手 |
+| Domain validation | スコープ内。IR 種類ごとの不変条件。ルール DSL は作らない。[UIDefinition 検証](./use-cases/layout-editor.md) は実装済み |
 | Undo コマンドスタック / event bus / 汎用 service 層 / リポジトリ外プラグイン | 対象外（`.cursor/rules/03-out-of-scope.mdc`） |

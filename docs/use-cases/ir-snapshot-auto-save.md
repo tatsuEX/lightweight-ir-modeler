@@ -1,18 +1,19 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T03:20:00"
-summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion、component hydrate"
+updated: "2026-09-30T04:19:00"
+summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、検証通過後だけ current を更新する"
 features:
   - ir-snapshot
   - auto-save
   - layout-editor
   - yaml-comments
   - global-toast
+  - ui-definition-validation
 ---
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-30 03:20
+最終更新: 2026-09-30 04:19
 
 ## 概要
 
@@ -57,8 +58,8 @@ sequenceDiagram
   Editor->>Store: メタ / components 変更
   Auto->>Auto: $effect で payload + IR/コメント hash 生成
   Note over Auto: IR 変化は debounce(delay) / コメントのみは delay+commentDelayExtra
-  alt meta 未準備 or hash 同一
-    Auto-->>Auto: 送信スキップ
+  alt 検証失敗 or hash 同一
+    Auto-->>Auto: 送信スキップ。失敗時は Toast
   else 送信
     Auto->>API: uiDefinition + components
     API->>IO: writeSnapshot
@@ -84,6 +85,8 @@ sequenceDiagram
 そのため、見た目上の reorder や id 再生成だけではサーバ側で skip されることがある。
 
 保存 API が失敗したときは `console.warn` に加え、Global Toast で `error` を出す（sticky にはしない）。
+
+クライアントは POST の直前に `validateUiDefinition` を走らせ、失敗なら送らない。サーバの POST も同じ関数で再検証し、失敗は 400 と `issues`。検証の時計は auto-save が有効なときはその debounce、無効なときは `uiDefinition.validation.delay`（[layout-editor](./layout-editor.md)）。current と history は検証成功時だけ同じ内容を書く。
 
 ## ファイル配置
 

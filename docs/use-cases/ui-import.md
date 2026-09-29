@@ -1,6 +1,6 @@
 ---
 created: "2026-08-10T05:10:00"
-updated: "2026-09-27T05:30:00"
+updated: "2026-09-30T04:46:00"
 summary: "外部 UI 定義 Import の横断パイプライン。未知 type は PersistedComponent（unsupported）"
 features:
   - ui-import
@@ -13,7 +13,7 @@ features:
 
 # 外部 UI 定義の取り込み（Import）
 
-最終更新: 2026-09-27 05:30
+最終更新: 2026-09-30 04:46
 
 外部 UI 定義ファイルをアップロードし、IR へ変換してエディタの編集状態を丸ごと置き換える。
 出力側は [UI Export](./ui-export.md) を参照。
@@ -102,10 +102,10 @@ snapshot が自動保存される**（既存世代は削除されない）。UI 
 | 未対応 / 未指定 target | 400 |
 | 拡張子不一致 | 400（`DefinitionReadError`） |
 | パース失敗 / target 固有の読取拒否 | 400（`DefinitionReadError`） |
-| Raw 検証失敗（`logicalId` が識別子として不正 等） | 400（`issues[]` 付き） |
+| Raw 検証失敗（`logicalId` が識別子として不正 等） | 400（`issues[]` 全件）。クライアントは先頭 1 件だけ出さず、モーダルに全件を列挙する |
 | 2MB 超のアップロード | 400 |
 
-`logicalId` は `^[a-zA-Z][a-zA-Z0-9_-]*$` を満たす必要がある。target によってはファイル名 stem から導出・補正することがある（詳細は各 target 文書）。それ以外の不正値は自動サニタイズせず 400 とする。
+`logicalId` は `isValidLogicalId`（`/^[A-Za-z0-9_#-]+$/`）を満たす必要がある。target によってはファイル名 stem から導出・補正することがある（詳細は各 target 文書）。それ以外の不正値は自動サニタイズせず 400 とする。
 
 ## 関連ドキュメント
 

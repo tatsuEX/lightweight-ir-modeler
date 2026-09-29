@@ -1,6 +1,6 @@
 ---
 created: "2026-08-28T07:25:00"
-updated: "2026-08-28T07:36:00"
+updated: "2026-09-30T05:08:00+09:00"
 summary: "アプリ全体の Global Toast と layout-editor への差し込み"
 features:
   - global-toast
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: Global Toast
 
-最終更新: 2026-08-28 07:36
+最終更新: 2026-09-30 05:08
 
 ## 概要
 
@@ -24,7 +24,7 @@ PrimeFaces Growl / `FacesMessage` 相当の通知を、アプリ全体で 1 つ�
 | `FacesMessage` | `ToastMessage`（`severity` / `summary` / `detail`） |
 | `FacesContext.addMessage` | `ToastMessages.add` / `info` / `warn` / `error` |
 | `<p:growl>` | `GlobalToast`（ルート `+layout.svelte`） |
-| `life` | `DEFAULT_TOAST_DELAY_MS`（5000） |
+| `life` | `DEFAULT_TOAST_DELAY_MS`（5000、info / warn）。error は `ERROR_TOAST_DELAY_MS`（8000） |
 | `sticky` | メッセージ単位の `sticky` |
 
 ## データフロー
@@ -62,6 +62,7 @@ toast.add({ severity: 'info', summary: '…', sticky: true });
 | `DefinitionImportModal.svelte` | 成功後 `info` | 失敗はモーダル内 `Alert` のまま |
 | `ir-auto-save.svelte.ts` | 保存失敗 `error` | `console.warn` も残す。sticky にはしない |
 | `UiDefinitionMetaAccordion.svelte` | 復元失敗 `error`。一覧取得・存在確認失敗 `warn` | 404（未使用 ID）は現状維持のため出さない。`console.warn` も残す |
+| `ui-definition-validation.svelte.ts` | 検証失敗 `error`（自動消去） | issue 1 件あたり Toast 1 件。件数サマリーは出さない。成功で dismiss |
 
 コメント保存（`MarkdownCommentModal`）はローカル store 更新のみで、失敗経路が無いので対象外。
 

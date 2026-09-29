@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T03:20:00"
-summary: "Property 属性テーブルは EditorComponent を bind。編集状態は client session が保持する"
+updated: "2026-09-30T04:54:00"
+summary: "Property 属性テーブルは EditorComponent を bind。UIDefinition 検証は debounce で、成功時だけ current を更新する"
 features:
   - layout-editor
   - ui-definition
@@ -13,11 +13,12 @@ features:
   - arrow-navigation
   - global-toast
   - client-session
+  - ui-definition-validation
 ---
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-30 03:20
+最終更新: 2026-09-30 04:54
 
 ## 概要
 
@@ -99,8 +100,30 @@ flowchart LR
 | 「次回以降確認しない」 | ブラウザ `localStorage`（`layout-editor.skipConfirmSnapshotDirCreation`）。application.yml は書き換えない |
 | キャンセル | ID 変更／取り込みを取り消し |
 
-`logicalId` の妥当性は `isValidLogicalId`（`/^[a-zA-Z][a-zA-Z0-9_-]*$/`）。  
+`logicalId` の妥当性は `isValidLogicalId`（`/^[A-Za-z0-9_#-]+$/`）。先頭英字は要求しない。  
 パスセグメントとしても同じ制約（`assertSafeLogicalIdPathSegment`）で traversal を防ぐ。
+
+## UIDefinition の整合性検証
+
+編集中のメモリ上の定義は未完成を許す。Zod の component parse は空文字を埋めたままにする。整合性は `validateUiDefinition` が issue を返す。
+
+| 層 | 内容 |
+|---|---|
+| コア | meta の `logicalId` / `name` 必須。component の `logicalId` 必須。既知 type の `label` 必須（`unsupported` は対象外）。`logicalId` は英数字と `-` `_` `#`。画面内の非空 `logicalId` は一意 |
+| 宣言 | `application.yml` の `uiDefinition.validation`。prefix / pattern / 文字数 / 件数上限など。コアを緩めるキーは受理しない |
+| プラグイン | in-repo の id 列。実装が無いあいだは空以外を起動時に拒否する |
+
+検証の時計:
+
+- セッション開始時に 1 回
+- `ir.autoSave.enabled` が true のとき、auto-save の待ちのあと POST 直前。`uiDefinition.validation.delay` は使わない
+- auto-save が false のとき、`uiDefinition.validation.delay`（既定 500ms）で検証と表示だけ行う。current / history は書かない
+
+成功したときだけ current と、同じ内容の history を更新する。失敗時はメモリと client session に残す。
+
+Property では、エラー箇所だけ淡い赤（`bg-red-50` / `border-red-300`）で示す。詳細文言は Global Toast（右上）で **issue 1 件あたり Toast 1 件**（自動消去・件数サマリーなし）。components 向けは `n行目 logicalId (type) の …`（logicalId 空は `-`、この形式は確定）。meta 向けは `基本情報の ラベル (field) …`（Toast detail は付けない。summary と重複するため）。解消したら残っている Toast も消す。表上の要約バナーや入力直下のメッセージは出さない。issue は **1 回の検証で全件** publish する。Import モーダルの Raw 失敗一覧は従来どおり。キー入力のたびに検証しない。
+
+`uiDefinition.validation.editor.fields` の `hidden` / `disabled` は保存成否に使わない。値は消さない。
 
 ### 確定版
 
@@ -239,6 +262,9 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | Property 画面 | `src/routes/layout-editor/property/+page.svelte` |
 | 初期読込 | `src/routes/layout-editor/+layout.server.ts` |
 | 属性テーブル | `src/lib/components/ComponentAttributeTable.svelte` |
+| 検証関数 | `src/lib/ir/ui-definition-validation/validate-ui-definition.ts` |
+| 検証プロファイル | `src/lib/config/ui-definition-validation-config.ts` |
+| 検証結果 Context | `src/lib/store/layout-editor/ui-definition-validation.svelte.ts` |
 | コメント `#` | `src/lib/components/YamlCommentButton.svelte` |
 | コメントモーダル | `src/lib/components/MarkdownCommentModal.svelte` |
 | コメント対象ツリー | `src/lib/components/CommentTargetTree.svelte` |
