@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T06:50:00"
+updated: "2026-09-27T05:30:00"
 summary: "Property 属性テーブルは EditorComponent を bind。Preview registry は ComponentType"
 features:
   - layout-editor
@@ -16,7 +16,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-07 06:50
+最終更新: 2026-09-27 05:30
 
 ## 概要
 
@@ -145,7 +145,7 @@ flowchart TB
 |---|---|---|
 | Basic | hint / required / readonly / disabled | 全 `EditorComponent` 共通（`bind:`。presence guard なし） |
 | Details | details-0..2（3 固定） | 0: defaultValue、1: items \| format \| cols、2: rows |
-| Validation | validation-0..2（3 固定） | 0: pattern \| maxlength \| min \| minDate / minDateTime(date)…、1: minlength \| max \| maxDate / maxDateTime(date)…、2: textbox maxlength。datetime は同セル内に Datepicker + Timepicker（時刻は `validation-N-time`） |
+| Validation | validation-0..3（4 固定） | 0: pattern \| maxlength \| min \| minDate…、1: minlength \| max \| maxDate…、2: textbox maxlength \| number scale \| date-span requiredFrom、3: number step \| date-span requiredTo。datepicker / datetimepicker の 2–3 は非対応。datetime は同セル内に Datepicker + Timepicker（時刻は `validation-N-time`） |
 
 ### 列ヘッダフィルタ
 

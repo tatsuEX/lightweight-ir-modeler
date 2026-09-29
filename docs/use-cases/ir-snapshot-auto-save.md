@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T07:14:00"
+updated: "2026-09-27T05:30:00"
 summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion、component hydrate"
 features:
   - ir-snapshot
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-07 07:14
+最終更新: 2026-09-27 05:30
 
 ## 概要
 
@@ -115,7 +115,7 @@ sequenceDiagram
 
 ## YAML envelope (schemaVersion)
 
-Root は UI IR 定義の**構造版** `schemaVersion`（`<main>.<sub>`。現行 `1.0`）を持つ。廃止した envelope `version: 1` は機能していなかったため撤去した。
+Root は UI IR 定義の**構造版** `schemaVersion`（`<main>.<sub>`。現行 `1.0`）を持つ。廃止した envelope `version` は未使用なので読込時に落とし、書き出しにも含めない。`uiDefinition.version` は残す。
 
 - `schemaVersion` は構造の版。`uiDefinition.version` は**ユーザ意図の画面定義の製品版**で、別概念（混ぜない）
 - `schemaVersion` キーが無い既存資産は baseline `1.0` として読む（migration step 不要）
@@ -132,8 +132,10 @@ Root は UI IR 定義の**構造版** `schemaVersion`（`<main>.<sub>`。現行 
 書き込み側（`current/snapshot.yml`）:
 
 - temp ファイル + `rename` による atomic 置換。書き込み途中の中断で `current` を半端な内容にしない
-- ディスク側が現行ビルドより**新しい**場合は 409 で上書き拒否（古いサーバ / stale なタブによる破壊を防ぐ）
-- ディスク側が**古い**場合はその書き込みが migration の commit なので、元ファイルを `history/ir-snapshot-<ts>-premigration-<schemaVersion>.yml` へ退避してから書く
+- ディスク側が現行ビルドより**新しい**場合は 409（`schema-future`）で上書き拒否（古いサーバ / stale なタブによる破壊を防ぐ）
+- `schemaVersion` が `<main>.<sub>` でない、または migration 経路が無い場合は 400。上書きしない
+- main が古い場合は 409（`schema-consent`）。同意前は premigration バックアップを書かない。同意後の書き込みだけ `history/ir-snapshot-<ts>-premigration-<schemaVersion>.yml` へ退避してから書く
+- main が同じで sub だけ古い場合は同意なしに migration し、その書き込みの前に同じ退避をする
 
 migration step は plain record → record の関数（`snapshot-migration.ts`）。Domain 型を import しないので、過去 schema の知識が Domain Model に入らない。現行 schema は `1.0` のみなので登録 step は空。
 

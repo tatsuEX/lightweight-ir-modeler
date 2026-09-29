@@ -1,6 +1,6 @@
 ---
 created: "2026-08-09T22:40:58"
-updated: "2026-09-07T00:04:00"
+updated: "2026-09-27T05:30:00"
 summary: "PrimeFaces Export: shape union・form.hbs の IR 系統コメント"
 features:
   - ui-export
@@ -10,7 +10,7 @@ features:
 
 # PrimeFaces Export（Facelet / Handlebars）
 
-最終更新: 2026-09-07 00:04
+最終更新: 2026-09-27 05:30
 
 Export 全体のパイプライン・API・検証境界は [外部 UI 定義の出力（Export）](./ui-export.md) を参照。  
 本稿は **target `primefaces` 固有** の shape・テンプレート合成・コンポーネント対応をまとめる。
@@ -63,7 +63,8 @@ logicalId=<id> version=<ver> basedOn=<ver> changeReason=<label>
 | グループ | IR `type` | 追加フィールド |
 |---|---|---|
 | 共通 | （すべて） | `id` / `label` / `hint` / `required` / `disabled` / `readonly` |
-| 単純入力 | `textbox` / `number` | （共通のみ） |
+| 単純入力 | `textbox` | `pattern`（`validation.pattern`） |
+| 単純入力 | `number` | （共通のみ） |
 | textarea | `textarea` | `rows` / `cols` / `maxlength`（任意） |
 | label | `label` | （共通のみ） |
 | select | `checkbox` / `radio` / `dropdown` / `dropdown-multi` | `items[]`（`label` / `value`） |
@@ -74,13 +75,14 @@ logicalId=<id> version=<ver> basedOn=<ver> changeReason=<label>
 - 日付系 IR の SSOT は `format` のみ。未指定時の既定: `yyyy-MM-dd` / `yyyy-MM-dd HH:mm` / `HH:mm`（type 別）
 - テンプレート用 `placeholder` は shape が `format` の英字トークンを同長 `_` に置換して導出する（例: `yyyy-MM-dd HH:mm` → `____-__-__ __:__`）。IR に `placeholder` は持たない
 - `clearable === true` のときテンプレートは `showButtonBar="true"` を出力する
-- EL バインド（`value="#{...}"`）は IR 非搭載方針のため **出力しない**（静的スケルトンのみ）
+- EL（`#{...}` / `${...}`）は出さない。リテラル `defaultValue` は `value` 属性にする（数値は文字列）。配列は出さない
+- `label` / `checkbox` / `dropdown-multi` / `date-span` には既定値の `value` を出さない。`date-span` の From / To は XHTML にしない
 
 ## IR type → PrimeFaces タグ
 
 | IR `type` | PrimeFaces タグ | 備考 |
 |---|---|---|
-| `textbox` | `p:inputText` | |
+| `textbox` | `p:inputText` | `pattern` ← `validation.pattern` |
 | `textarea` | `p:inputTextarea` | |
 | `number` | `p:inputNumber` | |
 | `checkbox` | `p:selectManyCheckbox` | `layout="lineDirection"`、`f:selectItem` |

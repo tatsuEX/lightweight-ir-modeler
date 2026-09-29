@@ -1,7 +1,7 @@
 ---
 created: "2026-09-07T04:46:00"
 summary: "IR snapshot の schemaVersion を改訂するときの作業手順。sub 改訂 3 箇所と main 改訂の同意フロー"
-updated: "2026-09-07T04:46:00"
+updated: "2026-09-27T05:30:00"
 features:
   - maintenance
   - ir-snapshot
@@ -10,7 +10,7 @@ features:
 
 # 保守手順: `schemaVersion` 改訂
 
-最終更新: 2026-09-07 04:46
+最終更新: 2026-09-27 05:30
 
 IR snapshot（`snapshot.yml`）の**構造**を変えるときの手順です。現行仕様は [IR スナップショット自動保存](../use-cases/ir-snapshot-auto-save.md) を参照してください。
 
@@ -63,43 +63,25 @@ IR snapshot（`snapshot.yml`）の**構造**を変えるときの手順です。
 
 `src/lib/ir/snapshot-migration.spec.ts` の既存テストは `options.steps`（テスト用 escape hatch）で step を差し替えているので、**本番の `IR_SNAPSHOT_MIGRATION_STEPS` を通る経路のテストを別途書いてください**。差し替えテストだけでは登録漏れを検出できません。
 
-## 手順 B: main を上げる（同意フローが未実装）
+## 手順 B: main を上げる
 
-`main` を上げる場合は A-1〜A-3 に加えて、**同意フローの配線が必要です。現状は未実装で、このまま `main` を上げると auto-save が 500 になります。**
+`main` を上げる場合は A-1〜A-3 に加えて、同意フローが動くことを確認します。配線は入っています。
 
-`deserializeIrSnapshotDocument` を `confirmMigration` なしで呼んでいる箇所が 3 つあり、いずれも `IrSnapshotMigrationConsentError` を投げます。
-
-| 呼び出し元 | 位置 |
+| 経路 | 挙動 |
 |---|---|
-| `isSameAsCurrentSnapshot` | `src/lib/server/io/ir-snapshot-io.ts`:406 |
-| `readPersistedSnapshotMeta` | 同 :387 |
-| `toLoadedIrSnapshot` | 同 :362 |
+| 読込（GET `/api/ir/snapshot`、layout load、確定、過去版読込） | `confirmMigration` が無いと `IrSnapshotMigrationConsentError`。HTTP は 409 + `code: schema-consent` + `rationales` |
+| 未来版 / 不正 / 経路なし | 409 `schema-future`、または 400 `schema-unreadable` / `schema-no-path`。上書きしない |
+| 同意 | クエリまたは body の `confirmMigration=true`。GUI は `SchemaMigrationConsentModal` |
+| auto-save | 同意が取れるまでその logicalId の POST を止める。同意後の保存だけ `confirmMigration: true` |
+| premigration バックアップ | 同意が必要なファイルは、同意済みの書き込みの直前だけ `history/` へ退避する |
 
-「同意なしに書かない」という安全側には倒れていますが、利用者には 500 しか見えず同意を求める手段がありません。必要な作業は次の 4 点です。
-
-### B-1. HTTP 層のエラーマッピング
-
-`IrSnapshotMigrationConsentError` を 409 + `rationales` を含むレスポンスへ、`IrSnapshotSchemaVersionError`（`kind` が `future` / `unreadable` / `no-path`）を明示エラーへマップします。現状は素の 500 です。
-
-### B-2. `confirmMigration` を読み取り経路へ通す
-
-`migrateIrSnapshotRecord` は既に `IrSnapshotMigrationOptions` を受けます。route → `readLatestSnapshot` / `loadPublishedVersion` → `deserializeIrSnapshotDocument` へ渡すだけです。設計では 2 段階 POST（確認 → 実行）としています。
-
-### B-3. GUI の同意ダイアログ
-
-`IrSnapshotMigrationConsentError.rationales` をそのまま提示する想定で step に `rationale` を持たせてあります。
-
-### B-4. auto-save の一時停止
-
-同意が取れるまで debounce 保存を止める分岐が `src/lib/store/layout-editor/ir-auto-save.svelte.ts` にまだありません。
-
-あわせて、`guardCurrentSchemaVersionBeforeWrite` は `isSameAsCurrentSnapshot` の throw より**先**に premigration バックアップを書きます。同意前に孤立したバックアップが `history/` に残るので、ここも直してください。
+`step.rationale` が同意ダイアログの文面です。
 
 ## migration step を書くときの制約
 
 - **Domain 型を import しない。** step は `Record<string, unknown>` → `Record<string, unknown>` の純関数です。これが「過去 schema の知識を Domain Model に持ち込まない」を構造的に保証しています。`<schemaVersion>/` ディレクトリに Domain のコピーを置く設計は採っていません
 - **component `id` を参照できない。** `id` は書き込み時に strip され読み込み時に再採番されます。step は位置・構造ベースで書いてください
-- **root の `version` は触らない。** 廃止済みキーの除去は `normalizeEnvelopeKeys` が既に行います。`uiDefinition.version` は絶対に触らないこと
+- **root の `version` は書かない。** 未使用なので `normalizeEnvelopeKeys` と `serializeIrSnapshot` が落とす。`uiDefinition.version` は触らない
 - **コメントのキーパスがズレる。** `deserializeIrSnapshotDocument` はコメントを **migration 前の元 Document** から抽出します。step がキー名や `components[]` の順序を変えると、運用コメントが旧パスに紐づいたまま残ります
 
 ## 波及チェックリスト
@@ -114,7 +96,7 @@ step の内容によって次が必要になります。
 ## やらなくてよいこと
 
 - **既存ファイルの一括書き換えは不要です。** `versions/<v>/` は immutable のまま残り、読み込み時に毎回 migration が走ります。migration を `deserializeIrSnapshotDocument` という単一の choke point に置いたのはこのためで、`current/` と `versions/` で分岐が生まれません
-- `current/` は次回書き込み時に、`history/ir-snapshot-<ts>-premigration-<ver>.yml` へのバックアップ付きで commit されます
+- `current/` は、同意が要らない古い sub、または同意済みの書き込みのときだけ、`history/ir-snapshot-<ts>-premigration-<ver>.yml` へ退避してから commit する
 - `schemaVersion` を持たない旧資産のための step も不要です（baseline として読まれます）
 
 ## 検証

@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-08-31T08:05:00"
+updated: "2026-09-27T05:30:00"
 summary: "IR snapshot（current / versions）と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
@@ -12,7 +12,7 @@ features:
 
 # HTTP API
 
-最終更新: 2026-08-31 08:05
+最終更新: 2026-09-27 05:30
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -23,17 +23,22 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 編集中メタ + components + 任意の `comments`（YAML キーパス → Markdown）を YAML snapshot として保存する。
 
 - **403**: `ir.autoSave.enabled` が false
-- **400**: JSON 不正 / `components` 非配列 / メタ不正
+- **400**: JSON 不正 / `components` 非配列 / メタ不正 / `schemaVersion` が不正または migration 経路が無い（`code`: `schema-unreadable` / `schema-no-path`）
+- **409**: ディスク側 `schemaVersion` がこのビルドより新しい（`schema-future`）、または main をまたぐ migration に同意が無い（`schema-consent` と `rationales`）
 - **201**: 新規書込
 - **200**: 内容同一のため skip（`skipped: true`）
 
+同意後の再保存は body に `confirmMigration: true` を付ける。GET の再読込は `confirmMigration=true`。
+
 ### `GET /api/ir/snapshot?logicalId=<id>`
 
-指定 logicalId の編集中 snapshot（`current/snapshot.yml`。無ければ旧レイアウトの latest）を JSON で返す。`comments` は YAML から抽出したパスマップ（ファイル内の `#` コメント）。
+指定 logicalId の編集中 snapshot（`current/snapshot.yml`。無ければ旧レイアウトの latest）を JSON で返す。`comments` は YAML から抽出したパスマップ（ファイル内の `#` コメント）。root の廃止済み `version` は含めない。
 
 - **404**: 無し
-- **400**: logicalId 不正
+- **400**: logicalId 不正、または `schema-unreadable` / `schema-no-path`
+- **409**: `schema-future` / `schema-consent`
 - **403**: 自動保存無効
+
 
 ### `GET /api/ir/snapshot/logical-ids`
 
@@ -48,10 +53,12 @@ SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一
 current を `versions/<main.sub>/snapshot.yml` へ複製する。Body: `{ logicalId, mode?: 'revision' | 'patch' | 'new-head' }`。`mode` 省略時は `revision`。
 
 - **201**: `{ version, snapshot }`（更新後の current）
-- **400**: 初回なのに patch/new-head、過去版なのに revision、HEAD なのに new-head
+- **400**: 初回なのに patch/new-head、過去版なのに revision、HEAD なのに new-head、または `schema-unreadable` / `schema-no-path`
 - **404**: current が無い
-- **409**: 同じ version ディレクトリが既にある
+- **409**: 同じ version ディレクトリが既にある、または `schema-future` / `schema-consent`
 - **403**: 自動保存無効
+
+同意が必要な current は body の `confirmMigration: true` で読む。
 
 HEAD 上では `patch` で同一 main の sub+1（メタ修正など）、`revision` で main+1.0。過去版（`basedOn` が HEAD より古い）では `patch` または `new-head`。
 
@@ -60,9 +67,12 @@ HEAD 上では `patch` で同一 main の sub+1（メタ修正など）、`revis
 確定版を current へ載せ、history を空にする。Body: `{ logicalId, version }`。`basedOn` に選択元を記録する。
 
 - **200**: current と同じ JSON 形
-- **400**: version が選択不可（その main の最新 sub ではない）
+- **400**: version が選択不可（その main の最新 sub ではない）、または `schema-unreadable` / `schema-no-path`
 - **404**: 確定版ファイルが無い
+- **409**: `schema-future` / `schema-consent`
 - **403**: 自動保存無効
+
+確定版の読込も `confirmMigration: true` で同意する。
 
 ## UI Export
 
@@ -114,7 +124,7 @@ Body 例（仮想。`target` は registry 登録済み targetId）:
 | `X-Ui-Export-Auto` | `true` / `false`（今回サーバが自動 export したか） |
 | `X-Ui-Export-Source` | `existing` / `snapshot` |
 
-成果物が無いときのみ最新 snapshot から `exportFromLatestSnapshot` を実行する。
+成果物が無いときのみ最新 snapshot から `exportFromLatestSnapshot` を実行する。その読込が schema で止まったときは snapshot API と同じ `400` / `409`（`schema-unreadable` / `schema-no-path` / `schema-future` / `schema-consent`）。
 
 ## UI Import
 

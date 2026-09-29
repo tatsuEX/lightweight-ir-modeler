@@ -1,6 +1,6 @@
 ---
 created: "2026-08-10T05:10:00"
-updated: "2026-09-07T06:40:00"
+updated: "2026-09-27T05:30:00"
 summary: "外部 UI 定義 Import の横断パイプライン。未知 type は PersistedComponent（unsupported）"
 features:
   - ui-import
@@ -13,7 +13,7 @@ features:
 
 # 外部 UI 定義の取り込み（Import）
 
-最終更新: 2026-09-07 06:40
+最終更新: 2026-09-27 05:30
 
 外部 UI 定義ファイルをアップロードし、IR へ変換してエディタの編集状態を丸ごと置き換える。
 出力側は [UI Export](./ui-export.md) を参照。
@@ -89,12 +89,7 @@ sequenceDiagram
 
 Transformer の `mapRawFieldToComponent` は `parsePersistedComponent` で `PersistedComponent` にする（エディタ用 `id` は付けない）。未知の Raw `type` は `unsupported` + `sourceType` に正規化する。
 
-store の `loadImported(ui, imported)` が
-
-1. `createComponentByType`（`$lib/ir/elements/factories`）で登録済み type にファクトリを適用（デフォルト補完 + エディタ用 `id` 採番）。`unsupported` は未登録のため `id` だけ付けて素通しする
-2. `UIDefinition.loadSnapshot` に委譲して hydrate し、components とメタを全置換
-
-を行う。
+store の `loadImported(ui, imported)` は `UIDefinition.loadSnapshot` に `PersistedComponent[]` を渡す。hydrate が既定値とエディタ用 `id` を付ける。パレットからの新規追加だけが `createComponentByType` を使う。
 
 取り込み後は `logicalId` が変わるため、debounce 後に **新しい logicalId のディレクトリへ
 snapshot が自動保存される**（既存世代は削除されない）。UI 側でその旨を警告する。  

@@ -1,6 +1,6 @@
 ---
 created: "2026-08-10T06:20:00"
-updated: "2026-08-31T05:55:00"
+updated: "2026-09-27T05:30:00"
 summary: "PrimeFaces XHTML Import: parse-xml / unshape / タグ判別と unsupported コメント救出"
 features:
   - ui-import
@@ -11,7 +11,7 @@ features:
 
 # PrimeFaces Import（XHTML / Facelet）
 
-最終更新: 2026-08-31 05:55
+最終更新: 2026-09-27 05:30
 
 Import 全体のパイプラインは [外部 UI 定義の取り込み（Import）](./ui-import.md) を参照。  
 本稿は **target `primefaces` 固有** の parse / unshape / タグ判別をまとめる。
@@ -59,7 +59,10 @@ Export 側のテンプレート対応は [PrimeFaces Export](./primefaces-export
 | `<!-- unsupported type: T id=I -->` | `T` | 正規表現で救出 |
 
 - `showButtonBar="true"` → `clearable: true`
-- 日付系の `placeholder` は Export 派生マスクのため **取り込まない**（`pattern` のみ信頼）
+- 日付系の `placeholder` は Export 派生マスクのため **取り込まない**
+- 日付系の `pattern` は `format`。`textbox` の `pattern` は `validation.pattern`。それ以外の `pattern` は残余に残す
+- リテラル `value`（`#{` も `${` も含まない）は `defaultValue`。`label` の `value` はラベル文字列のまま。`checkbox` / `dropdown-multi` / `date-span` は単一 `value` を既定値にしない。EL は取り込まない
+- `date-span` の From / To は `defaultValueFrom` / `defaultValueTo`（Raw と IR）。XHTML 属性にはしない
 - `layout` / `showCheckbox` はテンプレート骨格として無視（残余に入れない）
 
 ## external 残余
