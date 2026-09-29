@@ -125,13 +125,17 @@ function isSnapshotSchemaBlock(value: unknown): value is SnapshotSchemaBlock {
  *
  * IR 変化は `delay`、コメント map のみは `delay + commentDelayExtra`。両方変わるときは短い方に合流する。
  * `beforeWrite` が false を返したときは current / history を更新しない。
+ * `readSaveHold` が true のあいだは debounce を張らない。空に戻ったとき、この effect が依存として読み直して保存をやり直す。
+ *
+ * WARN: `readSaveHold` は effect の先頭付近で呼ぶ。退避の有無を依存に載せないと、退避だけが空に戻った保存が起きない。
  */
 export function attachIrAutoSave(
 	uiDefinition: UIDefinition,
 	comments: SnapshotComments,
 	options: IrAutoSaveOptions,
 	checkpoint: AutoSaveCheckpoint,
-	beforeWrite?: () => boolean
+	beforeWrite?: () => boolean,
+	readSaveHold?: () => boolean
 ): void {
 	if (!options.enabled) {
 		return;
@@ -225,12 +229,9 @@ export function attachIrAutoSave(
 	 * IR 変化時に snapshot API へ POST する
 	 */
 	$effect(() => {
+		const held = readSaveHold?.() ?? false;
 		schemaMigrationEpoch();
 		const logicalId = uiDefinition.meta.logicalId;
-		if (isSchemaMigrationSaveBlocked(logicalId)) {
-			return;
-		}
-
 		const componentIds = uiDefinition.components.map((component) => component.id);
 		const payload: SnapshotSavePayload = {
 			uiDefinition: buildSaveMeta(uiDefinition),
@@ -240,6 +241,10 @@ export function attachIrAutoSave(
 		};
 		const irHash = buildIrHash(uiDefinition);
 		const commentsHash = buildCommentsHash(comments, componentIds);
+		if (isSchemaMigrationSaveBlocked(logicalId) || held) {
+			return;
+		}
+
 		const timing = selectAutoSaveTiming(
 			{ irHash: lastSavedIrHash, commentsHash: lastSavedCommentsHash },
 			{ irHash, commentsHash }

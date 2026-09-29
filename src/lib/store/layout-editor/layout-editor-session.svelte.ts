@@ -26,6 +26,7 @@ import {
 	type AutoSaveCheckpoint
 } from '$lib/store/layout-editor/ir-auto-save.svelte';
 import { createReactiveUIDefinition } from '$lib/store/layout-editor/layout-editor.svelte';
+import { createLayoutColumns, type LayoutColumns } from '$lib/store/layout-editor/layout-columns.svelte';
 import {
 	blockSchemaMigrationSave,
 	requestSchemaConsent
@@ -53,6 +54,8 @@ export type LayoutEditorSession = {
 	transformTarget: TransformTarget;
 	checkpoint: AutoSaveCheckpoint;
 	schemaAnnounced: boolean;
+	/** 並べ替え列と退避列。snapshot には載せない */
+	layoutColumns: LayoutColumns;
 };
 
 /**
@@ -190,7 +193,8 @@ function buildSession(seed: LayoutEditorSessionSeed, key: ClientSessionKey): Lay
 		previewTheme: createPreviewTheme(seed.preview.theme),
 		transformTarget: createTransformTarget(seed.preview.transformTarget),
 		checkpoint: captureAutoSaveCheckpoint(uiDefinition, snapshotComments),
-		schemaAnnounced: false
+		schemaAnnounced: false,
+		layoutColumns: createLayoutColumns(uiDefinition.components)
 	};
 }
 

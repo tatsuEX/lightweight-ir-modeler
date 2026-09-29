@@ -32,6 +32,12 @@
 		markSchemaMigrationConsent,
 		pendingSchemaConsent
 	} from '$lib/store/layout-editor/schema-migration-consent.svelte';
+	import {
+		LAYOUT_PARKED_SAVE_BLOCK_MESSAGE,
+		sameLayoutColumnItems,
+		syncLayoutColumns
+	} from '$lib/store/layout-editor/layout-columns';
+	import { setLayoutColumnsContext } from '$lib/store/layout-editor/layout-columns.svelte';
 	import { setSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import { setTransformTargetContext } from '$lib/store/layout-editor/transform-target.svelte';
 	import { getToastContext } from '$lib/store/toast/toast.svelte';
@@ -62,6 +68,7 @@
 	const validationProfile = untrack(() => uiDefinitionValidation);
 
 	setUIDefinitionContext(bound.uiDefinition);
+	setLayoutColumnsContext(bound.layoutColumns);
 	setPreviewThemeContext(bound.previewTheme);
 	setTransformTargetContext(bound.transformTarget);
 	setSnapshotCommentsContext(bound.snapshotComments);
@@ -90,7 +97,10 @@
 		bound.snapshotComments,
 		saveOptions,
 		bound.checkpoint,
-		saveOptions.enabled ? () => validationState.revalidate() : undefined
+		saveOptions.enabled
+			? () => validationState.revalidate() && bound.layoutColumns.parked.length === 0
+			: undefined,
+		saveOptions.enabled ? () => bound.layoutColumns.parked.length > 0 : undefined
 	);
 
 	/**
@@ -113,6 +123,57 @@
 		return () => {
 			validateLater.cancel();
 		};
+	});
+
+	/**
+	 * 確定済み components に二つの列を合わせる。退避が空で順が違えば確定する
+	 *
+	 * WARN: ドラッグ中は影 id が確定側に無いので同期しない。
+	 */
+	$effect(() => {
+		const committed = bound.uiDefinition.components;
+		const dragging = bound.layoutColumns.dragging;
+		const main = bound.layoutColumns.main;
+		const parked = bound.layoutColumns.parked;
+		if (dragging) {
+			return;
+		}
+
+		const next = syncLayoutColumns(committed, main, parked);
+		untrack(() => {
+			if (!sameLayoutColumnItems(bound.layoutColumns.main, next.main)) {
+				bound.layoutColumns.main = next.main;
+			}
+			if (!sameLayoutColumnItems(bound.layoutColumns.parked, next.parked)) {
+				bound.layoutColumns.parked = next.parked;
+			}
+			if (!next.commitMain) {
+				return;
+			}
+			bound.uiDefinition.replaceComponents(next.main);
+			bound.layoutColumns.main = bound.uiDefinition.components.slice();
+			bound.layoutColumns.parked = [];
+		});
+	});
+
+	let parkedToastId = '';
+
+	/**
+	 * 退避が空でなくなったときだけ error Toast を出し、空に戻したら消す
+	 */
+	$effect(() => {
+		const parked = bound.layoutColumns.parked.length > 0;
+		if (parked && parkedToastId === '') {
+			parkedToastId = toast.add({
+				severity: 'error',
+				summary: LAYOUT_PARKED_SAVE_BLOCK_MESSAGE
+			});
+			return;
+		}
+		if (!parked && parkedToastId !== '') {
+			toast.dismiss(parkedToastId);
+			parkedToastId = '';
+		}
 	});
 
 	/**
