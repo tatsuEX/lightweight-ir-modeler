@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T05:39:00"
-summary: "Property 属性テーブルは EditorComponent を bind。UIDefinition 検証は debounce で、成功時だけ current を更新する"
+updated: "2026-09-30T06:40:00"
+summary: "Layout の選択は片方の列だけ。ボタンはその列の中で動かす"
 features:
   - layout-editor
   - ui-definition
@@ -18,7 +18,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-30 05:39
+最終更新: 2026-09-30 06:40
 
 ## 概要
 
@@ -28,7 +28,7 @@ features:
 | 画面 | パス | 主な操作 |
 |---|---|---|
 | Property | `/layout-editor/property` | コンポーネント追加・属性編集・論理 ID 確定 |
-| Layout | `/layout-editor/layout` | 並べ替え（DnD） |
+| Layout | `/layout-editor/layout` | 左右の列で並べ替え。退避が残るあいだは自動保存しない |
 | Preview | `/layout-editor/preview` | 見た目確認・Export / Download |
 
 ## アクターと成功条件
@@ -171,6 +171,20 @@ flowchart TB
 - Export / Download ボタンは `isUiDefinitionMetaReady` かつ非 busy のときのみ有効。結果は Global Toast（成功 `info` / 失敗 `error`）
 - **chrome 固定 + table 内スクロール**: ページ見出し・テーマ選択は上部固定、出力先選択と出力ボタンは下部固定。残り高を `.preview-root` に渡し、プレビュー table だけ `overflow-y-auto` する。ページ全体はスクロールしない。Datepicker ポップオーバーが table の overflow で切れる場合がある。
 
+## Layout: 左右の並べ替え
+
+並べ替え列と退避列を左右に置き、同じ DnD の type で相互にドロップする。既定は左が並べ替え、右が退避。「左右入れ替え」は列の画面上の位置だけを入れ替え、中の項目は動かさない。位置も退避も snapshot には載せない。
+
+- 操作列（左右入れ替えから末尾へ）と二つの列は、ページ幅の 60% で中央に置く。各列は最低 400px で、列の間隔を足した全体の最低幅は 812px。見出しと説明はページ幅のまま。
+
+- 行のどこを押しても、横 50px 以内かつ縦が行の高さの 4 分の 1以内で離すと、その列の選択を付け外しする。Shift は範囲を足す。どちらかを超えるとドラッグになり、列の中でもう一方の列へも落とせる。行は `button` にしない（`value` があると svelte-dnd-action がドラッグを開始しない）。
+- 選択は片方の列だけ。ある列の選択が残る操作をしたとき、もう一方の列の選択はすべて外す。
+- 選択中の行をドラッグすると、その列で選んだ項目が元の相対順のまま一塊で動く。未選択の行はその 1 件だけ動く。
+- 「選択解除 / 上へ / 下へ / 先頭へ / 末尾へ」は、選択がある列の中だけで動かす。どちらも未選択なら無効。上下と端への移動は、隙間を閉じてから一塊で動かす。
+- 二つの列は同じ component 参照の分割で、編集セッションに置く。退避が 1 件以上のあいだは `replaceComponents` しない。Property と Preview は直前に確定した順のまま。0 件に戻ったときだけ並べ替え列の順を確定する。
+- 退避が 1 件以上のときは Layout タブをエラー色にし、error Toast を 1 件出す。ドメイン検証が成功しても自動保存はしない。退避が空に戻ると、止まっていた差分を保存する。`validateUiDefinition` にはこの条件を足さない。
+- Property での追加・削除は id の増減だけ列へ合わせる。snapshot 読込で id が全部替わったら退避は空に戻す。
+
 ## Property 属性テーブル
 
 `ComponentAttributeTable` で `UIDefinition.components` を行編集する。
@@ -262,6 +276,8 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | Property 画面 | `src/routes/layout-editor/property/+page.svelte` |
 | 初期読込 | `src/routes/layout-editor/+layout.server.ts` |
 | 属性テーブル | `src/lib/components/ComponentAttributeTable.svelte` |
+| Layout 並べ替え | `src/lib/components/ComponentLayoutBuilder.svelte` |
+| Layout の列 | `src/lib/store/layout-editor/layout-columns.ts` / `layout-columns.svelte.ts` |
 | 検証関数 | `src/lib/ir/ui-definition-validation/validate-ui-definition.ts` |
 | 検証プロファイル | `src/lib/config/ui-definition-validation-config.ts` |
 | 検証結果 Context | `src/lib/store/layout-editor/ui-definition-validation.svelte.ts` |
