@@ -146,6 +146,15 @@
 			.sort((a, b) => a.type.localeCompare(b.type));
 	});
 
+	/** 表示中の type がすべて選択されているか */
+	const allTypesSelected = $derived(
+		typeFilterOptions.length > 0 &&
+			typeFilterOptions.every((option) => selectedTypes.has(option.type))
+	);
+
+	/** 一部の type だけ選択されているか */
+	const someTypesSelected = $derived(selectedTypes.size > 0 && !allTypesSelected);
+
 	/** 列フィルタが適用されているか判定する */
 	const hasActiveColumnFilters = $derived(
 		logicalIdQuery.trim() !== '' ||
@@ -315,11 +324,12 @@
 	}
 
 	/**
-	 * type 複数選択を解除する
+	 * 表示中の type をすべて選択する、または選択を解除する
 	 */
-	function clearTypeFilter(): void {
-		selectedTypes = new Set();
-		typeFilterOpen = false;
+	function toggleAllTypeFilters(checked: boolean): void {
+		selectedTypes = checked
+			? new Set(typeFilterOptions.map((option) => option.type))
+			: new Set();
 	}
 
 	/**
@@ -479,36 +489,49 @@
 							種類選択
 						{/if}
 					</Button>
+					<!-- WARN: simple だと全体が 1 つの ul になり、「すべて」をスクロール外に出せない。 -->
 					<Dropdown
-						simple
 						placement="bottom-start"
 						offset={4}
 						triggeredBy={`#${TYPE_FILTER_TRIGGER_ID}`}
 						bind:isOpen={typeFilterOpen}
-						class="max-h-64 overflow-y-auto"
+						class="flex max-h-64 flex-col overflow-hidden"
 					>
 						{#if typeFilterOptions.length === 0}
-							<DropdownItem class="text-sm text-gray-400">type がありません</DropdownItem>
+							<div class="px-4 py-2 text-sm text-gray-400">type がありません</div>
 						{:else}
-							{#each typeFilterOptions as option (option.type)}
-								<DropdownItem>
-									<Checkbox
-										aria-label="type {option.type} で絞り込み"
-										checked={isTypeFilterSelected(option.type)}
-										onchange={(event: Event) => {
-											if (event.target instanceof HTMLInputElement) {
-												toggleTypeFilter(option.type, event.target.checked);
-											}
-										}}
-									>
-										{option.type}
-										<span class="text-gray-400">({option.count})</span>
-									</Checkbox>
-								</DropdownItem>
-							{/each}
-							{#if selectedTypes.size > 0}
-								<DropdownItem onclick={clearTypeFilter}>すべて解除</DropdownItem>
-							{/if}
+							<div class="shrink-0 px-4 py-2">
+								<Checkbox
+									aria-label="type をすべて選択"
+									checked={allTypesSelected}
+									indeterminate={someTypesSelected}
+									onchange={(event: Event) => {
+										if (event.target instanceof HTMLInputElement) {
+											toggleAllTypeFilters(event.target.checked);
+										}
+									}}
+								>
+									すべて
+								</Checkbox>
+							</div>
+							<ul class="min-h-0 overflow-y-auto py-2 text-sm text-gray-700 dark:text-gray-200">
+								{#each typeFilterOptions as option (option.type)}
+									<DropdownItem>
+										<Checkbox
+											aria-label="type {option.type} で絞り込み"
+											checked={isTypeFilterSelected(option.type)}
+											onchange={(event: Event) => {
+												if (event.target instanceof HTMLInputElement) {
+													toggleTypeFilter(option.type, event.target.checked);
+												}
+											}}
+										>
+											{option.type}
+											<span class="text-gray-400">({option.count})</span>
+										</Checkbox>
+									</DropdownItem>
+								{/each}
+							</ul>
 						{/if}
 					</Dropdown>
 				</div>

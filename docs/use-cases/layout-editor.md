@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T04:54:00"
+updated: "2026-09-30T05:39:00"
 summary: "Property 属性テーブルは EditorComponent を bind。UIDefinition 検証は debounce で、成功時だけ current を更新する"
 features:
   - layout-editor
@@ -18,7 +18,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-30 04:54
+最終更新: 2026-09-30 05:39
 
 ## 概要
 
@@ -198,7 +198,7 @@ flowchart TB
 |---|---|---|
 | 行選択 | なし | — |
 | id（`logicalId`） | 一致モード + テキスト | 前方 / 部分 / 後方（既定: 部分）。大小無視。空 query は全件 |
-| type | 複数チェック Dropdown | 未選択 = 全件。選択肢は「編集可能のみ」適用後に存在する type + 件数 |
+| type | 複数チェック Dropdown | 未選択 = 全件。選択肢は「編集可能のみ」適用後に存在する type + 件数。先頭の「すべて」はスクロール外に固定。オンで表示中の type をすべて選択し、オフで選択を空にする。一部選択時は中間状態 |
 | label / hint | テキスト | 部分一致・大小無視 |
 | required / readonly / disabled | すべて / ON / OFF | 非対応（`undefined`）は ON / OFF に一致しない |
 | Details / Validation | なし | — |
