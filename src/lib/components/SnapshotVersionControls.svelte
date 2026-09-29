@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Button, Label, Select, type SelectOptionType } from 'flowbite-svelte';
 	import ConfirmPublishKindModal from '$lib/components/ConfirmPublishKindModal.svelte';
-	import { isUiDefinitionMetaReady, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
+	import { isUiDefinitionMetaReady, isValidLogicalId } from '$lib/ir/ui-definition-meta';
 	import {
 		EMPTY_PUBLISHED_VERSIONS_LISTING,
 		findPublishedChangeReason,
@@ -12,10 +12,10 @@
 		type PublishKind
 	} from '$lib/ir/snapshot-version';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
-	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
+	import { activateLayoutEditorDiskSnapshot } from '$lib/store/layout-editor/layout-editor-session.svelte';
 	import { getToastContext } from '$lib/store/toast/toast.svelte';
 	import { requestSchemaConsent } from '$lib/store/layout-editor/schema-migration-consent.svelte';
-import {
+	import {
 		fetchPublishedVersions,
 		loadWorkingSnapshotFromVersion,
 		publishWorkingSnapshot,
@@ -32,7 +32,6 @@ import {
 	} = $props();
 
 	const uiDefinition = getUIDefinitionContext();
-	const snapshotComments = getSnapshotCommentsContext();
 	const toast = getToastContext();
 
 	let listing = $state<PublishedVersionsListing>({ ...EMPTY_PUBLISHED_VERSIONS_LISTING });
@@ -192,14 +191,7 @@ import {
 	 * API から返った snapshot をエディタへ載せる
 	 */
 	function applyLoadedSnapshot(snapshot: LoadedWorkingSnapshot): void {
-		uiDefinition.loadSnapshot(
-			snapshot.components ?? [],
-			snapshot.uiDefinition ? toEditorMeta(snapshot.uiDefinition) : undefined
-		);
-		snapshotComments.loadFromYamlMap(
-			snapshot.comments ?? {},
-			uiDefinition.components.map((component) => component.id)
-		);
+		activateLayoutEditorDiskSnapshot(snapshot);
 	}
 
 	/**

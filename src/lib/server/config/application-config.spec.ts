@@ -178,6 +178,7 @@ preview:
 		});
 		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
 		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(true);
+		expect(config.layoutEditor.clientSession.maxLifetimeMs).toBe(43_200_000);
 	});
 
 	it('parses layoutEditor.property.itemDelimiter', () => {
@@ -202,6 +203,40 @@ layoutEditor:
 ${minimalPreviewYaml}
 `);
 		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(false);
+	});
+
+	it('parses layoutEditor.clientSession.maxLifetimeMs', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+layoutEditor:
+  clientSession:
+    maxLifetimeMs: 1000
+${minimalPreviewYaml}
+`);
+		expect(config.layoutEditor.clientSession.maxLifetimeMs).toBe(1000);
+	});
+
+	it('defaults layoutEditor.clientSession.maxLifetimeMs', () => {
+		const config = parseApplicationConfig(`
+app:
+  name: test-app
+${minimalPreviewYaml}
+`);
+		expect(config.layoutEditor.clientSession.maxLifetimeMs).toBe(43_200_000);
+	});
+
+	it('rejects a negative layoutEditor.clientSession.maxLifetimeMs', () => {
+		expect(() =>
+			parseApplicationConfig(`
+app:
+  name: test-app
+layoutEditor:
+  clientSession:
+    maxLifetimeMs: -1
+${minimalPreviewYaml}
+`)
+		).toThrow('layoutEditor.clientSession.maxLifetimeMs" must be a non-negative finite number');
 	});
 
 	it('rejects empty layoutEditor.property.itemDelimiter', () => {
@@ -342,6 +377,7 @@ describe('profile overlay', () => {
 		expect(config.ir).toBeUndefined();
 		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
 		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(true);
+		expect(config.layoutEditor.clientSession.maxLifetimeMs).toBe(43_200_000);
 		expect(config.preview.theme.default).toBe('tailwind-light');
 		expect(config.preview.transformTarget.options).toHaveLength(2);
 		expect(config.preview.transformTarget.options.map((option) => option.value)).toEqual([

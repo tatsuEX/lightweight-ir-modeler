@@ -14,6 +14,7 @@
 	import type { ImportedDefinition } from '$lib/transform/imported-definition';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext, loadImported } from '$lib/store/layout-editor/layout-editor.svelte';
+	import { rekeyActiveSessionFromMeta } from '$lib/store/layout-editor/layout-editor-session.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import { getTransformTargetContext } from '$lib/store/layout-editor/transform-target.svelte';
 	import { resolveUiImportClient } from '$lib/store/layout-editor/ui-import-client';
@@ -70,6 +71,7 @@
 		pendingImported = null;
 		try {
 			loadImported(uiDefinition, imported);
+			rekeyActiveSessionFromMeta();
 			snapshotComments.clear();
 			toast.info('定義を取り込みました', imported.uiDefinition.logicalId);
 		} catch (error) {

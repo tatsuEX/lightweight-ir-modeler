@@ -8,8 +8,10 @@ import {
 	type IrAutoSaveConfig
 } from '$lib/config/application-types';
 import {
+	DEFAULT_CLIENT_SESSION_MAX_LIFETIME_MS,
 	DEFAULT_CONFIRM_SNAPSHOT_DIR_CREATION,
 	DEFAULT_ITEM_DELIMITER,
+	type LayoutEditorClientSessionConfig,
 	type LayoutEditorConfig,
 	type LayoutEditorPropertyConfig
 } from '$lib/config/layout-editor-config';
@@ -192,11 +194,42 @@ function parseLayoutEditorProperty(raw: unknown): LayoutEditorPropertyConfig {
 }
 
 /**
+ * layoutEditor.clientSession ブロックをパースする
+ */
+function parseLayoutEditorClientSession(raw: unknown): LayoutEditorClientSessionConfig {
+	const defaults: LayoutEditorClientSessionConfig = {
+		maxLifetimeMs: DEFAULT_CLIENT_SESSION_MAX_LIFETIME_MS
+	};
+	if (raw === undefined) {
+		return defaults;
+	}
+	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('application config "layoutEditor.clientSession" must be an object');
+	}
+
+	const block = raw as Record<string, unknown>;
+	let maxLifetimeMs = defaults.maxLifetimeMs;
+	if (block.maxLifetimeMs !== undefined) {
+		if (typeof block.maxLifetimeMs !== 'number' || !Number.isFinite(block.maxLifetimeMs) || block.maxLifetimeMs < 0) {
+			throw new Error(
+				'application config "layoutEditor.clientSession.maxLifetimeMs" must be a non-negative finite number'
+			);
+		}
+		maxLifetimeMs = block.maxLifetimeMs;
+	}
+
+	return { maxLifetimeMs };
+}
+
+/**
  * layoutEditor ブロックをパースする（未設定時は既定値）
  */
 function parseLayoutEditor(raw: unknown): LayoutEditorConfig {
 	if (raw === undefined) {
-		return { property: parseLayoutEditorProperty(undefined) };
+		return {
+			property: parseLayoutEditorProperty(undefined),
+			clientSession: parseLayoutEditorClientSession(undefined)
+		};
 	}
 	if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
 		throw new Error('application config "layoutEditor" must be an object');
@@ -204,7 +237,8 @@ function parseLayoutEditor(raw: unknown): LayoutEditorConfig {
 
 	const block = raw as Record<string, unknown>;
 	return {
-		property: parseLayoutEditorProperty(block.property)
+		property: parseLayoutEditorProperty(block.property),
+		clientSession: parseLayoutEditorClientSession(block.clientSession)
 	};
 }
 

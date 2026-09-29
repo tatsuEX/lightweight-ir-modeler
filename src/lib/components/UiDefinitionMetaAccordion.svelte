@@ -7,12 +7,11 @@
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import type { SnapshotSchemaBlock } from '$lib/ir/snapshot-schema-block';
 	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
-	import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
+	import { isUiDefinitionMetaReady, isValidLogicalId } from '$lib/ir/ui-definition-meta';
 	import { formatPublishedVersionLabel } from '$lib/ir/snapshot-version';
 	import { closeDatepickerOnFocusOut, formatDateString, parseDateString } from '$lib/utils/date-time-ir';
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
-	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import {
 		blockSchemaMigrationSave,
 		requestSchemaConsent
@@ -23,11 +22,14 @@
 		shouldPromptNewSnapshotDir,
 		snapshotDirectoryExists
 	} from '$lib/store/layout-editor/snapshot-dir-confirm';
+	import {
+		activateLayoutEditorDiskSnapshot,
+		rekeyActiveSessionLogicalId
+	} from '$lib/store/layout-editor/layout-editor-session.svelte';
 
 	/** 画面定義の状態は Context API 経由でのみ参照する */
 	const uiDefinition = getUIDefinitionContext();
 	const layoutEditorConfig = getLayoutEditorConfigContext();
-	const snapshotComments = getSnapshotCommentsContext();
 	const toast = getToastContext();
 
 	let metaOpen = $state(true);
@@ -131,7 +133,9 @@
 		try {
 			const response = await fetch(`/api/ir/snapshot?logicalId=${encodeURIComponent(logicalId)}`);
 			if (response.status === 404) {
-				// WARN: 404 時は現状維持（コピー作成ユースケースで中身を引き継ぐ）
+				// WARN: 404 時は現状維持（コピー作成）。キーだけ新しい画面 ID へ付け替える。
+				rekeyActiveSessionLogicalId(logicalId);
+				editingLogicalId = false;
 				return;
 			}
 			if (!response.ok) {
@@ -175,16 +179,11 @@
 			};
 
 			editingLogicalId = false;
-			uiDefinition.loadSnapshot(
-				snapshot.components ?? [],
-				snapshot.uiDefinition
-					? parseEditorMetaFromRecord(snapshot.uiDefinition as Record<string, unknown>)
-					: undefined
-			);
-			snapshotComments.loadFromYamlMap(
-				snapshot.comments ?? {},
-				uiDefinition.components.map((component) => component.id)
-			);
+			activateLayoutEditorDiskSnapshot({
+				uiDefinition: snapshot.uiDefinition as Record<string, unknown> | undefined,
+				components: snapshot.components,
+				comments: snapshot.comments
+			});
 		} catch (error) {
 			console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', error);
 			const detail = error instanceof Error ? error.message : String(error);
@@ -196,7 +195,6 @@
 	 * 新しい画面 ID を確定する（既存 snapshot があれば復元）
 	 */
 	async function applyLogicalIdChange(nextId: string, previousId: string): Promise<void> {
-		uiDefinition.meta.logicalId = nextId;
 		if (nextId === previousId) {
 			return;
 		}

@@ -58,6 +58,46 @@ function buildCommentsHash(comments: SnapshotComments, componentIds: readonly st
 }
 
 /**
+ * 自動保存が最後に成功したとみなす比較値
+ *
+ * WARN: 再マウントのたびに現在値で初期化すると、未送信の差分が次の編集まで保存されない。
+ */
+export type AutoSaveCheckpoint = {
+	irHash: string;
+	commentsHash: string;
+};
+
+/**
+ * いまの IR とコメントから比較値を取る
+ */
+export function captureAutoSaveCheckpoint(
+	uiDefinition: UIDefinition,
+	comments: SnapshotComments
+): AutoSaveCheckpoint {
+	const componentIds = uiDefinition.components.map((component) => component.id);
+	return {
+		irHash: buildIrHash(uiDefinition),
+		commentsHash: buildCommentsHash(comments, componentIds)
+	};
+}
+
+/**
+ * 前回の比較値から、今回の保存タイミングを決める
+ */
+export function selectAutoSaveTiming(
+	checkpoint: AutoSaveCheckpoint,
+	next: AutoSaveCheckpoint
+): 'ir' | 'comments' | 'none' {
+	if (next.irHash !== checkpoint.irHash) {
+		return 'ir';
+	}
+	if (next.commentsHash !== checkpoint.commentsHash) {
+		return 'comments';
+	}
+	return 'none';
+}
+
+/**
  * schemaVersion 失敗の code か判定する
  */
 function isSnapshotSchemaBlock(value: unknown): value is SnapshotSchemaBlock {
@@ -81,7 +121,8 @@ function isSnapshotSchemaBlock(value: unknown): value is SnapshotSchemaBlock {
 export function attachIrAutoSave(
 	uiDefinition: UIDefinition,
 	comments: SnapshotComments,
-	options: IrAutoSaveOptions
+	options: IrAutoSaveOptions,
+	checkpoint: AutoSaveCheckpoint
 ): void {
 	if (!options.enabled) {
 		return;
@@ -89,9 +130,8 @@ export function attachIrAutoSave(
 
 	// WARN: getToastContext は debounce コールバック内ではなく、コンポーネント初期化中に取る。
 	const toast = getToastContext();
-	const initialComponentIds = uiDefinition.components.map((component) => component.id);
-	let lastSavedIrHash = buildIrHash(uiDefinition);
-	let lastSavedCommentsHash = buildCommentsHash(comments, initialComponentIds);
+	let lastSavedIrHash = checkpoint.irHash;
+	let lastSavedCommentsHash = checkpoint.commentsHash;
 
 	/**
 	 * snapshot API へ POST し、成功時に保存済み hash を更新する
@@ -120,6 +160,8 @@ export function attachIrAutoSave(
 				if (response.ok) {
 					lastSavedIrHash = irHash;
 					lastSavedCommentsHash = commentsHash;
+					checkpoint.irHash = irHash;
+					checkpoint.commentsHash = commentsHash;
 					return;
 				}
 
@@ -185,14 +227,16 @@ export function attachIrAutoSave(
 		};
 		const irHash = buildIrHash(uiDefinition);
 		const commentsHash = buildCommentsHash(comments, componentIds);
-		const irChanged = irHash !== lastSavedIrHash;
-		const commentsChanged = commentsHash !== lastSavedCommentsHash;
+		const timing = selectAutoSaveTiming(
+			{ irHash: lastSavedIrHash, commentsHash: lastSavedCommentsHash },
+			{ irHash, commentsHash }
+		);
 
-		if (irChanged) {
+		if (timing === 'ir') {
 			// IR 変化時は遅延保存をキャンセルし、即時保存を実行する
 			saveLater.cancel();
 			saveSoon(payload, irHash, commentsHash);
-		} else if (commentsChanged) {
+		} else if (timing === 'comments') {
 			// コメント map 変化時は即時保存をキャンセルし、遅延保存を実行する
 			saveSoon.cancel();
 			saveLater(payload, irHash, commentsHash);

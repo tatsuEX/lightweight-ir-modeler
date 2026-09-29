@@ -12,6 +12,9 @@ export const DEFAULT_ITEM_DELIMITER = ':';
  */
 export const DEFAULT_CONFIRM_SNAPSHOT_DIR_CREATION = true;
 
+/** ブラウザタブ内の編集セッション保持期限の既定（12 時間、ms） */
+export const DEFAULT_CLIENT_SESSION_MAX_LIFETIME_MS = 43_200_000;
+
 /**
  * Property 属性エディタ設定
  */
@@ -27,8 +30,18 @@ export type LayoutEditorPropertyConfig = {
 };
 
 /**
+ * ブラウザタブ内 client session の保持期限
+ *
+ * サーバセッションへ移すときも同じ項目を保持期限に使う。二本立てにはしない。
+ */
+export type LayoutEditorClientSessionConfig = {
+	maxLifetimeMs: number;
+};
+
+/**
  * layout-editor 画面向け設定
  */
 export type LayoutEditorConfig = {
 	property: LayoutEditorPropertyConfig;
+	clientSession: LayoutEditorClientSessionConfig;
 };
