@@ -181,6 +181,32 @@ describe('shapePrimeFaces', () => {
 		]);
 	});
 
+	it('copies a literal default and a textbox pattern', () => {
+		const shaped = shapePrimeFaces({
+			target: 'primefaces',
+			logicalId: 'myForm',
+			name: 'My Form',
+			fields: [
+				{
+					logicalId: 'name',
+					type: 'textbox',
+					label: 'Name',
+					defaultValue: '太郎',
+					validation: { pattern: '.{1,30}' }
+				},
+				{
+					logicalId: 'qty',
+					type: 'number',
+					label: 'Qty',
+					defaultValue: 0
+				}
+			]
+		});
+
+		expect(shaped.fields[0]).toMatchObject({ defaultValue: '太郎', pattern: '.{1,30}' });
+		expect(shaped.fields[1]).toMatchObject({ defaultValue: '0' });
+	});
+
 	it('copies IR lineage keys onto form context when present', () => {
 		expect(
 			shapePrimeFaces({

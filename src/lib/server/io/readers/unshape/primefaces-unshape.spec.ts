@@ -23,7 +23,7 @@ const richXhtml = `<!--
 		<p:messages id="messages" showDetail="true" showSummary="true" />
 		<p:panelGrid columns="2" columnClasses="column-label,column-input">
 			<p:outputLabel for="name" value="氏名" />
-			<p:inputText id="name" required="true" placeholder="全角" data-extra="keep" />
+			<p:inputText id="name" required="true" placeholder="全角" value="太郎" pattern=".{1,30}" data-extra="keep" />
 
 			<p:outputLabel for="note" value="備考" />
 			<p:inputTextarea id="note" rows="3" cols="40" maxlength="200"></p:inputTextarea>
@@ -96,6 +96,8 @@ describe('unshapePrimeFaces', () => {
 			label: '氏名',
 			hint: '全角',
 			required: true,
+			defaultValue: '太郎',
+			validation: { required: true, pattern: '.{1,30}' },
 			external: { primefaces: { 'data-extra': 'keep' } }
 		});
 		expect(fields[2]).toMatchObject({
@@ -136,6 +138,24 @@ describe('unshapePrimeFaces', () => {
 		expect(fields.some((field) => field.logicalId === 'cb' && field.type === 'checkbox')).toBe(
 			true
 		);
+	});
+
+	it('keeps an EL value out of defaultValue', () => {
+		const raw = unshapePrimeFaces(
+			parseXml(`<html xmlns:h="http://xmlns.jcp.org/jsf/html" xmlns:p="http://primefaces.org/ui">
+				<h:head><title>申請フォーム</title></h:head>
+				<h:body>
+					<h:form id="f">
+						<p:panelGrid>
+							<p:outputLabel for="name" value="氏名" />
+							<p:inputText id="name" value="#{bean.name}" />
+						</p:panelGrid>
+					</h:form>
+				</h:body>
+			</html>`)
+		);
+		const fields = raw.fields as Record<string, unknown>[];
+		expect(fields[0]).not.toHaveProperty('defaultValue');
 	});
 
 	it('rejects a document without h:form', () => {

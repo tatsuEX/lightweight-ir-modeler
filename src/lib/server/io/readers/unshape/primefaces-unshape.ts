@@ -23,7 +23,6 @@ const KNOWN_CONTROL_ATTRS = [
 	'disabled',
 	'readonly',
 	'placeholder',
-	'pattern',
 	'showButtonBar',
 	'rows',
 	'cols',
@@ -37,6 +36,9 @@ const KNOWN_CONTROL_ATTRS = [
 	'showCheckbox'
 ] as const;
 
+/** pattern 属性を format として読む type */
+const DATE_FORMAT_TYPES = new Set(['datepicker', 'datetimepicker', 'timepicker', 'date-span']);
+
 /** unsupported.hbs コメントの救出パターン */
 const UNSUPPORTED_COMMENT_PATTERN = /unsupported\s+type:\s*(\S+)\s+id=(\S+)/i;
 
@@ -45,6 +47,40 @@ const UNSUPPORTED_COMMENT_PATTERN = /unsupported\s+type:\s*(\S+)\s+id=(\S+)/i;
  */
 function isXmlTrue(value: string | undefined): boolean {
 	return value === 'true' || value === '';
+}
+
+/**
+ * EL / テンプレート式か判定する
+ */
+function isValueExpression(value: string): boolean {
+	return value.includes('#{') || value.includes('${');
+}
+
+/**
+ * リテラル value を defaultValue にする
+ *
+ * WARN: label の value は表示文言（label）なので初期値にしない。複数選択と日付範囲は属性が一つに畳めない。
+ */
+function applyLiteralDefault(field: Record<string, unknown>, type: string, raw: string | undefined): void {
+	if (raw === undefined || raw.trim() === '' || isValueExpression(raw)) {
+		return;
+	}
+	if (
+		type === 'label' ||
+		type === 'checkbox' ||
+		type === 'dropdown-multi' ||
+		type === 'date-span'
+	) {
+		return;
+	}
+	if (type === 'number') {
+		const parsed = Number(raw);
+		if (Number.isFinite(parsed)) {
+			field.defaultValue = parsed;
+		}
+		return;
+	}
+	field.defaultValue = raw;
 }
 
 /**
@@ -236,6 +272,7 @@ function fieldFromControl(
 
 	const required = isXmlTrue(attrs.required);
 	const validation: Record<string, unknown> = { required };
+	let consumedPattern = false;
 	if (attrs.maxlength !== undefined && attrs.maxlength !== '') {
 		const maxlength = Number(attrs.maxlength);
 		if (Number.isFinite(maxlength)) {
@@ -265,8 +302,15 @@ function fieldFromControl(
 	}
 
 	if (typeof attrs.pattern === 'string' && attrs.pattern !== '') {
-		field.format = attrs.pattern;
+		if (DATE_FORMAT_TYPES.has(type)) {
+			field.format = attrs.pattern;
+			consumedPattern = true;
+		} else if (type === 'textbox') {
+			validation.pattern = attrs.pattern;
+			consumedPattern = true;
+		}
 	}
+	applyLiteralDefault(field, type, attrs.value);
 	if (isXmlTrue(attrs.showButtonBar)) {
 		field.clearable = true;
 	}
@@ -295,6 +339,9 @@ function fieldFromControl(
 	const residualSource: Record<string, string> = { ...attrs };
 	for (const key of KNOWN_CONTROL_ATTRS) {
 		delete residualSource[key];
+	}
+	if (consumedPattern) {
+		delete residualSource.pattern;
 	}
 	const external = buildTargetResidual(residualSource, [], PRIMEFACES_TARGET_ID);
 	if (external) {

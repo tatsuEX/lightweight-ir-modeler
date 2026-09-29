@@ -22,6 +22,10 @@ export type PrimeFacesFieldCommon = {
 	required: boolean;
 	disabled: boolean;
 	readonly: boolean;
+	/** リテラル初期値。空は付けない。EL は載せない */
+	defaultValue?: string;
+	/** textbox の validation.pattern。空は付けない */
+	pattern?: string;
 };
 
 /**
@@ -248,8 +252,21 @@ function shapePrimeFacesField(field: Record<string, unknown>): PrimeFacesFieldSh
 			cols: asFiniteNumber(source.cols),
 			maxlength: asFiniteNumber(validation.maxlength) ?? asFiniteNumber(source.maxlength)
 		};
-	} else if (type === 'textbox' || type === 'number') {
-		shaped = { ...common, type };
+	} else if (type === 'textbox') {
+		const validation =
+			source.validation !== null &&
+			typeof source.validation === 'object' &&
+			!Array.isArray(source.validation)
+				? (source.validation as Record<string, unknown>)
+				: {};
+		const pattern = asNonEmptyString(validation.pattern);
+		shaped = {
+			...common,
+			type: 'textbox',
+			...(pattern ? { pattern } : {})
+		};
+	} else if (type === 'number') {
+		shaped = { ...common, type: 'number' };
 	} else if (type === 'label') {
 		shaped = { ...common, type: 'label' };
 	} else if (SELECT_TYPES.has(type)) {
@@ -285,8 +302,27 @@ function shapePrimeFacesField(field: Record<string, unknown>): PrimeFacesFieldSh
 	// WARN: 残余を先に spread する。IR が所有するキーは必ず後勝ちにする。
 	return {
 		...readTargetResidual(external, PRIMEFACES_TARGET_ID),
-		...shaped
+		...withLiteralDefault(shaped, source)
 	} as PrimeFacesFieldShape;
+}
+
+/**
+ * リテラルの defaultValue をテンプレート用の文字列にする
+ *
+ * WARN: 空文字と配列（複数選択）は出さない。`0` は `"0"` にして Handlebars の falsy を避ける。
+ */
+function withLiteralDefault(
+	shaped: PrimeFacesFieldShape,
+	source: Record<string, unknown>
+): PrimeFacesFieldShape {
+	const value = source.defaultValue;
+	if (typeof value === 'number' && Number.isFinite(value)) {
+		return { ...shaped, defaultValue: String(value) };
+	}
+	if (typeof value === 'string' && value !== '') {
+		return { ...shaped, defaultValue: value };
+	}
+	return shaped;
 }
 
 /**
