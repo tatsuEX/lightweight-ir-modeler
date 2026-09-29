@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Datepicker, Input, Timepicker } from 'flowbite-svelte';
+	import { Datepicker, Input, Timepicker, Toggle } from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
 	import type { EditorComponent } from '$lib/ir/elements/component-schema';
 	import {
@@ -11,8 +11,8 @@
 		parseOptionalNumber
 	} from '$lib/utils/date-time-ir';
 
-	/** Validation 固定スロット（0..2） */
-	export type ValidationSlot = 0 | 1 | 2;
+	/** Validation 固定スロット（0..3） */
+	export type ValidationSlot = 0 | 1 | 2 | 3;
 
 	type Props = {
 		component: EditorComponent;
@@ -70,10 +70,14 @@
 	const showTextboxPattern = $derived(slotId === 0 && component.type === 'textbox');
 	const showTextboxMinlength = $derived(slotId === 1 && component.type === 'textbox');
 	const showTextboxMaxlength = $derived(slotId === 2 && component.type === 'textbox');
+	const showTextareaMinlength = $derived(slotId === 1 && component.type === 'textarea');
 	const showTextareaMaxlength = $derived(slotId === 0 && component.type === 'textarea');
 	const showNumberMin = $derived(slotId === 0 && component.type === 'number');
 	const showNumberMax = $derived(slotId === 1 && component.type === 'number');
 	const showNumberScale = $derived(slotId === 2 && component.type === 'number');
+	const showNumberStep = $derived(slotId === 3 && component.type === 'number');
+	const showDateSpanRequiredFrom = $derived(slotId === 2 && component.type === 'date-span');
+	const showDateSpanRequiredTo = $derived(slotId === 3 && component.type === 'date-span');
 	const showDateMin = $derived(
 		slotId === 0 && (component.type === 'datepicker' || component.type === 'date-span')
 	);
@@ -89,10 +93,14 @@
 		showTextboxPattern ||
 			showTextboxMinlength ||
 			showTextboxMaxlength ||
+			showTextareaMinlength ||
 			showTextareaMaxlength ||
 			showNumberMin ||
 			showNumberMax ||
 			showNumberScale ||
+			showNumberStep ||
+			showDateSpanRequiredFrom ||
+			showDateSpanRequiredTo ||
 			showDateMin ||
 			showDateMax ||
 			showTimeMin ||
@@ -120,6 +128,22 @@
 		</span>
 	</div>
 {:else if showTextboxMinlength && component.type === 'textbox'}
+	<div>
+		<p class={fieldLabelClass}>minlength</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Input
+				type="text"
+				size="sm"
+				pattern="(0|[1-9]\d+)"
+				aria-label="{component.type} の minlength"
+				bind:value={component.validation.minlength}
+			/>
+		</span>
+	</div>
+{:else if showTextareaMinlength && component.type === 'textarea'}
 	<div>
 		<p class={fieldLabelClass}>minlength</p>
 		<span
@@ -217,6 +241,55 @@
 						}
 					}
 				}
+			/>
+		</span>
+	</div>
+{:else if showNumberStep && component.type === 'number'}
+	<div>
+		<p class={fieldLabelClass}>step</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Input
+				type="text"
+				size="sm"
+				pattern="[0-9]+(\.[0-9]+)?"
+				aria-label="{component.type} の step"
+				bind:value={
+					() => component.validation.step,
+					(value) => {
+						if (component.type === 'number') {
+							component.validation.step = parseOptionalNumber(value) ?? 1;
+						}
+					}
+				}
+			/>
+		</span>
+	</div>
+{:else if showDateSpanRequiredFrom && component.type === 'date-span'}
+	<div>
+		<p class={fieldLabelClass}>requiredFrom</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Toggle
+				aria-label="{component.type} の開始日必須"
+				bind:checked={component.validation.requiredFrom}
+			/>
+		</span>
+	</div>
+{:else if showDateSpanRequiredTo && component.type === 'date-span'}
+	<div>
+		<p class={fieldLabelClass}>requiredTo</p>
+		<span
+			class="contents"
+			use:arrowNavigation={{ field: fieldName, row: rowIndex, fieldGroup: FIELD_GROUP }}
+		>
+			<Toggle
+				aria-label="{component.type} の終了日必須"
+				bind:checked={component.validation.requiredTo}
 			/>
 		</span>
 	</div>

@@ -3,9 +3,11 @@ import {
 	DEFAULT_IR_AUTO_SAVE_DELAY,
 	type IrAutoSaveConfig
 } from '$lib/config/application-types';
+import type { SnapshotSchemaBlock } from '$lib/ir/snapshot-schema-block';
 import { createEmptyUiDefinitionMeta, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { readLatestSnapshotIfEnabled } from '$lib/server/io/ir-snapshot-io';
+import { toSnapshotSchemaBlock } from '$lib/server/io/snapshot-http-error';
 import type { LayoutServerLoad } from './$types';
 
 /**
@@ -43,7 +45,8 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		initialComments: {} as Record<string, string>,
 		layoutEditor,
 		preview,
-		uiDefinition: defaultUiDefinition
+		uiDefinition: defaultUiDefinition,
+		schemaBlock: null as SnapshotSchemaBlock | null
 	};
 
 	if (!autoSave?.enabled) {
@@ -56,21 +59,43 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	};
 
 	if (logicalIdParam && isValidLogicalId(logicalIdParam)) {
-		const latest = await readLatestSnapshotIfEnabled(logicalIdParam);
+		try {
+			const latest = await readLatestSnapshotIfEnabled(logicalIdParam);
 
-		if (latest) {
-			const editorMeta = latest.uiDefinition
-				? toEditorMeta(latest.uiDefinition)
-				: { ...defaultUiDefinition, logicalId: logicalIdParam };
+			if (latest) {
+				const editorMeta = latest.uiDefinition
+					? toEditorMeta(latest.uiDefinition)
+					: { ...defaultUiDefinition, logicalId: logicalIdParam };
+
+				return {
+					autoSave: enabledAutoSave,
+					initialSnapshot: latest.components,
+					initialUiDefinition: editorMeta,
+					initialComments: latest.comments,
+					layoutEditor,
+					preview,
+					uiDefinition: editorMeta,
+					schemaBlock: null
+				};
+			}
+		} catch (error) {
+			const schema = toSnapshotSchemaBlock(error);
+			if (!schema) {
+				throw error;
+			}
 
 			return {
 				autoSave: enabledAutoSave,
-				initialSnapshot: latest.components,
-				initialUiDefinition: editorMeta,
-				initialComments: latest.comments,
+				initialSnapshot: null,
+				initialUiDefinition: null,
+				initialComments: {},
 				layoutEditor,
 				preview,
-				uiDefinition: editorMeta
+				uiDefinition: {
+					...defaultUiDefinition,
+					logicalId: logicalIdParam
+				},
+				schemaBlock: schema.block
 			};
 		}
 
@@ -84,7 +109,8 @@ export const load: LayoutServerLoad = async ({ url }) => {
 			uiDefinition: {
 				...defaultUiDefinition,
 				logicalId: logicalIdParam
-			}
+			},
+			schemaBlock: null
 		};
 	}
 
@@ -95,6 +121,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		initialComments: {},
 		layoutEditor,
 		preview,
-		uiDefinition: defaultUiDefinition
+		uiDefinition: defaultUiDefinition,
+		schemaBlock: null
 	};
 };

@@ -6,6 +6,7 @@ import {
 	hasExportedDefinition,
 	readExportedDefinition
 } from '$lib/server/io/definition-export-io';
+import { toSnapshotSchemaBlock } from '$lib/server/io/snapshot-http-error';
 import { exportFromLatestSnapshot } from '$lib/server/ui/export-pipeline';
 import { resolveExportTargetBundle } from '$lib/server/ui/export-target-registry';
 import { getLogger } from '$lib/server/logging/logger';
@@ -58,6 +59,10 @@ export const GET: RequestHandler = async ({ params }) => {
 			}
 		});
 	} catch (error) {
+		const schema = toSnapshotSchemaBlock(error);
+		if (schema) {
+			return json(schema.block, { status: schema.status });
+		}
 		if (error instanceof RawValidationError) {
 			return json(
 				{ error: error.message, target: error.targetId, issues: error.issues },

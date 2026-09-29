@@ -14,10 +14,12 @@
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
 	import { getToastContext } from '$lib/store/toast/toast.svelte';
-	import {
+	import { requestSchemaConsent } from '$lib/store/layout-editor/schema-migration-consent.svelte';
+import {
 		fetchPublishedVersions,
 		loadWorkingSnapshotFromVersion,
 		publishWorkingSnapshot,
+		SnapshotSchemaRequestError,
 		type LoadedWorkingSnapshot,
 		type PublishedVersionsListing
 	} from '$lib/store/layout-editor/snapshot-version-client';
@@ -216,6 +218,20 @@
 			await refreshListing(uiDefinition.meta.logicalId, result.version);
 			toast.info('確定しました', publishedLabel);
 		} catch (error) {
+			if (error instanceof SnapshotSchemaRequestError && error.block.code === 'schema-consent') {
+				requestSchemaConsent(
+					{
+						logicalId: uiDefinition.meta.logicalId,
+						rationales: error.block.rationales,
+						schemaVersion: error.block.schemaVersion,
+						latest: error.block.latest
+					},
+					() => {
+						void publishWithKind(kind);
+					}
+				);
+				return;
+			}
 			const detail = error instanceof Error ? error.message : String(error);
 			toast.error('確定に失敗しました', detail);
 		} finally {
@@ -255,6 +271,22 @@
 			await refreshListing(uiDefinition.meta.logicalId, selectedVersion);
 			toast.info('過去版を読み込みました', `${loadedLabel}（history をリセット）`);
 		} catch (error) {
+			if (error instanceof SnapshotSchemaRequestError && error.block.code === 'schema-consent') {
+				const version = selectedVersion;
+				requestSchemaConsent(
+					{
+						logicalId: uiDefinition.meta.logicalId,
+						rationales: error.block.rationales,
+						schemaVersion: error.block.schemaVersion,
+						latest: error.block.latest
+					},
+					() => {
+						selectedVersion = version;
+						void handleLoadVersion();
+					}
+				);
+				return;
+			}
 			const detail = error instanceof Error ? error.message : String(error);
 			toast.error('過去版の読込に失敗しました', detail);
 		} finally {

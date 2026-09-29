@@ -5,6 +5,7 @@
 	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
 	import SnapshotVersionControls from '$lib/components/SnapshotVersionControls.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
+	import type { SnapshotSchemaBlock } from '$lib/ir/snapshot-schema-block';
 	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
 	import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
 	import { formatPublishedVersionLabel } from '$lib/ir/snapshot-version';
@@ -12,6 +13,10 @@
 	import { getLayoutEditorConfigContext } from '$lib/store/layout-editor/layout-editor-config.svelte';
 	import { getUIDefinitionContext } from '$lib/store/layout-editor/layout-editor.svelte';
 	import { getSnapshotCommentsContext } from '$lib/store/layout-editor/snapshot-comments.svelte';
+	import {
+		blockSchemaMigrationSave,
+		requestSchemaConsent
+	} from '$lib/store/layout-editor/schema-migration-consent.svelte';
 	import { getToastContext } from '$lib/store/toast/toast.svelte';
 	import {
 		setSnapshotDirConfirmSkippedByUser,
@@ -97,6 +102,25 @@
 	}
 
 	/**
+	 * schemaVersion 失敗の JSON を読む
+	 */
+	function readSchemaBlock(value: unknown): SnapshotSchemaBlock | null {
+		if (value === null || typeof value !== 'object') {
+			return null;
+		}
+		const code = (value as { code?: unknown }).code;
+		if (
+			code !== 'schema-future' &&
+			code !== 'schema-unreadable' &&
+			code !== 'schema-no-path' &&
+			code !== 'schema-consent'
+		) {
+			return null;
+		}
+		return value as SnapshotSchemaBlock;
+	}
+
+	/**
 	 * logicalId 変更確定後、当該 snapshot ディレクトリから UI 定義を復元する
 	 */
 	async function restoreFromSnapshotDirectory(logicalId: string): Promise<void> {
@@ -111,8 +135,28 @@
 				return;
 			}
 			if (!response.ok) {
+				const body = await response.json().catch(() => null);
+				const block = readSchemaBlock(body);
+				if (block) {
+					blockSchemaMigrationSave(logicalId);
+					if (block.code === 'schema-consent') {
+						requestSchemaConsent({
+							logicalId,
+							rationales: block.rationales,
+							schemaVersion: block.schemaVersion,
+							latest: block.latest
+						});
+						return;
+					}
+					toast.error('snapshot の復元に失敗しました', block.error);
+					return;
+				}
 				console.warn('[UiDefinitionMetaAccordion] failed to restore snapshot:', response.status);
-				toast.error('snapshot の復元に失敗しました', `HTTP ${response.status}`);
+				const detail =
+					body !== null && typeof body === 'object' && typeof (body as { error?: unknown }).error === 'string'
+						? (body as { error: string }).error
+						: `HTTP ${response.status}`;
+				toast.error('snapshot の復元に失敗しました', detail);
 				return;
 			}
 

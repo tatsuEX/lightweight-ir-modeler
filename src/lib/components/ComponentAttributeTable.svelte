@@ -75,7 +75,7 @@
 	const DETAILS_SLOTS: DetailsSlot[] = [0, 1, 2];
 
 	/** Validation 固定スロット */
-	const VALIDATION_SLOTS: ValidationSlot[] = [0, 1, 2];
+	const VALIDATION_SLOTS: ValidationSlot[] = [0, 1, 2, 3];
 
 	/** boolean 列フィルタ（すべて / ON / OFF） */
 	type BooleanFilterValue = 'all' | 'on' | 'off';
