@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Datepicker, Input, Timepicker, Toggle } from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
+	import ValidationFieldShell from '$lib/components/ValidationFieldShell.svelte';
 	import type { EditorComponent } from '$lib/ir/elements/component-schema';
 	import {
 		closeDatepickerOnFocusOut,
@@ -10,6 +11,12 @@
 		parseDateTimeParts,
 		parseOptionalNumber
 	} from '$lib/utils/date-time-ir';
+	import { editorFieldMode } from '$lib/config/ui-definition-validation-config';
+	import {
+		slotIssuePath,
+		validationSlotField
+	} from '$lib/ir/ui-definition-validation/validate-ui-definition';
+	import { getUiDefinitionValidationContext } from '$lib/store/layout-editor/ui-definition-validation.svelte';
 
 	/** Validation 固定スロット（0..3） */
 	export type ValidationSlot = 0 | 1 | 2 | 3;
@@ -108,8 +115,20 @@
 			showDateTimeMin ||
 			showDateTimeMax
 	);
+	const validationState = getUiDefinitionValidationContext();
+	const domainField = $derived(validationSlotField(component.type, slotId));
+	const fieldMode = $derived(
+		domainField ? editorFieldMode(validationState.profile, component.type, domainField) : 'editable'
+	);
+	const issuePath = $derived(
+		domainField ? slotIssuePath(component.id, domainField, 'validation') : ''
+	);
 </script>
 
+{#if fieldMode === 'hidden'}
+	<span class={notSupportedClass}>- not supported -</span>
+{:else}
+	<ValidationFieldShell path={issuePath} mode={fieldMode}>
 {#if !supported}
 	<span class={notSupportedClass}>- not supported -</span>
 {:else if showTextboxPattern && component.type === 'textbox'}
@@ -489,4 +508,6 @@
 			</span>
 		</div>
 	</div>
+{/if}
+	</ValidationFieldShell>
 {/if}

@@ -26,6 +26,7 @@
 		type ValidationSlot
 	} from '$lib/components/ComponentValidationCell.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
+	import ValidationFieldShell from '$lib/components/ValidationFieldShell.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import { componentCommentKey } from '$lib/ir/snapshot-comment-map';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
@@ -651,14 +652,16 @@
 						</TableBodyCell>
 						<!-- ID (論理:logicalId) 列 -->
 						<TableBodyCell class={cellClass}>
-							<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
-								<Input
-									size="sm"
-									placeholder="ID"
-									aria-label="{component.type} のID"
-									bind:value={component.logicalId}
-								/>
-							</span>
+							<ValidationFieldShell path="components/{component.id}/logicalId">
+								<span class="contents" use:arrowNavigation={{ field: 'logicalId', row: rowIndex }}>
+									<Input
+										size="sm"
+										placeholder="ID"
+										aria-label="{component.type} のID"
+										bind:value={component.logicalId}
+									/>
+								</span>
+							</ValidationFieldShell>
 						</TableBodyCell>
 						<!-- UIコンポーネント種別 列 -->
 						<TableBodyCell class={cellClass}>
@@ -666,14 +669,16 @@
 						</TableBodyCell>
 						<!-- 表示ラベル 列 -->
 						<TableBodyCell class={cellClass}>
-							<span class="contents" use:arrowNavigation={{ field: 'label', row: rowIndex }}>
-								<Input
-									size="sm"
-									placeholder="表示ラベル"
-									aria-label="{component.type} のラベル"
-									bind:value={component.label}
-								/>
-							</span>
+							<ValidationFieldShell path="components/{component.id}/label">
+								<span class="contents" use:arrowNavigation={{ field: 'label', row: rowIndex }}>
+									<Input
+										size="sm"
+										placeholder="表示ラベル"
+										aria-label="{component.type} のラベル"
+										bind:value={component.label}
+									/>
+								</span>
+							</ValidationFieldShell>
 						</TableBodyCell>
 
 						{#if columnGroup === 'basic'}

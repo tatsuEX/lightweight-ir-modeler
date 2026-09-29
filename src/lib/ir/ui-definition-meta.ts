@@ -258,10 +258,12 @@ export function buildPublishedSnapshotMeta(
 
 /**
  * logicalId が snapshot ディレクトリ名として安全か判定する
+ *
+ * 英数字と `-` `_` `#` のみ。先頭英字は要求しない。
  */
 export function isValidLogicalId(value: string): boolean {
 	const trimmed = value.trim();
-	return trimmed.length > 0 && /^[a-zA-Z][a-zA-Z0-9_-]*$/.test(trimmed);
+	return /^[A-Za-z0-9_#-]+$/.test(trimmed);
 }
 
 /**

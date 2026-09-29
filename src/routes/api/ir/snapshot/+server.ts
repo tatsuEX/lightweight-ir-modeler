@@ -1,5 +1,9 @@
 import { json } from '@sveltejs/kit';
-import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
+import { nanoid } from 'nanoid';
+import { SYSTEM_ID_LENGTH } from '$lib/ir/elements/factories';
+import { hydrateEditorComponent } from '$lib/ir/elements/component-schema';
+import { isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
+import { validateUiDefinition } from '$lib/ir/ui-definition-validation/validate-ui-definition';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
 import { toSnapshotSchemaBlock } from '$lib/server/io/snapshot-http-error';
@@ -101,8 +105,32 @@ export const POST: RequestHandler = async ({ request }) => {
 	const uiDefinitionRecord = uiDefinitionRaw as Record<string, unknown>;
 	const editorMeta = parseEditorMetaFromRecord(uiDefinitionRecord);
 
-	if (!isUiDefinitionMetaReady(editorMeta) || !isValidLogicalId(editorMeta.logicalId)) {
-		return json({ error: 'uiDefinition.logicalId and uiDefinition.name are required' }, { status: 400 });
+	let editorComponents;
+	try {
+		editorComponents = components.map((value) => {
+			const existingId =
+				value !== null &&
+				typeof value === 'object' &&
+				!Array.isArray(value) &&
+				typeof (value as { id?: unknown }).id === 'string'
+					? (value as { id: string }).id.trim()
+					: '';
+			return hydrateEditorComponent(value, existingId !== '' ? existingId : nanoid(SYSTEM_ID_LENGTH));
+		});
+	} catch {
+		return json({ error: 'components must be editable UI definition components' }, { status: 400 });
+	}
+
+	const validation = validateUiDefinition(
+		editorMeta,
+		editorComponents,
+		config.uiDefinition.validation
+	);
+	if (!validation.ok) {
+		return json(
+			{ error: 'uiDefinition validation failed', issues: validation.issues },
+			{ status: 400 }
+		);
 	}
 
 	let comments;

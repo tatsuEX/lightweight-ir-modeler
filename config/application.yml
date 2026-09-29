@@ -24,6 +24,13 @@ layoutEditor:
   clientSession:
     maxLifetimeMs: 43200000
 
+# UIDefinition の整合性検証。種類名は uiDefinition（Layout IR 等とは混ぜない）
+# auto-save が無効なときの debounce（ms）。有効なときは auto-save の直前に検証し、この delay は使わない
+# =================================================================================================
+uiDefinition:
+  validation:
+    delay: 500
+
 # プレビュー画面: テーマ選択と外部 UI 定義の出力先
 # =================================================================================================
 preview:

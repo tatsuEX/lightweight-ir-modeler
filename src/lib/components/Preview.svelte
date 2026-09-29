@@ -14,6 +14,7 @@
 		saveBlobAsFile
 	} from '$lib/store/layout-editor/ui-export-client';
 	import { getToastContext } from '$lib/store/toast/toast.svelte';
+	import { formatIssuesDetail, IssuesError } from '$lib/utils/validation-issue-notify';
 
 	const uiDefinition = getUIDefinitionContext();
 	const toast = getToastContext();
@@ -58,8 +59,15 @@
 			const result = await exportClient.export(uiDefinition);
 			toast.info('出力しました', result.relativePath);
 		} catch (error) {
-			const detail = error instanceof Error ? error.message : '出力に失敗しました';
-			toast.error('出力に失敗しました', detail);
+			if (error instanceof IssuesError) {
+				toast.error(
+					`出力検証エラーが ${error.issues.length} 件あります`,
+					formatIssuesDetail(error.issues)
+				);
+			} else {
+				const detail = error instanceof Error ? error.message : '出力に失敗しました';
+				toast.error('出力に失敗しました', detail);
+			}
 		} finally {
 			busy = false;
 		}

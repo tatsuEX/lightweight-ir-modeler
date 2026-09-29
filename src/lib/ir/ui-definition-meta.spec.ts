@@ -21,9 +21,13 @@ describe('ui-definition-meta', () => {
 
 	it('validates logicalId', () => {
 		expect(isValidLogicalId('userRegistration')).toBe(true);
+		expect(isValidLogicalId('1screen')).toBe(true);
+		expect(isValidLogicalId('screen#1')).toBe(true);
+		expect(isValidLogicalId('a-b_c')).toBe(true);
 		expect(isValidLogicalId('')).toBe(false);
-		expect(isValidLogicalId('1invalid')).toBe(false);
 		expect(isValidLogicalId('../escape')).toBe(false);
+		expect(isValidLogicalId('a/b')).toBe(false);
+		expect(isValidLogicalId('a b')).toBe(false);
 	});
 
 	it('checks required meta fields', () => {

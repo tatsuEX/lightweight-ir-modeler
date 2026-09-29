@@ -1,5 +1,6 @@
 import type { PersistedComponent } from '$lib/ir/elements/component-schema';
 import type { ImportedDefinition } from '$lib/transform/imported-definition';
+import { IssuesError } from '$lib/utils/validation-issue-notify';
 
 /**
  * 外部 UI 定義ファイル取り込みポート（target 別）
@@ -28,6 +29,8 @@ export class HttpUiImportClient implements UiImportClient {
 
 	/**
 	 * POST /api/ui/import へ multipart 送信して IR を取得する
+	 *
+	 * WARN: 検証失敗時は先頭 1 件だけを投げず、issues 全件を IssuesError に載せる。
 	 */
 	async importDefinition(file: File): Promise<ImportedDefinition> {
 		const form = new FormData();
@@ -43,10 +46,11 @@ export class HttpUiImportClient implements UiImportClient {
 		};
 
 		if (!response.ok) {
-			const issueSummary = payload.issues?.[0]
-				? `${payload.issues[0].path}: ${payload.issues[0].message}`
-				: undefined;
-			throw new Error(issueSummary ?? payload.error ?? `import failed (${response.status})`);
+			const issues = payload.issues ?? [];
+			if (issues.length > 0) {
+				throw new IssuesError(`取り込み検証エラーが ${issues.length} 件あります`, issues);
+			}
+			throw new Error(payload.error ?? `import failed (${response.status})`);
 		}
 
 		if (!payload.uiDefinition || !Array.isArray(payload.components)) {

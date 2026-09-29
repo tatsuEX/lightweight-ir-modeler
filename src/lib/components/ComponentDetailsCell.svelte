@@ -2,7 +2,9 @@
 	import { Checkbox, Datepicker, Input, Radio, Textarea, Timepicker, Tooltip } from 'flowbite-svelte';
 	import { arrowNavigation } from '$lib/action/arrowNavigation';
 	import TagsInput from '$lib/components/TagsInput.svelte';
+	import ValidationFieldShell from '$lib/components/ValidationFieldShell.svelte';
 	import { DEFAULT_ITEM_DELIMITER } from '$lib/config/layout-editor-config';
+	import { editorFieldMode } from '$lib/config/ui-definition-validation-config';
 	import {
 		isSelectEditorComponent,
 		toSelectItems,
@@ -17,6 +19,11 @@
 		parseDateTimeParts,
 		parseOptionalNumber
 	} from '$lib/utils/date-time-ir';
+	import {
+		detailsSlotField,
+		slotIssuePath
+	} from '$lib/ir/ui-definition-validation/validate-ui-definition';
+	import { getUiDefinitionValidationContext } from '$lib/store/layout-editor/ui-definition-validation.svelte';
 
 	/** Details 固定スロット（Validation と同様、列位置に type 別フィールドを載せる） */
 	export type DetailsSlot = 0 | 1 | 2;
@@ -167,8 +174,18 @@
 	const showRows = $derived(slotId === 2 && component.type === 'textarea');
 	const supported = $derived(showDefaultValue || showItems || showFormat || showCols || showRows);
 	const selectItems = $derived(isSelectEditorComponent(component) ? toSelectItems(component.items) : []);
+	const validationState = getUiDefinitionValidationContext();
+	const domainField = $derived(detailsSlotField(component.type, slotId));
+	const fieldMode = $derived(
+		domainField ? editorFieldMode(validationState.profile, component.type, domainField) : 'editable'
+	);
+	const issuePath = $derived(domainField ? slotIssuePath(component.id, domainField, 'details') : '');
 </script>
 
+{#if fieldMode === 'hidden'}
+	<span class={notSupportedClass}>- not supported -</span>
+{:else}
+	<ValidationFieldShell path={issuePath} mode={fieldMode}>
 {#if !supported}
 	<span class={notSupportedClass}>- not supported -</span>
 {:else if showDefaultValue && component.type === 'textbox'}
@@ -540,4 +557,6 @@
 			/>
 		</span>
 	</div>
+{/if}
+	</ValidationFieldShell>
 {/if}

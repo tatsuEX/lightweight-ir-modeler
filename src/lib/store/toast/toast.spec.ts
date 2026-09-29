@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_TOAST_DELAY_MS, ToastMessages } from './toast.svelte';
+import {
+	DEFAULT_TOAST_DELAY_MS,
+	ERROR_TOAST_DELAY_MS,
+	ToastMessages
+} from './toast.svelte';
 
 describe('ToastMessages', () => {
 	let toast: ToastMessages;
@@ -35,7 +39,7 @@ describe('ToastMessages', () => {
 		expect(toast.messages[1]?.detail).toBe('permission denied');
 	});
 
-	it('removes a non-sticky message after the default delay', () => {
+	it('removes a non-sticky info message after the default delay', () => {
 		toast.info('一時メッセージ');
 		expect(toast.messages).toHaveLength(1);
 
@@ -46,10 +50,21 @@ describe('ToastMessages', () => {
 		expect(toast.messages).toHaveLength(0);
 	});
 
+	it('keeps an error message until the longer error delay', () => {
+		toast.error('入力エラー');
+		expect(toast.messages).toHaveLength(1);
+
+		vi.advanceTimersByTime(ERROR_TOAST_DELAY_MS - 1);
+		expect(toast.messages).toHaveLength(1);
+
+		vi.advanceTimersByTime(1);
+		expect(toast.messages).toHaveLength(0);
+	});
+
 	it('keeps a sticky message until dismiss', () => {
 		toast.add({ severity: 'info', summary: '固定', sticky: true });
 
-		vi.advanceTimersByTime(DEFAULT_TOAST_DELAY_MS * 2);
+		vi.advanceTimersByTime(ERROR_TOAST_DELAY_MS * 2);
 		expect(toast.messages).toHaveLength(1);
 
 		const id = toast.messages[0]?.id;
@@ -87,7 +102,7 @@ describe('ToastMessages', () => {
 		toast.clear();
 
 		expect(toast.messages).toHaveLength(0);
-		vi.advanceTimersByTime(DEFAULT_TOAST_DELAY_MS);
+		vi.advanceTimersByTime(ERROR_TOAST_DELAY_MS);
 		expect(toast.messages).toHaveLength(0);
 	});
 });

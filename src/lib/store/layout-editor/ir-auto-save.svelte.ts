@@ -43,11 +43,18 @@ function buildSaveMeta(uiDefinition: UIDefinition): UiDefinitionEditorMeta {
 /**
  * IR（meta + components）の比較用ハッシュを生成する
  */
-function buildIrHash(uiDefinition: UIDefinition): string {
+export function hashUiDefinitionIr(uiDefinition: UIDefinition): string {
 	return JSON.stringify({
 		uiDefinition: buildSaveMeta(uiDefinition),
 		components: uiDefinition.components
 	});
+}
+
+/**
+ * IR（meta + components）の比較用ハッシュを生成する
+ */
+function buildIrHash(uiDefinition: UIDefinition): string {
+	return hashUiDefinitionIr(uiDefinition);
 }
 
 /**
@@ -117,12 +124,14 @@ function isSnapshotSchemaBlock(value: unknown): value is SnapshotSchemaBlock {
  * 編集途絶え後に snapshot API へ POST する debounce を UIDefinition とコメント store に接続する
  *
  * IR 変化は `delay`、コメント map のみは `delay + commentDelayExtra`。両方変わるときは短い方に合流する。
+ * `beforeWrite` が false を返したときは current / history を更新しない。
  */
 export function attachIrAutoSave(
 	uiDefinition: UIDefinition,
 	comments: SnapshotComments,
 	options: IrAutoSaveOptions,
-	checkpoint: AutoSaveCheckpoint
+	checkpoint: AutoSaveCheckpoint,
+	beforeWrite?: () => boolean
 ): void {
 	if (!options.enabled) {
 		return;
@@ -140,6 +149,10 @@ export function attachIrAutoSave(
 		void (async () => {
 			// 保存済み hash が変化していない場合は保存しない
 			if (irHash === lastSavedIrHash && commentsHash === lastSavedCommentsHash) {
+				return;
+			}
+
+			if (beforeWrite && !beforeWrite()) {
 				return;
 			}
 

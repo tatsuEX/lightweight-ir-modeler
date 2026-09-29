@@ -17,8 +17,17 @@ export class RawValidationError extends Error {
 	 * Raw 検証エラーを生成する
 	 */
 	constructor(targetId: string, issues: RawValidationIssue[]) {
-		const summary = issues[0]?.message ?? 'RawDefinition validation failed';
-		super(issues.length > 1 ? `${summary}（他 ${issues.length - 1} 件）` : summary);
+		const summary =
+			issues.length === 0
+				? 'RawDefinition validation failed'
+				: issues.length === 1
+					? (issues[0]?.message ?? 'RawDefinition validation failed')
+					: `Raw 検証エラーが ${issues.length} 件あります`;
+		super(
+			issues.length <= 1
+				? summary
+				: `${summary}\n${issues.map((issue) => `・${issue.path}: ${issue.message}`).join('\n')}`
+		);
 		this.name = 'RawValidationError';
 		this.targetId = targetId;
 		this.issues = issues;

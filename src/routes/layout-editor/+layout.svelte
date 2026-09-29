@@ -37,6 +37,7 @@
 			{session}
 			autoSave={data.autoSave}
 			layoutEditor={data.layoutEditor}
+			uiDefinitionValidation={data.uiDefinitionValidation}
 			schemaBlock={data.schemaBlock}
 		>
 			<div class="mb-4 shrink-0">

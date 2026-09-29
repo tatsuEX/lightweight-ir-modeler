@@ -1,5 +1,6 @@
 import type { UIDefinition } from '$lib/ir/ui-definition';
 import { toVendorExportMeta } from '$lib/ir/ui-definition-meta';
+import { IssuesError } from '$lib/utils/validation-issue-notify';
 
 /**
  * 明示出力 API の成功レスポンス
@@ -48,6 +49,8 @@ export class HttpUiExportClient implements UiExportClient {
 
 	/**
 	 * 編集中 IR を POST /api/ui/export で出力する
+	 *
+	 * WARN: 検証失敗時は先頭 1 件だけを投げず、issues 全件を IssuesError に載せる。
 	 */
 	async export(ui: UIDefinition): Promise<UiExportResult> {
 		const response = await fetch('/api/ui/export', {
@@ -71,10 +74,11 @@ export class HttpUiExportClient implements UiExportClient {
 		};
 
 		if (!response.ok) {
-			const issueSummary = payload.issues?.[0]
-				? `${payload.issues[0].path}: ${payload.issues[0].message}`
-				: undefined;
-			throw new Error(issueSummary ?? payload.error ?? `export failed (${response.status})`);
+			const issues = payload.issues ?? [];
+			if (issues.length > 0) {
+				throw new IssuesError(`出力検証エラーが ${issues.length} 件あります`, issues);
+			}
+			throw new Error(payload.error ?? `export failed (${response.status})`);
 		}
 
 		return {

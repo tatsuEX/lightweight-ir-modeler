@@ -24,12 +24,15 @@
 		snapshotDirectoryExists
 	} from '$lib/store/layout-editor/snapshot-dir-confirm';
 	import { getToastContext } from '$lib/store/toast/toast.svelte';
+	import { getUiDefinitionValidationContext } from '$lib/store/layout-editor/ui-definition-validation.svelte';
+	import { IssuesError, issuesFromUnknown, type NotifyIssue } from '$lib/utils/validation-issue-notify';
 
 	const uiDefinition = getUIDefinitionContext();
 	const snapshotComments = getSnapshotCommentsContext();
 	const transformTarget = getTransformTargetContext();
 	const layoutEditorConfig = getLayoutEditorConfigContext();
 	const toast = getToastContext();
+	const validationState = getUiDefinitionValidationContext();
 
 	// WARN: Reader 未実装の target は選ばせない。選択肢は import クライアント registry で絞り込む。
 	const targetItems: SelectOptionType<string>[] = transformTarget.target.filter((item) =>
@@ -40,6 +43,7 @@
 	let selectedTarget = $state<string>(targetItems[0]?.value ?? '');
 	let files = $state<FileList | undefined>();
 	let errorMessage = $state('');
+	let errorIssues = $state<NotifyIssue[]>([]);
 	let busy = $state(false);
 
 	let confirmOpen = $state(false);
@@ -56,6 +60,7 @@
 	 */
 	function openImport(): void {
 		errorMessage = '';
+		errorIssues = [];
 		files = undefined;
 		pendingImported = null;
 		confirmOpen = false;
@@ -74,7 +79,10 @@
 			rekeyActiveSessionFromMeta();
 			snapshotComments.clear();
 			toast.info('定義を取り込みました', imported.uiDefinition.logicalId);
+			// WARN: 取り込み直後に全 issue を一度に publish する。1 件ずつ赤くしない。
+			validationState.revalidate();
 		} catch (error) {
+			errorIssues = issuesFromUnknown(error);
 			errorMessage = error instanceof Error ? error.message : '取り込み結果の反映に失敗しました';
 			open = true;
 		}
@@ -90,6 +98,7 @@
 
 		busy = true;
 		errorMessage = '';
+		errorIssues = [];
 		try {
 			const imported = await importClient.importDefinition(selectedFile);
 			const logicalId = imported.uiDefinition.logicalId.trim();
@@ -112,7 +121,12 @@
 			confirmInitialId = logicalId;
 			confirmOpen = true;
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : '取り込みに失敗しました';
+			errorIssues = issuesFromUnknown(error);
+			if (error instanceof IssuesError) {
+				errorMessage = `取り込み検証エラーが ${error.issues.length} 件あります`;
+			} else {
+				errorMessage = error instanceof Error ? error.message : '取り込みに失敗しました';
+			}
 		} finally {
 			busy = false;
 		}
@@ -163,7 +177,16 @@
 			で自動保存されます。
 		</Alert>
 
-		{#if errorMessage}
+		{#if errorIssues.length > 0}
+			<Alert color="red" role="alert">
+				<p class="font-medium">{errorMessage}</p>
+				<ul class="mt-2 list-disc space-y-1 pl-5 text-sm">
+					{#each errorIssues as issue (`${issue.path}:${issue.message}`)}
+						<li><span class="font-mono text-xs">{issue.path}</span>: {issue.message}</li>
+					{/each}
+				</ul>
+			</Alert>
+		{:else if errorMessage}
 			<Alert color="red" role="alert">{errorMessage}</Alert>
 		{/if}
 

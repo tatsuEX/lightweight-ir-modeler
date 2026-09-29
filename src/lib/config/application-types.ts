@@ -1,6 +1,7 @@
 import type { LayoutEditorConfig } from '$lib/config/layout-editor-config';
 import type { LoggingConfig } from '$lib/config/logging-config';
 import type { PreviewConfig } from '$lib/config/preview-config';
+import type { UiDefinitionValidationProfile } from '$lib/config/ui-definition-validation-config';
 
 /** IR 自動保存の既定 debounce（ms）。Property / Layout 向け */
 export const DEFAULT_IR_AUTO_SAVE_DELAY = 500;
@@ -59,4 +60,7 @@ export type ApplicationConfig = {
 	layoutEditor: LayoutEditorConfig;
 	preview: PreviewConfig;
 	logging: LoggingConfig;
+	uiDefinition: {
+		validation: UiDefinitionValidationProfile;
+	};
 };

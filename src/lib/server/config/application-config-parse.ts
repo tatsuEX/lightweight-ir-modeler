@@ -27,6 +27,7 @@ import {
 	type PreviewSelectConfig,
 	type PreviewSelectOption
 } from '$lib/config/preview-config';
+import { parseUiDefinitionValidationConfig } from '$lib/config/ui-definition-validation-config';
 import { parseYaml } from '$lib/utils/yaml-document';
 
 /**
@@ -506,7 +507,10 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 		app: io ? { name, io } : { name },
 		layoutEditor: parseLayoutEditor(root.layoutEditor),
 		preview: parsePreview(previewBlock),
-		logging: parseLogging(root.logging)
+		logging: parseLogging(root.logging),
+		uiDefinition: {
+			validation: parseUiDefinitionValidationConfig(root.uiDefinition)
+		}
 	};
 
 	const ir = root.ir;

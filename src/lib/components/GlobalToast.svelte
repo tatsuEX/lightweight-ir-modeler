@@ -55,7 +55,9 @@
 			{/snippet}
 			<div class="text-sm font-semibold text-gray-900 dark:text-white">{message.summary}</div>
 			{#if message.detail}
-				<div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{message.detail}</div>
+				<div class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-sm text-gray-500 dark:text-gray-400">
+					{message.detail}
+				</div>
 			{/if}
 		</Toast>
 	{/each}

@@ -175,7 +175,7 @@ describe('importFromUploadedFile', () => {
 		).toThrow(DefinitionReadError);
 	});
 
-	it('accepts numeric filename stems via f_ prefix', () => {
+	it('accepts numeric filename stems as logicalId', () => {
 		const content = readFileSync(
 			resolve(process.cwd(), '.samples/forma/8hvx450fu9l31il.json'),
 			'utf8'
@@ -184,7 +184,7 @@ describe('importFromUploadedFile', () => {
 			filename: '8hvx450fu9l31il.json',
 			content
 		});
-		expect(imported.uiDefinition.logicalId).toBe('f_8hvx450fu9l31il');
+		expect(imported.uiDefinition.logicalId).toBe('8hvx450fu9l31il');
 		const raw = transformToImFormaRaw(imported.uiDefinition, imported.components);
 		expect(() => validateRawDefinition('im-forma', raw)).not.toThrow(RawValidationError);
 	});

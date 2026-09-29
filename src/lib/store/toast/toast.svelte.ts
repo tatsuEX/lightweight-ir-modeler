@@ -1,8 +1,11 @@
 import { createContext } from 'svelte';
 import { nanoid } from 'nanoid';
 
-/** Toast 自動消去までの待ち時間（ミリ秒） */
+/** Toast 自動消去までの待ち時間（ミリ秒）。info / warn 用 */
 export const DEFAULT_TOAST_DELAY_MS = 5000;
+
+/** error Toast の自動消去待ち（ミリ秒）。読む余裕を見て info より長くする */
+export const ERROR_TOAST_DELAY_MS = 8000;
 
 /** FacesMessage.Severity 相当 */
 export type ToastSeverity = 'info' | 'warn' | 'error';
@@ -48,8 +51,9 @@ export class ToastMessages {
 	 * メッセージを追加し、sticky でなければ delay 後に自動削除する
 	 *
 	 * WARN: timer は Host の $effect ではなくここで張る。$effect だと再実行で二重になる。
+	 * @returns 追加したメッセージの id
 	 */
-	add(input: ToastMessageInput): void {
+	add(input: ToastMessageInput): string {
 		const id = nanoid();
 		const sticky = input.sticky ?? false;
 		const message: ToastMessage = {
@@ -64,11 +68,15 @@ export class ToastMessages {
 		this.#messages = [...this.#messages, message];
 
 		if (!sticky) {
+			const delayMs =
+				input.severity === 'error' ? ERROR_TOAST_DELAY_MS : DEFAULT_TOAST_DELAY_MS;
 			const timer = setTimeout(() => {
 				this.dismiss(id);
-			}, DEFAULT_TOAST_DELAY_MS);
+			}, delayMs);
 			this.#timers.set(id, timer);
 		}
+
+		return id;
 	}
 
 	/**

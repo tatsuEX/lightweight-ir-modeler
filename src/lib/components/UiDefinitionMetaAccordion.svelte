@@ -4,6 +4,7 @@
 	import Autocomplete from '$lib/components/Autocomplete.svelte';
 	import ConfirmNewSnapshotDirModal from '$lib/components/ConfirmNewSnapshotDirModal.svelte';
 	import SnapshotVersionControls from '$lib/components/SnapshotVersionControls.svelte';
+	import ValidationFieldShell from '$lib/components/ValidationFieldShell.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
 	import type { SnapshotSchemaBlock } from '$lib/ir/snapshot-schema-block';
 	import { UI_DEFINITION_COMMENT_KEY } from '$lib/ir/snapshot-comment-map';
@@ -301,33 +302,37 @@
 				<Label for="ui-definition-logical-id">
 					ID <span class="text-red-600 dark:text-red-400">*</span>
 				</Label>
-				<Autocomplete
-					id="ui-definition-logical-id"
-					required
-					placeholder="画面 ID"
-					aria-label="画面定義 ID"
-					options={logicalIdOptions}
-					debounceMs={300}
-					value={logicalIdField}
-					onfocus={beginLogicalIdEdit}
-					oninput={handleLogicalIdInput}
-					onblur={() => void handleLogicalIdCommit()}
-					onselect={() => void handleLogicalIdCommit()}
-				/>
+				<ValidationFieldShell path="meta.logicalId">
+					<Autocomplete
+						id="ui-definition-logical-id"
+						required
+						placeholder="画面 ID"
+						aria-label="画面定義 ID"
+						options={logicalIdOptions}
+						debounceMs={300}
+						value={logicalIdField}
+						onfocus={beginLogicalIdEdit}
+						oninput={handleLogicalIdInput}
+						onblur={() => void handleLogicalIdCommit()}
+						onselect={() => void handleLogicalIdCommit()}
+					/>
+				</ValidationFieldShell>
 			</div>
 
 			<div class="{fieldClass} md:col-span-3">
 				<Label for="ui-definition-name">
 					画面名 <span class="text-red-600 dark:text-red-400">*</span>
 				</Label>
-				<Input
-					id="ui-definition-name"
-					size="sm"
-					required
-					placeholder="画面名"
-					aria-label="画面名"
-					bind:value={uiDefinition.meta.name}
-				/>
+				<ValidationFieldShell path="meta.name">
+					<Input
+						id="ui-definition-name"
+						size="sm"
+						required
+						placeholder="画面名"
+						aria-label="画面名"
+						bind:value={uiDefinition.meta.name}
+					/>
+				</ValidationFieldShell>
 			</div>
 
 			<div class="{fieldClass} md:col-span-2">

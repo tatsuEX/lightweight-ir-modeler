@@ -378,6 +378,8 @@ describe('profile overlay', () => {
 		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
 		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(true);
 		expect(config.layoutEditor.clientSession.maxLifetimeMs).toBe(43_200_000);
+		expect(config.uiDefinition.validation.delay).toBe(500);
+		expect(config.uiDefinition.validation.plugins).toEqual([]);
 		expect(config.preview.theme.default).toBe('tailwind-light');
 		expect(config.preview.transformTarget.options).toHaveLength(2);
 		expect(config.preview.transformTarget.options.map((option) => option.value)).toEqual([

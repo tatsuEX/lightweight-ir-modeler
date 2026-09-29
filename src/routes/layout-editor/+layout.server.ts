@@ -32,6 +32,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	const autoSave = config.ir?.autoSave;
 	const preview = config.preview;
 	const layoutEditor = config.layoutEditor;
+	const uiDefinitionValidation = config.uiDefinition.validation;
 	const defaultUiDefinition = createEmptyUiDefinitionMeta();
 	const logicalIdParam = url.searchParams.get('logicalId')?.trim() ?? '';
 
@@ -44,6 +45,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		initialUiDefinition: null as ReturnType<typeof createEmptyUiDefinitionMeta> | null,
 		initialComments: {} as Record<string, string>,
 		layoutEditor,
+		uiDefinitionValidation,
 		preview,
 		uiDefinition: defaultUiDefinition,
 		schemaBlock: null as SnapshotSchemaBlock | null
@@ -73,6 +75,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 					initialUiDefinition: editorMeta,
 					initialComments: latest.comments,
 					layoutEditor,
+					uiDefinitionValidation,
 					preview,
 					uiDefinition: editorMeta,
 					schemaBlock: null
@@ -90,6 +93,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 				initialUiDefinition: null,
 				initialComments: {},
 				layoutEditor,
+				uiDefinitionValidation,
 				preview,
 				uiDefinition: {
 					...defaultUiDefinition,
@@ -105,6 +109,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 			initialUiDefinition: null,
 			initialComments: {},
 			layoutEditor,
+			uiDefinitionValidation,
 			preview,
 			uiDefinition: {
 				...defaultUiDefinition,
@@ -120,6 +125,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		initialUiDefinition: null,
 		initialComments: {},
 		layoutEditor,
+		uiDefinitionValidation,
 		preview,
 		uiDefinition: defaultUiDefinition,
 		schemaBlock: null
