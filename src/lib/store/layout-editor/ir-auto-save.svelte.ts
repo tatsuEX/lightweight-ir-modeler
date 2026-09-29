@@ -4,6 +4,14 @@ import { debounce } from '$lib/utils/debounce';
 import { isUiDefinitionMetaReady, toEditorMetaFromLive, type UiDefinitionEditorMeta } from '$lib/ir/ui-definition-meta';
 import type { UIDefinition } from '$lib/ir/ui-definition';
 import { getToastContext } from '$lib/store/toast/toast.svelte';
+import type { SnapshotSchemaBlock } from '$lib/ir/snapshot-schema-block';
+import {
+	hasSchemaMigrationConsent,
+	isSchemaMigrationSaveBlocked,
+	requestSchemaConsent,
+	schemaMigrationEpoch,
+	blockSchemaMigrationSave
+} from './schema-migration-consent.svelte';
 import type { SnapshotComments } from './snapshot-comments.svelte';
 
 // WARN: logger は ブラウザから利用できない。
@@ -20,6 +28,7 @@ type SnapshotSavePayload = {
 	uiDefinition: UiDefinitionEditorMeta;
 	components: readonly unknown[];
 	comments: Record<string, string>;
+	confirmMigration?: boolean;
 };
 
 /**
@@ -46,6 +55,22 @@ function buildIrHash(uiDefinition: UIDefinition): string {
  */
 function buildCommentsHash(comments: SnapshotComments, componentIds: readonly string[]): string {
 	return JSON.stringify(comments.toYamlMap(componentIds));
+}
+
+/**
+ * schemaVersion 失敗の code か判定する
+ */
+function isSnapshotSchemaBlock(value: unknown): value is SnapshotSchemaBlock {
+	if (value === null || typeof value !== 'object') {
+		return false;
+	}
+	const code = (value as { code?: unknown }).code;
+	return (
+		code === 'schema-future' ||
+		code === 'schema-unreadable' ||
+		code === 'schema-no-path' ||
+		code === 'schema-consent'
+	);
 }
 
 /**
@@ -98,6 +123,22 @@ export function attachIrAutoSave(
 					return;
 				}
 
+				const body = await response.json().catch(() => null);
+				if (isSnapshotSchemaBlock(body)) {
+					blockSchemaMigrationSave(payload.uiDefinition.logicalId);
+					if (body.code === 'schema-consent') {
+						requestSchemaConsent({
+							logicalId: payload.uiDefinition.logicalId,
+							rationales: body.rationales,
+							schemaVersion: body.schemaVersion,
+							latest: body.latest
+						});
+						return;
+					}
+					toast.error('自動保存を止めました', body.error);
+					return;
+				}
+
 				console.warn(`[ir-auto-save] save failed: ${response.status}`);
 				toast.error('自動保存に失敗しました', `HTTP ${response.status}`);
 			} catch (error) {
@@ -129,11 +170,18 @@ export function attachIrAutoSave(
 	 * IR 変化時に snapshot API へ POST する
 	 */
 	$effect(() => {
+		schemaMigrationEpoch();
+		const logicalId = uiDefinition.meta.logicalId;
+		if (isSchemaMigrationSaveBlocked(logicalId)) {
+			return;
+		}
+
 		const componentIds = uiDefinition.components.map((component) => component.id);
 		const payload: SnapshotSavePayload = {
 			uiDefinition: buildSaveMeta(uiDefinition),
 			components: uiDefinition.components,
-			comments: comments.toYamlMap(componentIds)
+			comments: comments.toYamlMap(componentIds),
+			...(hasSchemaMigrationConsent(logicalId) ? { confirmMigration: true } : {})
 		};
 		const irHash = buildIrHash(uiDefinition);
 		const commentsHash = buildCommentsHash(comments, componentIds);

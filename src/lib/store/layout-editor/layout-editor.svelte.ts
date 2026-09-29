@@ -4,7 +4,6 @@
 
 import { createContext } from 'svelte';
 import { createUiDefinitionData, UIDefinition } from '$lib/ir/ui-definition';
-import { createComponentByType } from '$lib/ir/elements/factories';
 import type { ImportedDefinition } from '$lib/transform/imported-definition';
 
 export { UIDefinition } from '$lib/ir/ui-definition';
@@ -28,27 +27,10 @@ export function createReactiveUIDefinition(
 }
 
 /**
- * プレーンな JSON 互換データを複製する（Svelte Proxy 等で structuredClone が失敗したら JSON 経由）
- */
-function clonePlainData<T>(value: T): T {
-	if (value === undefined) {
-		return value;
-	}
-	try {
-		return structuredClone(value);
-	} catch {
-		// WARN: Proxy / 関数混入時。importBase 等の JSON 互換データ向けフォールバック。
-		return JSON.parse(JSON.stringify(value)) as T;
-	}
-}
-
-/**
  * 外部 UI 定義の取り込み結果で編集状態を丸ごと置き換える
+ *
+ * WARN: ファクトリを通さない。既定値と id は `loadSnapshot` の hydrate だけが補う。
  */
 export function loadImported(ui: UIDefinition, imported: ImportedDefinition): void {
-	const plain = clonePlainData(imported);
-	ui.loadSnapshot(
-		plain.components.map((component) => createComponentByType(component)),
-		plain.uiDefinition
-	);
+	ui.loadSnapshot(imported.components, imported.uiDefinition);
 }
