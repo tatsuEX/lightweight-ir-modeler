@@ -6,7 +6,11 @@
  */
 
 import { nanoid } from 'nanoid';
-import { type EditorComponent, type KnownComponentType } from '$lib/ir/elements/component-schema';
+import {
+	hydrateEditorComponent,
+	type EditorComponent,
+	type KnownComponentType
+} from '$lib/ir/elements/component-schema';
 
 /** コンポーネント system id の長さ（restore / append と揃える） */
 export const SYSTEM_ID_LENGTH = 24;
@@ -451,12 +455,9 @@ export function isPropertyEditableType(type: unknown): type is KnownComponentTyp
 /**
  * info.type に対応するファクトリでコンポーネントを作成する
  *
- * WARN: 未登録 type（`unsupported` を含む）は id だけ付けて素通しする。
- * 未知ベンダー type の正規化は `parsePersistedComponent` / hydrate の責務。
+ * WARN: 未登録 type は hydrate で `unsupported` に閉じる。素通ししない。
  */
-export function createComponentByType(
-	info: unknown
-): EditorComponent | (Record<string, unknown> & { id: string }) {
+export function createComponentByType(info: unknown): EditorComponent {
 	const record =
 		info !== null && typeof info === 'object' && !Array.isArray(info)
 			? (info as Record<string, unknown>)
@@ -465,7 +466,7 @@ export function createComponentByType(
 	if (!isPropertyEditableType(type)) {
 		const existingId =
 			typeof record.id === 'string' && record.id.trim() !== '' ? record.id : nextComponentId();
-		return { ...record, id: existingId };
+		return hydrateEditorComponent(record, existingId);
 	}
 
 	const factory = COMPONENT_FACTORY_REGISTRY[type];

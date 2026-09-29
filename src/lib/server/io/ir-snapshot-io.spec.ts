@@ -2,6 +2,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { IrSnapshotSchemaVersionError } from '$lib/ir/snapshot-migration';
 import { createIrSnapshot, serializeIrSnapshot } from '$lib/ir/snapshot';
 import {
 	buildSnapshotMetaForWrite,
@@ -207,6 +208,36 @@ describe('ir-snapshot-io', () => {
 		]);
 
 		await expect(listSnapshotLogicalIds()).resolves.toEqual(['anotherScreen', 'testScreen']);
+	});
+
+	it('refuses a newer schemaVersion without writing a premigration backup', async () => {
+		const { screenDir, currentFile, historyDir } = layoutPaths(tempDir, sampleEditorMeta.logicalId);
+		await mkdir(join(screenDir, 'current'), { recursive: true });
+		await mkdir(historyDir, { recursive: true });
+		const original = ['schemaVersion: "99.0"', 'savedAt: "2026-01-01T00:00:00.000Z"', 'components: []'].join(
+			'\n'
+		);
+		await writeFile(currentFile, original, 'utf8');
+
+		await expect(writeSnapshot(sampleEditorMeta, [])).rejects.toBeInstanceOf(IrSnapshotSchemaVersionError);
+		const historyNames = await readdir(historyDir);
+		expect(historyNames.some((name) => name.includes('premigration'))).toBe(false);
+		await expect(readFile(currentFile, 'utf8')).resolves.toBe(original);
+	});
+
+	it('refuses an unreadable schemaVersion without writing a premigration backup', async () => {
+		const { screenDir, currentFile, historyDir } = layoutPaths(tempDir, sampleEditorMeta.logicalId);
+		await mkdir(join(screenDir, 'current'), { recursive: true });
+		await mkdir(historyDir, { recursive: true });
+		await writeFile(
+			currentFile,
+			['schemaVersion: nope', 'savedAt: "2026-01-01T00:00:00.000Z"', 'components: []'].join('\n'),
+			'utf8'
+		);
+
+		await expect(writeSnapshot(sampleEditorMeta, [])).rejects.toBeInstanceOf(IrSnapshotSchemaVersionError);
+		const historyNames = await readdir(historyDir);
+		expect(historyNames.some((name) => name.includes('premigration'))).toBe(false);
 	});
 
 	it('reads legacy flat snapshot when current is missing', async () => {

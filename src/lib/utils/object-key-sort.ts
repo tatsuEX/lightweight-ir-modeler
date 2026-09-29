@@ -1,8 +1,8 @@
 /**
  * YAML / JSON オブジェクトで常に先頭へ置くシステムメタキー
  *
- * WARN: `schemaVersion` は snapshot root の構造版、`version` は `uiDefinition` の製品版。
- * 別概念なので両方載せる（root には `version` を書かない）。
+ * WARN: `schemaVersion` は snapshot root の構造版。`version` は `uiDefinition` の製品版の並び用で、
+ * root の envelope `version` は未使用のため snapshot 文書には出さない。
  */
 export const SYSTEM_META_OBJECT_KEYS = [
 	'schemaVersion',

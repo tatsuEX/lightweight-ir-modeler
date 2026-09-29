@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { isUiDefinitionMetaReady, isValidLogicalId, parseEditorMetaFromRecord } from '$lib/ir/ui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { readLatestSnapshotIfEnabled, writeSnapshot } from '$lib/server/io/ir-snapshot-io';
+import { toSnapshotSchemaBlock } from '$lib/server/io/snapshot-http-error';
 import { getLogger } from '$lib/server/logging/logger';
 import { parseYamlCommentMap } from '$lib/utils/yaml-comments';
 import type { RequestHandler } from './$types';
@@ -26,9 +27,11 @@ export const GET: RequestHandler = async ({ url }) => {
 		return json({ error: 'logicalId is required and must be a valid identifier' }, { status: 400 });
 	}
 
+	const confirmMigration = url.searchParams.get('confirmMigration') === 'true';
+
 	try {
 		// 編集中 snapshot を取得する
-		const snapshot = await readLatestSnapshotIfEnabled(logicalId);
+		const snapshot = await readLatestSnapshotIfEnabled(logicalId, { confirmMigration });
 		if (!snapshot) {
 			return json({ error: 'snapshot not found' }, { status: 404 });
 		}
@@ -36,6 +39,10 @@ export const GET: RequestHandler = async ({ url }) => {
 		// 編集中 snapshot を JSON として返す
 		return json(snapshot);
 	} catch (error) {
+		const schema = toSnapshotSchemaBlock(error);
+		if (schema) {
+			return json(schema.block, { status: schema.status });
+		}
 		logger.error('snapshot read failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: 'failed to read snapshot' }, { status: 500 });
 	}
@@ -106,9 +113,15 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		const result = await writeSnapshot(editorMeta, components, comments);
+		const result = await writeSnapshot(editorMeta, components, comments, {
+			confirmMigration: record.confirmMigration === true
+		});
 		return json(result, { status: result.skipped ? 200 : 201 });
 	} catch (error) {
+		const schema = toSnapshotSchemaBlock(error);
+		if (schema) {
+			return json(schema.block, { status: schema.status });
+		}
 		logger.error('snapshot write failed', { errorMessage: error instanceof Error ? error.message : String(error) });
 		return json({ error: 'failed to write snapshot' }, { status: 500 });
 	}

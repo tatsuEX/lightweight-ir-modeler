@@ -41,7 +41,6 @@ export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
 	'disabled',
 	'readonly',
 	'hidden',
-	'tooltip',
 	'validation',
 	'required',
 	'requiredFrom',
@@ -52,6 +51,7 @@ export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
 	'min',
 	'max',
 	'step',
+	'scale',
 	'minDate',
 	'maxDate',
 	'minDateTime',
@@ -65,7 +65,6 @@ export const SNAPSHOT_YAML_PREFERRED_KEYS: readonly string[] = [
 	'rows',
 	'cols',
 	'multiple',
-	'autosize',
 	'external'
 ];
 
@@ -323,10 +322,24 @@ export function normalizeSnapshotForCompare(
 }
 
 /**
+ * 書き出す root だけを取り出す
+ *
+ * WARN: 廃止した envelope `version` は未使用なのでここでも落とす。`uiDefinition.version` は別オブジェクトなので残る。
+ */
+function snapshotDocument(snapshot: IrSnapshot): Record<string, unknown> {
+	return {
+		schemaVersion: snapshot.schemaVersion,
+		savedAt: snapshot.savedAt,
+		...(snapshot.uiDefinition ? { uiDefinition: snapshot.uiDefinition } : {}),
+		components: snapshot.components
+	};
+}
+
+/**
  * IrSnapshot を YAML 文字列へシリアライズする
  */
 export function serializeIrSnapshot(snapshot: IrSnapshot, comments: YamlCommentMap = {}): string {
-	return stringifySnapshotYaml(snapshot, comments);
+	return stringifySnapshotYaml(snapshotDocument(snapshot), comments);
 }
 
 /**

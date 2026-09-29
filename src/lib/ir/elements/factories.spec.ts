@@ -40,9 +40,13 @@ describe('component factories', () => {
 		expect(isPropertyEditableType('unsupported')).toBe(false);
 	});
 
-	it('createComponentByType passes through unregistered types with an id', () => {
+	it('createComponentByType normalizes unregistered types to unsupported', () => {
 		const passed = createComponentByType({ type: 'custom', label: 'X' });
-		expect(passed.type).toBe('custom');
+		expect(passed.type).toBe('unsupported');
+		if (passed.type !== 'unsupported') {
+			throw new Error('expected unsupported');
+		}
+		expect(passed.sourceType).toBe('custom');
 		expect(passed.label).toBe('X');
 		expect(typeof passed.id).toBe('string');
 	});

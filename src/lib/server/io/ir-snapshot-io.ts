@@ -32,7 +32,12 @@ import {
 	type PublishKind
 } from '$lib/ir/snapshot-version';
 import { classifyIrSchemaVersion } from '$lib/ir/snapshot-schema-version';
-import { readRecordSchemaVersion } from '$lib/ir/snapshot-migration';
+import {
+	IrSnapshotSchemaVersionError,
+	migrateIrSnapshotRecord,
+	readRecordSchemaVersion,
+	type IrSnapshotMigrationOptions
+} from '$lib/ir/snapshot-migration';
 import { parseYaml } from '$lib/utils/yaml-document';
 import {
 	loadApplicationConfig,
@@ -53,6 +58,20 @@ const CURRENT_FILENAME = 'snapshot.yml';
 const CURRENT_RELATIVE_PATH = `${CURRENT_DIR_NAME}/${CURRENT_FILENAME}`;
 /** ファイル名衝突時の最大試行回数（無 suffix 1 回 + suffix 付き） */
 const MAX_SNAPSHOT_WRITE_ATTEMPTS = 100;
+
+/** 読込時に main をまたぐ migration を許可するか */
+type SnapshotMigrationFlag = {
+	confirmMigration?: boolean;
+};
+
+/**
+ * 呼び出し側から渡す同意フラグを migration オプションにする
+ *
+ * WARN: step 列の差し替えは HTTP から受け取らない。
+ */
+function migrationOptions(flag: SnapshotMigrationFlag | undefined): IrSnapshotMigrationOptions {
+	return flag?.confirmMigration ? { confirmMigration: true } : {};
+}
 
 /**
  * snapshot ディレクトリの構造（値は絶対パス）
@@ -358,8 +377,12 @@ export type LoadedIrSnapshot = IrSnapshot & {
 /**
  * YAML テキストから読込結果を組み立てる
  */
-function toLoadedIrSnapshot(logicalId: string, yamlText: string): LoadedIrSnapshot {
-	const { snapshot, comments } = deserializeIrSnapshotDocument(yamlText);
+function toLoadedIrSnapshot(
+	logicalId: string,
+	yamlText: string,
+	flag: SnapshotMigrationFlag = {}
+): LoadedIrSnapshot {
+	const { snapshot, comments } = deserializeIrSnapshotDocument(yamlText, migrationOptions(flag));
 	const editorDefaults = createEmptyUiDefinitionMeta();
 
 	return {
@@ -378,13 +401,16 @@ function toLoadedIrSnapshot(logicalId: string, yamlText: string): LoadedIrSnapsh
 /**
  * 永続化済み snapshot の uiDefinition メタデータを取得する
  */
-async function readPersistedSnapshotMeta(logicalIdDir: string): Promise<UiDefinitionSnapshotMeta | null> {
+async function readPersistedSnapshotMeta(
+	logicalIdDir: string,
+	flag: SnapshotMigrationFlag = {}
+): Promise<UiDefinitionSnapshotMeta | null> {
 	const yamlText = await readCurrentOrLegacyYaml(logicalIdDir);
 	if (yamlText === null) {
 		return null;
 	}
 
-	const { snapshot } = deserializeIrSnapshotDocument(yamlText);
+	const { snapshot } = deserializeIrSnapshotDocument(yamlText, migrationOptions(flag));
 
 	return snapshot.uiDefinition ?? null;
 }
@@ -396,14 +422,15 @@ async function isSameAsCurrentSnapshot(
 	logicalIdDir: string,
 	editorMeta: UiDefinitionEditorMeta,
 	components: unknown[],
-	comments: YamlCommentMap
+	comments: YamlCommentMap,
+	flag: SnapshotMigrationFlag = {}
 ): Promise<boolean> {
 	const yamlText = await readUtf8IfExists(resolveCurrentFile(logicalIdDir));
 	if (yamlText === null) {
 		return false;
 	}
 
-	const loaded = deserializeIrSnapshotDocument(yamlText);
+	const loaded = deserializeIrSnapshotDocument(yamlText, migrationOptions(flag));
 	const snapshotEditorMeta = loaded.snapshot.uiDefinition
 		? toEditorMeta(loaded.snapshot.uiDefinition)
 		: editorMeta;
@@ -425,7 +452,8 @@ async function isSameAsCurrentSnapshot(
  */
 async function guardCurrentSchemaVersionBeforeWrite(
 	currentFile: string,
-	historyDir: string
+	historyDir: string,
+	flag: SnapshotMigrationFlag = {}
 ): Promise<void> {
 	const yamlText = await readUtf8IfExists(currentFile);
 	if (yamlText === null) {
@@ -439,14 +467,21 @@ async function guardCurrentSchemaVersionBeforeWrite(
 
 	const classification = classifyIrSchemaVersion(diskSchemaVersion);
 
-	if (classification.kind === 'future') {
-		throw new IrSnapshotRequestError(
-			409,
-			`current snapshot schemaVersion ${diskSchemaVersion} is newer than this build (${classification.latest}); refusing to overwrite`
+	if (classification.kind === 'future' || classification.kind === 'unreadable') {
+		throw new IrSnapshotSchemaVersionError(
+			classification.kind,
+			diskSchemaVersion,
+			classification.latest
 		);
 	}
 
-	if (classification.kind === 'current' || classification.kind === 'unreadable') {
+	if (classification.kind === 'current') {
+		return;
+	}
+
+	if (classification.kind === 'consent-required' && !flag.confirmMigration) {
+		// WARN: 同意前に history へ退避しない。経路が無い場合は migration が no-path を投げる。
+		migrateIrSnapshotRecord(parseYaml(yamlText));
 		return;
 	}
 
@@ -467,13 +502,14 @@ async function guardCurrentSchemaVersionBeforeWrite(
 export async function writeSnapshot(
 	editorMeta: UiDefinitionEditorMeta,
 	components: unknown[],
-	comments: YamlCommentMap = {}
+	comments: YamlCommentMap = {},
+	flag: SnapshotMigrationFlag = {}
 ): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
 	return runLogged(
 		logger,
 		'writeSnapshot',
 		{ logicalId: editorMeta.logicalId, componentCount: components.length },
-		() => writeSnapshotUnchecked(editorMeta, components, comments)
+		() => writeSnapshotUnchecked(editorMeta, components, comments, flag)
 	);
 }
 
@@ -483,7 +519,8 @@ export async function writeSnapshot(
 async function writeSnapshotUnchecked(
 	editorMeta: UiDefinitionEditorMeta,
 	components: unknown[],
-	comments: YamlCommentMap
+	comments: YamlCommentMap,
+	flag: SnapshotMigrationFlag
 ): Promise<{ filename: string; savedAt: string; skipped: boolean }> {
 	const autoSave = getAutoSaveConfig();
 	const logicalIdDir = resolveSnapshotDirForLogicalId(autoSave, editorMeta.logicalId);
@@ -494,17 +531,17 @@ async function writeSnapshotUnchecked(
 	await mkdir(currentDir, { recursive: true });
 	await mkdir(historyDir, { recursive: true });
 
-	await guardCurrentSchemaVersionBeforeWrite(currentFile, historyDir);
+	await guardCurrentSchemaVersionBeforeWrite(currentFile, historyDir, flag);
 
-	if (await isSameAsCurrentSnapshot(logicalIdDir, editorMeta, components, comments)) {
+	if (await isSameAsCurrentSnapshot(logicalIdDir, editorMeta, components, comments, flag)) {
 		const yamlText = await readFile(currentFile, 'utf8');
-		const { snapshot } = deserializeIrSnapshotDocument(yamlText);
+		const { snapshot } = deserializeIrSnapshotDocument(yamlText, migrationOptions(flag));
 
 		return { filename: CURRENT_RELATIVE_PATH, savedAt: snapshot.savedAt, skipped: true };
 	}
 
 	const savedAt = new Date();
-	const previousMeta = await readPersistedSnapshotMeta(logicalIdDir);
+	const previousMeta = await readPersistedSnapshotMeta(logicalIdDir, flag);
 	const uiDefinition = buildSnapshotMetaForWrite(editorMeta, previousMeta, savedAt);
 	const snapshot = createIrSnapshot(uiDefinition, components, savedAt);
 	const yamlText = serializeIrSnapshot(snapshot, comments);
@@ -539,7 +576,10 @@ async function writeSnapshotUnchecked(
 /**
  * logicalId 別ディレクトリから編集中 snapshot を読み込む（存在しない場合は null）
  */
-export async function readLatestSnapshot(logicalId: string): Promise<LoadedIrSnapshot | null> {
+export async function readLatestSnapshot(
+	logicalId: string,
+	flag: SnapshotMigrationFlag = {}
+): Promise<LoadedIrSnapshot | null> {
 	const autoSave = getAutoSaveConfig();
 	const logicalIdDir = resolveSnapshotDirForLogicalId(autoSave, logicalId);
 	const yamlText = await readCurrentOrLegacyYaml(logicalIdDir);
@@ -548,13 +588,16 @@ export async function readLatestSnapshot(logicalId: string): Promise<LoadedIrSna
 		return null;
 	}
 
-	return toLoadedIrSnapshot(logicalId, yamlText);
+	return toLoadedIrSnapshot(logicalId, yamlText, flag);
 }
 
 /**
  * autoSave が有効な場合のみ logicalId 別ディレクトリから編集中 snapshot を読み込む
  */
-export async function readLatestSnapshotIfEnabled(logicalId: string): Promise<LoadedIrSnapshot | null> {
+export async function readLatestSnapshotIfEnabled(
+	logicalId: string,
+	flag: SnapshotMigrationFlag = {}
+): Promise<LoadedIrSnapshot | null> {
 	return runLogged(logger, 'readLatestSnapshotIfEnabled', { logicalId }, async () => {
 		const config = loadApplicationConfig();
 
@@ -562,7 +605,7 @@ export async function readLatestSnapshotIfEnabled(logicalId: string): Promise<Lo
 			return null;
 		}
 
-		return readLatestSnapshot(logicalId);
+		return readLatestSnapshot(logicalId, flag);
 	});
 }
 
@@ -666,10 +709,11 @@ export async function listPublishedVersions(logicalId: string): Promise<Publishe
  */
 export async function publishSnapshot(
 	logicalId: string,
-	kind: PublishKind = 'revision'
+	kind: PublishKind = 'revision',
+	flag: SnapshotMigrationFlag = {}
 ): Promise<{ version: string; snapshot: LoadedIrSnapshot }> {
 	return runLogged(logger, 'publishSnapshot', { logicalId, kind }, () =>
-		publishSnapshotUnchecked(logicalId, kind)
+		publishSnapshotUnchecked(logicalId, kind, flag)
 	);
 }
 
@@ -678,7 +722,8 @@ export async function publishSnapshot(
  */
 async function publishSnapshotUnchecked(
 	logicalId: string,
-	kind: PublishKind
+	kind: PublishKind,
+	flag: SnapshotMigrationFlag
 ): Promise<{ version: string; snapshot: LoadedIrSnapshot }> {
 	const autoSave = getAutoSaveConfig();
 	const logicalIdDir = resolveSnapshotDirForLogicalId(autoSave, logicalId);
@@ -687,7 +732,7 @@ async function publishSnapshotUnchecked(
 		throw new IrSnapshotRequestError(404, 'current snapshot not found');
 	}
 
-	const loaded = toLoadedIrSnapshot(logicalId, yamlText);
+	const loaded = toLoadedIrSnapshot(logicalId, yamlText, flag);
 	const editorMeta = loaded.uiDefinition
 		? toEditorMeta(loaded.uiDefinition)
 		: { ...createEmptyUiDefinitionMeta(), logicalId };
@@ -751,10 +796,11 @@ async function publishSnapshotUnchecked(
  */
 export async function loadPublishedVersion(
 	logicalId: string,
-	version: string
+	version: string,
+	flag: SnapshotMigrationFlag = {}
 ): Promise<LoadedIrSnapshot> {
 	return runLogged(logger, 'loadPublishedVersion', { logicalId, version }, () =>
-		loadPublishedVersionUnchecked(logicalId, version)
+		loadPublishedVersionUnchecked(logicalId, version, flag)
 	);
 }
 
@@ -763,7 +809,8 @@ export async function loadPublishedVersion(
  */
 async function loadPublishedVersionUnchecked(
 	logicalId: string,
-	version: string
+	version: string,
+	flag: SnapshotMigrationFlag
 ): Promise<LoadedIrSnapshot> {
 	const safeVersion = version.trim();
 	if (!isValidSnapshotVersion(safeVersion)) {
@@ -783,7 +830,7 @@ async function loadPublishedVersionUnchecked(
 		throw new IrSnapshotRequestError(404, `published version not found: ${safeVersion}`);
 	}
 
-	const loaded = toLoadedIrSnapshot(logicalId, yamlText);
+	const loaded = toLoadedIrSnapshot(logicalId, yamlText, flag);
 	const now = new Date();
 	const editorMeta: UiDefinitionEditorMeta = {
 		...(loaded.uiDefinition ? toEditorMeta(loaded.uiDefinition) : createEmptyUiDefinitionMeta()),

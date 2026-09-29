@@ -215,6 +215,12 @@ describe('ir snapshot', () => {
 		const restored = restoreIrSnapshotFromYaml(yamlText);
 		expect(restored.schemaVersion).toBe('1.0');
 		expect(restored.components).toHaveLength(1);
+
+		const { snapshot } = deserializeIrSnapshotDocument(yamlText);
+		expect(snapshot).not.toHaveProperty('version');
+		const rewritten = serializeIrSnapshot(snapshot);
+		expect(rewritten.startsWith('schemaVersion:')).toBe(true);
+		expect(rewritten).not.toMatch(/^version:/m);
 	});
 
 	it('refuses a snapshot newer than this build', () => {

@@ -3,6 +3,7 @@ import { isValidLogicalId } from '$lib/ir/ui-definition-meta';
 import { isValidSnapshotVersion } from '$lib/ir/snapshot-version';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { IrSnapshotRequestError, loadPublishedVersion } from '$lib/server/io/ir-snapshot-io';
+import { toSnapshotSchemaBlock } from '$lib/server/io/snapshot-http-error';
 import { getLogger } from '$lib/server/logging/logger';
 import type { RequestHandler } from './$types';
 
@@ -41,9 +42,15 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		const snapshot = await loadPublishedVersion(logicalId, version);
+		const snapshot = await loadPublishedVersion(logicalId, version, {
+			confirmMigration: record.confirmMigration === true
+		});
 		return json(snapshot);
 	} catch (error) {
+		const schema = toSnapshotSchemaBlock(error);
+		if (schema) {
+			return json(schema.block, { status: schema.status });
+		}
 		if (error instanceof IrSnapshotRequestError) {
 			return json({ error: error.message }, { status: error.httpStatus });
 		}

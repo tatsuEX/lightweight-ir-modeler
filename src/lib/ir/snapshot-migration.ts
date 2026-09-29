@@ -146,7 +146,7 @@ export function readRecordSchemaVersion(record: Record<string, unknown>): string
 }
 
 /**
- * 廃止した envelope `version` キーを落とし、`schemaVersion` を明示する
+ * 未使用の root `version` を落とし、`schemaVersion` を明示する
  *
  * WARN: root の `version` のみ対象。`uiDefinition.version`（画面定義の製品版）は触らない。
  */
