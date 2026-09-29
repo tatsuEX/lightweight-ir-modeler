@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-27T05:30:00"
-summary: "Property 属性テーブルは EditorComponent を bind。Preview registry は ComponentType"
+updated: "2026-09-30T03:20:00"
+summary: "Property 属性テーブルは EditorComponent を bind。編集状態は client session が保持する"
 features:
   - layout-editor
   - ui-definition
@@ -12,11 +12,12 @@ features:
   - yaml-comments
   - arrow-navigation
   - global-toast
+  - client-session
 ---
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-27 05:30
+最終更新: 2026-09-30 03:20
 
 ## 概要
 
@@ -58,6 +59,23 @@ flowchart LR
   Store --> Auto
   Auto -->|debounce| API
 ```
+
+## 編集セッション
+
+`+layout.svelte` はマウントのたびに新しい `UIDefinition` を作らない。タブの client session を取得し、同じインスタンスを Context に載せ直す。HMR で layout が再マウントされても、未保存の編集は残る。
+
+| 項目 | 内容 |
+|---|---|
+| キー | `sessionId` + `logicalId` + `version` |
+| `sessionId` | タブにつき 1 つ。`nanoid()` で発行し `sessionStorage` に置く。編集本体は保存しない |
+| 空の画面 ID | キーの logicalId は `draft:<nanoid>`。画面上の ID は空のまま |
+| 保持 | ブラウザタブのメモリ。期限は `layoutEditor.clientSession.maxLifetimeMs`（既定 12 時間） |
+| フルリロード | 自動保存済み snapshot を種にする。未保存のメモリは戻らない |
+| 新規画面 ID（snapshot 404） | いまの編集内容を保ったままキーを付け替える |
+| 既存 snapshot の読込・確定・過去版 | その応答で対象スロットを上書きし、アクティブにする |
+| HMR | アクティブな session を優先し、初回 load の `data` では種を当て直さない |
+
+画面はこれまでどおり `get*Context` だけを使う。サーバセッションと編集の排他は未実装。キーは将来そのままサーバ側の Map に載せる。
 
 ## メタ編集と既存画面の読込
 
@@ -215,6 +233,7 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | App shell | `src/routes/+layout.svelte` |
 | Global Toast | `src/lib/store/toast/toast.svelte.ts` / `GlobalToast.svelte`（[Global Toast](./global-toast.md)） |
 | Store | `src/lib/store/layout-editor/layout-editor.svelte.ts` |
+| Client session | `src/lib/store/layout-editor/client-session-repository.ts` / `layout-editor-session.svelte.ts` |
 | 画面定義集約 | `src/lib/ir/ui-definition.ts` |
 | Layout shell | `src/routes/layout-editor/+layout.svelte` |
 | Property 画面 | `src/routes/layout-editor/property/+page.svelte` |

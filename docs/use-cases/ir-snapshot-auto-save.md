@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-27T05:30:00"
+updated: "2026-09-30T03:20:00"
 summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、root schemaVersion、component hydrate"
 features:
   - ir-snapshot
@@ -12,7 +12,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-27 05:30
+最終更新: 2026-09-30 03:20
 
 ## 概要
 
@@ -78,7 +78,7 @@ sequenceDiagram
 
 | 層 | 比較単位 | 備考 |
 |---|---|---|
-| クライアント | IR hash とコメント hash（`JSON.stringify`、component `id` を含む） | 変化種別に応じて delay を分ける。連続入力の送信抑制 |
+| クライアント | IR hash とコメント hash（`JSON.stringify`、component `id` を含む） | 変化種別に応じて delay を分ける。比較値は client session に残し、layout 再マウントでも未保存差分を保存済みにしない |
 | サーバ | `normalizeSnapshotForCompare` + `normalizeCommentsForCompare` | 意味的に同じ内容の再書込を skip |
 
 そのため、見た目上の reorder や id 再生成だけではサーバ側で skip されることがある。
