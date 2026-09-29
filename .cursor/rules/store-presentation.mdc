@@ -14,15 +14,17 @@ alwaysApply: false
 
 ## Context API
 
-- Share store state **only via Svelte Context** (`set*Context` in an ancestor, `get*Context` in descendants). Do not import a singleton instance or pass the store as props for cross-tree access.
+- Share store state **only via Svelte Context** (`set*Context` in an ancestor, `get*Context` in descendants). Do not import a singleton `UIDefinition` or pass the store as props for cross-tree access.
+- The layout acquires a client session, then sets context from that session. Descendants do not import the session repository.
 - Example: `setUIDefinitionContext` in `+layout.svelte`, `getUIDefinitionContext` in pages/components.
 
 ```typescript
-// ✅ GOOD — ancestor sets a reactive domain instance, descendant gets
-setUIDefinitionContext(createReactiveUIDefinition(...));
+// ✅ GOOD — ancestor acquires a session, then sets context. Descendants get it.
+const session = ensureActiveLayoutEditorSession(seed);
+setUIDefinitionContext(session.uiDefinition);
 const ui = getUIDefinitionContext();
 
-// ❌ BAD — module singleton or prop-drill the store tree-wide
+// ❌ BAD — module singleton or prop-drill the UIDefinition tree-wide
 export const ui = new UIDefinition();
 ```
 

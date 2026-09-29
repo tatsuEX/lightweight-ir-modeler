@@ -1,0 +1,23 @@
+---
+description: Prefer one implementation per purpose; ask before adding a second
+alwaysApply: true
+---
+
+# Implementation choices
+
+Prefer one way to do each job. Do not add a second library or API for a purpose this project already covers.
+
+This is not an absolute ban. A second method may stay, or be added, when there is a clear reason (a real constraint the current choice cannot meet). An existing outlier is not a license to copy it into new code.
+
+## When the choice is unclear
+
+Stop. Show the tradeoff between the options, ask for approval, and wait. Do not add the second method before that answer. Then follow the instruction.
+
+## Current choices
+
+| Purpose | Use | Do not add |
+|---|---|---|
+| Unique random strings | `nanoid` | `crypto.randomUUID`, another id library |
+| YAML read and write | `yaml` (eemeli/yaml) | `js-yaml` |
+
+New code and newly chosen dependencies follow this list. Do not rewrite existing call sites only to align them.
