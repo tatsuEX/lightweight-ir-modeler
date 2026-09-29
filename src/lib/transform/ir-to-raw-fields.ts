@@ -52,6 +52,7 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 	if (typeof source.multiple === 'boolean') {
 		field.multiple = source.multiple;
 	}
+	copyOwnValueKeys(field, source);
 
 	// WARN: このマッピングは allowlist。external を通さないと import 由来のベンダー固有キーが export で消える。
 	const external = normalizeExternalResidual(source.external);
@@ -60,4 +61,20 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 	}
 
 	return field;
+}
+
+/** Raw へ写す初期値キー（型に無いキーは後段の parse が落とす） */
+const VALUE_KEYS = ['defaultValue', 'defaultValueFrom', 'defaultValueTo'] as const;
+
+/**
+ * 初期値キーを、undefined 以外のときだけ写す
+ *
+ * WARN: `null` は number / 日付の「未設定」なので残す。
+ */
+function copyOwnValueKeys(target: Record<string, unknown>, source: Record<string, unknown>): void {
+	for (const key of VALUE_KEYS) {
+		if (Object.prototype.hasOwnProperty.call(source, key) && source[key] !== undefined) {
+			target[key] = source[key];
+		}
+	}
 }

@@ -68,6 +68,28 @@ describe('mapRawFieldToComponent', () => {
 		).toBe('product_72_shape');
 	});
 
+	it('round-trips default values', () => {
+		const field = {
+			logicalId: 'span',
+			type: 'date-span',
+			label: '期間',
+			defaultValueFrom: '2026-01-01',
+			defaultValueTo: null
+		};
+
+		const component = mapRawFieldToComponent(field);
+		expect(component.type).toBe('date-span');
+		if (component.type !== 'date-span') {
+			throw new Error('expected date-span');
+		}
+		expect(component.defaultValueFrom).toBe('2026-01-01');
+		expect(component.defaultValueTo).toBeNull();
+		expect(mapComponentToRawField(component)).toMatchObject({
+			defaultValueFrom: '2026-01-01',
+			defaultValueTo: null
+		});
+	});
+
 	it('round-trips allowlisted Raw keys through mapComponentToRawField', () => {
 		const field = {
 			logicalId: 'name',

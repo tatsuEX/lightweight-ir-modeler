@@ -59,6 +59,7 @@ export function mapRawFieldToComponent(field: unknown): PersistedComponent {
 	if (typeof field.multiple === 'boolean') {
 		component.multiple = field.multiple;
 	}
+	copyOwnValueKeys(component, field);
 
 	const external = normalizeExternalResidual(field.external);
 	if (external) {
@@ -66,4 +67,20 @@ export function mapRawFieldToComponent(field: unknown): PersistedComponent {
 	}
 
 	return parsePersistedComponent(component);
+}
+
+/** IR へ写す初期値キー */
+const VALUE_KEYS = ['defaultValue', 'defaultValueFrom', 'defaultValueTo'] as const;
+
+/**
+ * 初期値キーを、undefined 以外のときだけ写す
+ *
+ * WARN: `null` は number / 日付の「未設定」なので残す。
+ */
+function copyOwnValueKeys(target: Record<string, unknown>, source: Record<string, unknown>): void {
+	for (const key of VALUE_KEYS) {
+		if (Object.prototype.hasOwnProperty.call(source, key) && source[key] !== undefined) {
+			target[key] = source[key];
+		}
+	}
 }
