@@ -1,9 +1,10 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T08:20:00"
-summary: "docs 索引。利用者向けと保守者向けの区別、現行スコープ（プラグイン多段・UIDefinition 検証・IR migration）"
+updated: "2026-10-05T02:05:00"
+summary: "docs 索引。利用者向けと保守者向けの区別、現行スコープ（プラグイン多段・UIDefinition 検証・IR migration・Intent Tags）"
 features:
   - docs
+  - intent-tags
   - maintenance
   - architecture
   - licensing
@@ -22,7 +23,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-30 08:20
+最終更新: 2026-10-05 02:05
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -44,30 +45,31 @@ features:
 2. [プラグイン（射影）](./architecture/plugins.md) — `applyProjections` / opt-in id
 3. [ライセンス方針](./architecture/licensing.md) — 自コード MIT / 第三者 NOTICE / `static/` 掲載
 4. [レイアウトエディタ編集](./use-cases/layout-editor.md) — property / layout / preview
-5. [Global Toast](./use-cases/global-toast.md) — アプリ全体の Growl 相当通知
-6. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
-7. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
-8. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
-9. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
-10. [HTTP API](./api/http-endpoints.md)
-11. [ロギング](./architecture/logging.md)
+5. [Intent Tags](./use-cases/intent-tags.md) — コンポーネントの意図タグ / YAML マスタ合成 / Raw への素通し
+6. [Global Toast](./use-cases/global-toast.md) — アプリ全体の Growl 相当通知
+7. [IR スナップショット自動保存](./use-cases/ir-snapshot-auto-save.md)
+8. [IR snapshot からの簡易コード生成](./use-cases/arcane-summon.md) — `arcane:summon`
+9. [外部 UI 定義の出力（Export）](./use-cases/ui-export.md) — 横断パイプライン / API / 検証
+10. [外部 UI 定義の取り込み（Import）](./use-cases/ui-import.md) — Reader / unshape / external 残余
+11. [HTTP API](./api/http-endpoints.md)
+12. [ロギング](./architecture/logging.md)
 
 ### Adapter target（ベンダー固有）
 
-12. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
-13. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
-14. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
-15. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
+13. [PrimeFaces Export](./use-cases/primefaces-export.md) — Facelet / shape / component 対応
+14. [PrimeFaces Import](./use-cases/primefaces-import.md) — XHTML / タグ判別 / unsupported 救出
+15. [im-forma Export](./use-cases/im-forma-export.md) — importBase merger / Forma 風 serialize
+16. [im-forma Import](./use-cases/im-forma-import.md) — 実画面定義 / type マップ / external
 
 ### 保守運用（LIRM を改造する人向け）
 
 索引: [保守運用ガイド](./maintenance/README.md)
 
-16. [`schemaVersion` 改訂](./maintenance/schema-version-revision.md) — sub / main の判断・migration step・同意フロー
-17. [target 追加: Import パイプライン](./maintenance/add-target-import.md) — unshape / Reader / Raw→IR
-18. [target 追加: Export パイプライン](./maintenance/add-target-export.md) — IR→Raw / shape or merge / serialize / Writer
-19. [target 追加: その他対応](./maintenance/add-target-other.md) — Raw schema / registry 一覧 / `application.yml` / 既存 spec / UI
-20. [`arcane:summon` テンプレート新規作成](./maintenance/add-summon-template.md) — context / helper / projection
+17. [`schemaVersion` 改訂](./maintenance/schema-version-revision.md) — sub / main の判断・migration step・同意フロー
+18. [target 追加: Import パイプライン](./maintenance/add-target-import.md) — unshape / Reader / Raw→IR
+19. [target 追加: Export パイプライン](./maintenance/add-target-export.md) — IR→Raw / shape or merge / serialize / Writer
+20. [target 追加: その他対応](./maintenance/add-target-other.md) — Raw schema / registry 一覧 / `application.yml` / 既存 spec / UI
+21. [`arcane:summon` テンプレート新規作成](./maintenance/add-summon-template.md) — context / helper / projection
 
 ## ドキュメントの層
 
@@ -96,6 +98,7 @@ features:
 | Import（Reader → Raw → validate → IR） | 実装済み（ファイルアップロード。`importDir` は未使用のまま） |
 | サーバロギング（Winston） | 実装済み（`logging` YAML、HTTP hook + パイプライン追跡） |
 | Global Toast | 実装済み（Preview / Import 成功 / 自動保存失敗 / snapshot 復元） |
+| Intent Tags | MVP 実装済み（[Intent Tags](./use-cases/intent-tags.md)）。GUI・IR・snapshot・YAML マスタ・Raw への素通し。target ごとの解釈は未着手 |
 | First-party 射影プラグイン（`by-logical-id` / `db-maxlength`） | MVP 実装済み（[プラグイン](./architecture/plugins.md)）。複数段の指定・実行。`arcane:summon --projection` |
 | writer-filter | 実装済み。Export の作業文書を静的な step 列で変える（[プラグイン](./architecture/plugins.md)）。射影や `arcane:summon` とは別 |
 | adapter-target | スコープ内。Import / Export は選んだ target を一度だけ実行。Reader / Writer は実装済み |

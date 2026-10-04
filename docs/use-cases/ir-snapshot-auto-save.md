@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T04:19:00"
+updated: "2026-10-05T02:05:00"
 summary: "current / history / versions による IR YAML snapshot 自動保存と確定版、検証通過後だけ current を更新する"
 features:
   - ir-snapshot
@@ -13,7 +13,7 @@ features:
 
 # ユースケース: IR スナップショット自動保存
 
-最終更新: 2026-09-30 04:19
+最終更新: 2026-10-05 02:05
 
 ## 概要
 
@@ -166,6 +166,7 @@ Envelope shape:
 - root: schemaVersion, savedAt, uiDefinition, components
 - uiDefinition: logicalId, name, version, changeReason / releasedAt / closedAt / closedReason（ある場合）, description, basedOn（ある場合）, external last if present, then createdAt, modifiedAt
 - components[]: logicalId, type, sourceType（`unsupported` のとき）, label, then type-specific keys, then external
+- components[] の `intentTags`（[Intent Tags](./intent-tags.md)）は加算の任意キー。空なら書かない。schemaVersion は上げない
 - 読込後のライブ配列は `EditorComponent[]`。次回保存で既定値が YAML に埋まり、未使用だった `tooltip` / `autosize` は消える（schemaVersion は上げない）
 
 createdAt is preserved by buildSnapshotMetaForWrite on first save.

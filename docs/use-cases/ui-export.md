@@ -1,9 +1,10 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T08:20:00"
-summary: "Export 横断パイプライン。Raw 検証のあと、必要な target だけ writer pipeline"
+updated: "2026-10-05T02:05:00"
+summary: "Export 横断パイプライン。Raw 検証のあと、必要な target だけ writer pipeline。intentTags は Raw へ素通し"
 features:
   - ui-export
+  - intent-tags
   - raw-validation
   - primefaces
   - im-forma
@@ -14,7 +15,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-09-30 08:20
+最終更新: 2026-10-05 02:05
 
 ## 概要
 
@@ -31,6 +32,7 @@ Preview の「出力」「ダウンロード」から、編集中 IR（store）�
 クライアントは `targetId` だけを選ぶ。json / yaml / Handlebars の戦略は各 `DefinitionWriter` の内部事情。  
 明示出力の `uiDefinition` body は `toVendorExportMeta`（`logicalId` / `name` / `description` / `version` / `basedOn` / `changeReason` / `external`）。`releasedAt` 等のライフサイクル日付は載せない。  
 transform は同投影を Raw にコピーする。系統キーは IR 由来でありベンダー語彙ではない。成果物コメントへの埋め込み可否は各 target 文書。  
+コンポーネントの `intentTags`（[Intent Tags](./intent-tags.md)）は、空でなければ Raw の各フィールドへそのまま載る。target ごとの解釈（writer-filter / テンプレート）は未実装で、現状の成果物には出ない。WARN: Import はタグを復元しないため、Export → Import の往復でタグは失われる。  
 **target 固有のコンポーネント対応・shape フィールド・テンプレート規約・serialize 方言**は各 target ドキュメントに分離する（本稿は横断パイプラインに留める）。
 
 ## API 形状（重要）

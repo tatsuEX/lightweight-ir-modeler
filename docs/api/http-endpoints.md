@@ -1,10 +1,11 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T08:20:00"
-summary: "IR snapshot（current / versions）と UI import/export/download の HTTP エンドポイント契約"
+updated: "2026-10-05T02:05:00"
+summary: "IR snapshot（current / versions）、Intent Tags マスタ、UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
   - ir-snapshot
+  - intent-tags
   - ui-export
   - ui-import
   - yaml-comments
@@ -12,7 +13,7 @@ features:
 
 # HTTP API
 
-最終更新: 2026-09-30 08:20
+最終更新: 2026-10-05 02:05
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -73,6 +74,39 @@ HEAD 上では `patch` で同一 main の sub+1（メタ修正など）、`revis
 - **403**: 自動保存無効
 
 確定版の読込も `confirmMigration: true` で同意する。
+
+## Intent Tags
+
+マスタ構成と GUI は [Intent Tags](../use-cases/intent-tags.md) を参照。対象 IR 種別はいずれも `ui-definition`。
+
+### `GET /api/ir/intent-tags`
+
+`application.yml` の `ir.intentTags` から合成したマスタを返す。
+
+```json
+{
+  "tags": [{ "id": "auto-layout", "description": "…", "source": "default" }],
+  "canRegister": true,
+  "sharedWithIrTypes": ["layout"]
+}
+```
+
+- `canRegister`: alias `default` があるとき true
+- `sharedWithIrTypes`: default ファイルを参照しているほかの IR 種別
+- 未設定なら空の `tags` と `canRegister: false`
+- **500**: マスタの形式不正など
+
+Layout Editor の初期読込（`+layout.server.ts`）も同じ値を `intentTagCatalog` として返す。こちらは失敗しても画面を止めず、`loadError` に理由を入れる。
+
+### `POST /api/ir/intent-tags`
+
+Body: `{ id, description? }`。default マスタの末尾へ追記する（既存コメントは保持）。
+
+- **201**: `{ definition: { id, description, source }, sharedWithIrTypes }`
+- **400**: JSON 不正 / `id` 欠落 / id の書式違反
+- **409**: 合成済みマスタに同じ id がある
+- **503**: default マスタが未設定
+- **500**: その他
 
 ## UI Export
 
@@ -186,6 +220,7 @@ Body 例（仮想。`target` は registry 登録済み targetId）:
 ## 関連ドキュメント
 
 - [IR snapshot ユースケース](../use-cases/ir-snapshot-auto-save.md)
+- [Intent Tags](../use-cases/intent-tags.md)
 - [UI Export ユースケース](../use-cases/ui-export.md)
 - [UI Import ユースケース](../use-cases/ui-import.md)
 - [im-forma Import](../use-cases/im-forma-import.md)

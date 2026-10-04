@@ -1,16 +1,17 @@
 ---
 created: "2026-09-01T08:20:00"
-updated: "2026-09-30T08:20:00"
-summary: "first-party の射影と writer pipeline。射影は IR を書き換えない"
+updated: "2026-10-05T02:05:00"
+summary: "first-party の射影と writer pipeline。射影は IR を書き換えない。Raw の intentTags は step から読める"
 features:
   - plugins
+  - intent-tags
   - arcane
   - ir-snapshot
 ---
 
 # First-party プラグイン（射影）
 
-最終更新: 2026-09-30 08:20
+最終更新: 2026-10-05 02:05
 
 閉じた kind と禁止事項の方針は Cursor ルール `.cursor/rules/16-plugins.mdc` を正とする。本稿は実装済みの射影と writer pipeline を書く。
 
@@ -24,6 +25,7 @@ Export のうち、作業文書を書き換える target だけが使う。射�
 - 変更は JSON Pointer と理由を渡す `mutate` だけ。同一 pointer は 1 件に畳み、before は最初の値、after と reason は最終更新。
 - error で pipeline を止め、成果物は書かない。warn だけなら書き、Export API の `warnings` で返す。
 - step の中身と採番は target 文書に書く。射影 view は今は渡さない。
+- Raw の各フィールドは IR 由来の `intentTags?: string[]`（[Intent Tags](../use-cases/intent-tags.md)）を持ちうる。タグを解釈する step はまだ無い。
 
 ## 原則
 

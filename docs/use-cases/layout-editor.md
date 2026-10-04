@@ -1,9 +1,10 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T06:40:00"
-summary: "Layout の選択は片方の列だけ。ボタンはその列の中で動かす"
+updated: "2026-10-05T02:05:00"
+summary: "Property に Intent Tags ダイアログと # 列の件数アイコンを追加"
 features:
   - layout-editor
+  - intent-tags
   - ui-definition
   - preview
   - ir-snapshot
@@ -18,7 +19,7 @@ features:
 
 # ユースケース: レイアウトエディタ編集
 
-最終更新: 2026-09-30 06:40
+最終更新: 2026-10-05 02:05
 
 ## 概要
 
@@ -257,6 +258,12 @@ snapshot YAML の `#` コメントを Property から編集する。IR フィー
 
 モーダルはヘッダとキャンセル/保存を固定し、残り高（最大 `min(90vh, 42rem)`）を左右ペインが分け合う。ツリーと Monaco はそれぞれ独立スクロールする。モーダル全体はスクロールしない。
 
+## Intent Tags
+
+Property ヘッダの「Intent Tags」ボタンで、選択行または全コンポーネントへタグを反映・削除する。属性テーブルの `#` 列は、運用コメント `#` の右にタグ件数アイコンを出す（タグがある行だけ）。行選択（`selectedIds`）は `ComponentAttributeTable` から `bind:selectedIds` で Property ページへ渡す。
+
+マスタ・候補・登録・Export の扱いは [Intent Tags](./intent-tags.md) を参照。
+
 ## コンポーネント種別（現状）
 
 Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` / `createRadio` / `createDropdown` / `createDropdownMulti` / `createDatepicker` / `createDateSpan` / `createDatetimepicker` / `createTimepicker` / `createLabel` など。  
@@ -282,6 +289,7 @@ Factory: `createTextbox` / `createTextarea` / `createNumber` / `createCheckbox` 
 | 検証プロファイル | `src/lib/config/ui-definition-validation-config.ts` |
 | 検証結果 Context | `src/lib/store/layout-editor/ui-definition-validation.svelte.ts` |
 | コメント `#` | `src/lib/components/YamlCommentButton.svelte` |
+| Intent Tags ダイアログ | `src/lib/components/IntentTagsEditModal.svelte`（[Intent Tags](./intent-tags.md)） |
 | コメントモーダル | `src/lib/components/MarkdownCommentModal.svelte` |
 | コメント対象ツリー | `src/lib/components/CommentTargetTree.svelte` |
 | コメント Markdown 編集 | `src/lib/components/MonacoMarkdownEditor.svelte` |
