@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T04:19:00"
+updated: "2026-09-30T08:20:00"
 summary: "IR snapshot（current / versions）と UI import/export/download の HTTP エンドポイント契約"
 features:
   - http-api
@@ -12,7 +12,7 @@ features:
 
 # HTTP API
 
-最終更新: 2026-09-30 04:19
+最終更新: 2026-09-30 08:20
 
 SvelteKit `src/routes/api/**/+server.ts` が提供するエンドポイント一覧。
 
@@ -101,14 +101,15 @@ Body 例（仮想。`target` は registry 登録済み targetId）:
   "logicalId": "sampleForm",
   "relativePath": "<targetId>/sampleForm/<filename>",
   "filename": "<filename>",
-  "writtenAt": "2026-08-08T13:39:29.652Z"
+  "writtenAt": "2026-08-08T13:39:29.652Z",
+  "warnings": []
 }
 ```
 
 失敗:
 
 - **403**: `app.io.exportDir` 未設定
-- **400**: 未対応 target / Raw 検証失敗（`issues[]` 付き）
+- **400**: 未対応 target / Raw 検証失敗 / writer pipeline の error（`issues[]` 付き）
 - **500**: その他
 
 成果物の拡張子・相対パスの詳細は各 target の Export ドキュメントを参照。

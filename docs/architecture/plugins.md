@@ -1,7 +1,7 @@
 ---
 created: "2026-09-01T08:20:00"
-updated: "2026-09-01T08:20:00"
-summary: "first-party 射影プラグインの契約（applyProjections、opt-in、IR 非永続化）"
+updated: "2026-09-30T08:20:00"
+summary: "first-party の射影と writer pipeline。射影は IR を書き換えない"
 features:
   - plugins
   - arcane
@@ -10,9 +10,20 @@ features:
 
 # First-party プラグイン（射影）
 
-最終更新: 2026-09-01 08:20
+最終更新: 2026-09-30 08:20
 
-閉じた kind と禁止事項の方針は Cursor ルール `.cursor/rules/16-plugins.mdc` を正とする。本稿は **実装済みの射影契約** だけを書く。writer-filter は未着手。
+閉じた kind と禁止事項の方針は Cursor ルール `.cursor/rules/16-plugins.mdc` を正とする。本稿は実装済みの射影と writer pipeline を書く。
+
+## Writer pipeline
+
+Export のうち、作業文書を書き換える target だけが使う。射影とは別モジュール（`src/lib/server/writer-pipeline/`）で、GUI を import しない。
+
+- 入力 Raw は複製して読む。UI IR と snapshot には書かない。同じ Raw からは同じ作業文書になる。
+- 前段は既存の Raw Zod（pipeline を始めてよいか）。後段は target が opt-in したときだけ、serialize 前に作業文書を見る。Raw Zod の再実行ではない。
+- step は namespace 付き id を持つ。前提は passed steps を見る。成功したときだけ自分の id を足す。
+- 変更は JSON Pointer と理由を渡す `mutate` だけ。同一 pointer は 1 件に畳み、before は最初の値、after と reason は最終更新。
+- error で pipeline を止め、成果物は書かない。warn だけなら書き、Export API の `warnings` で返す。
+- step の中身と採番は target 文書に書く。射影 view は今は渡さない。
 
 ## 原則
 

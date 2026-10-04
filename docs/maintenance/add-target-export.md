@@ -1,7 +1,7 @@
 ---
 created: "2026-09-07T04:46:00"
 summary: "新 adapter target の Export パイプラインを実装する手順。IR→Raw transform / shape or merge / serialize / Writer"
-updated: "2026-09-07T04:46:00"
+updated: "2026-09-30T08:20:00"
 features:
   - maintenance
   - adapter-target
@@ -10,7 +10,7 @@ features:
 
 # 保守手順: target 追加（Export パイプライン）
 
-最終更新: 2026-09-07 04:46
+最終更新: 2026-09-30 08:20
 
 新しい adapter target の**出力**を実装する手順です。横断仕様は [外部 UI 定義の出力](../use-cases/ui-export.md) を参照してください。schema / config / UI / docs は [その他対応](./add-target-other.md) にあります。
 
@@ -25,6 +25,8 @@ GET  /api/ui/download/[target]/[logicalId]   .../+server.ts:20
   → bundle.transform(editorMeta, components) IR meta+components → RawDefinition
   → validateRawDefinition(targetId, raw)     Import と同じ schema、失敗は 400
   → bundle.writer.toArtifact(raw)            → DefinitionArtifact
+      作業文書を変える target は、この中で writer pipeline を実行し、
+      opt-in の後段検証のあと serialize する。変えない target は shape → serialize のまま
   → writeExportedDefinition(...)             <exportDir>/<targetId>/<logicalId>/
 ```
 

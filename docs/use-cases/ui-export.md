@@ -1,7 +1,7 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-07T07:14:00"
-summary: "Export 横断パイプライン・ベンダー投影・IR 系統キー"
+updated: "2026-09-30T08:20:00"
+summary: "Export 横断パイプライン。Raw 検証のあと、必要な target だけ writer pipeline"
 features:
   - ui-export
   - raw-validation
@@ -14,7 +14,7 @@ features:
 
 # ユースケース: 外部 UI 定義の出力（Export）
 
-最終更新: 2026-09-07 07:14
+最終更新: 2026-09-30 08:20
 
 ## 概要
 
@@ -82,9 +82,13 @@ sequenceDiagram
 
 1. `resolveExportTargetBundle(targetId)`
 2. `bundle.transform(meta, components)` → `RawDefinition`
-3. `validateRawDefinition(targetId, raw)` ← **ここで Zod（JSON Schema 由来）検証**（shape 後は再検証しない）
-4. `bundle.writer.toArtifact(raw)`（内部で shape → serialize）
+3. `validateRawDefinition(targetId, raw)` ← **ここで Zod（JSON Schema 由来）検証**（pipeline を始めてよいか）
+4. `bundle.writer.toArtifact(raw)`
+   - writer pipeline を持たない target は、この中で shape → serialize する
+   - 持つ target は、検証済み Raw を入力に作業文書を変え、opt-in の後段検証のあと serialize する。作業文書と mutation は snapshot に書かない
 5. `writeExportedDefinition(...)`
+
+error diagnostic があるときはファイルを書かず **400**（`issues`）。warn だけのときは書き、**201** の `warnings` に載せる。射影 plugin と `arcane:summon` はこの pipeline を通らない。
 
 ## ダウンロードシーケンス
 
@@ -185,6 +189,7 @@ classDiagram
 | 領域 | パス |
 |---|---|
 | Pipeline | `src/lib/server/ui/export-pipeline.ts` |
+| Writer pipeline | `src/lib/server/writer-pipeline/`（server 専用。GUI を前提にしない） |
 | Registry | `src/lib/server/ui/export-target-registry.ts` |
 | Validate | `src/lib/schema/validate-raw.ts` |
 | Schema loader | `src/lib/schema/json-schema-loader.ts` |

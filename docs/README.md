@@ -1,6 +1,6 @@
 ---
 created: "2026-08-08T22:54:00"
-updated: "2026-09-30T04:19:00"
+updated: "2026-09-30T08:20:00"
 summary: "docs 索引。利用者向けと保守者向けの区別、現行スコープ（プラグイン多段・UIDefinition 検証・IR migration）"
 features:
   - docs
@@ -22,7 +22,7 @@ features:
 
 # lightweight-ir-modeler ドキュメント
 
-最終更新: 2026-09-30 04:19
+最終更新: 2026-09-30 08:20
 
 本ディレクトリは、実装と同期する **現行仕様** のドキュメント置き場です。  
 設計検討のスナップショットは [`.design-logs/`](../.design-logs/)（追記専用）、日々の作業記録は [`.articles/`](../.articles/) を参照してください。
@@ -97,7 +97,7 @@ features:
 | サーバロギング（Winston） | 実装済み（`logging` YAML、HTTP hook + パイプライン追跡） |
 | Global Toast | 実装済み（Preview / Import 成功 / 自動保存失敗 / snapshot 復元） |
 | First-party 射影プラグイン（`by-logical-id` / `db-maxlength`） | MVP 実装済み（[プラグイン](./architecture/plugins.md)）。複数段の指定・実行。`arcane:summon --projection` |
-| writer-filter | スコープ内。複数段を指定順に実行。実装は未着手（契約は `.cursor/rules/16-plugins.mdc`） |
+| writer-filter | 実装済み。Export の作業文書を静的な step 列で変える（[プラグイン](./architecture/plugins.md)）。射影や `arcane:summon` とは別 |
 | adapter-target | スコープ内。Import / Export は選んだ target を一度だけ実行。Reader / Writer は実装済み |
 | IR snapshot `schemaVersion` | MVP 実装済み（[自動保存](./use-cases/ir-snapshot-auto-save.md)）。root `schemaVersion` + 4 分類 + step 空の seam |
 | IR schema migration | スコープ内。加算でない形の変更は版付き変換。移行ランナーは未着手 |
