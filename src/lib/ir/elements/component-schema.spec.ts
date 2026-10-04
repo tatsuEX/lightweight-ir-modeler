@@ -151,6 +151,19 @@ describe('IR component schema', () => {
 		]);
 	});
 
+	it('keeps intentTags through hydrate and persist, and omits the key when absent', () => {
+		const editor = hydrateEditorComponent(
+			{ ...legacyTextbox, intentTags: ['auto-layout', 'validator:email'] },
+			'cmp-tags'
+		);
+		expect(editor.intentTags).toEqual(['auto-layout', 'validator:email']);
+		expect(toPersistedComponent(editor).intentTags).toEqual(['auto-layout', 'validator:email']);
+
+		const plain = hydrateEditorComponent(legacyTextbox, 'cmp-plain');
+		expect(plain).not.toHaveProperty('intentTags');
+		expect(toPersistedComponent(plain)).not.toHaveProperty('intentTags');
+	});
+
 	it('parses a persisted vendor type without minting id', () => {
 		const persisted = parsePersistedComponent({ type: 'product_72_shape', label: '図形' });
 		expect(persisted.type).toBe('unsupported');

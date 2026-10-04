@@ -374,7 +374,13 @@ describe('profile overlay', () => {
 		expect(config.app.io?.export?.templates?.primefaces?.dir).toBe(
 			'./templates/export/primefaces'
 		);
-		expect(config.ir).toBeUndefined();
+		expect(config.ir?.autoSave).toBeUndefined();
+		expect(config.ir?.intentTags).toEqual([
+			{
+				irType: 'ui-definition',
+				files: [{ path: './config/intent-tags-default.yaml', alias: 'default' }]
+			}
+		]);
 		expect(config.layoutEditor.property.itemDelimiter).toBe(':');
 		expect(config.layoutEditor.property.confirmSnapshotDirCreation).toBe(true);
 		expect(config.layoutEditor.clientSession.maxLifetimeMs).toBe(43_200_000);
@@ -447,6 +453,118 @@ app:
 ${minimalPreviewYaml}
 `)
 		).toThrow('app.io.export.templates.primefaces.dir" must be a non-empty string');
+	});
+});
+
+describe('ir.intentTags', () => {
+	/**
+	 * ir.intentTags だけを差し替えた設定 YAML を返す
+	 */
+	function withIntentTags(block: string): string {
+		return `
+app:
+  name: test-app
+${minimalPreviewYaml}
+ir:
+  intentTags:
+${block}
+`;
+	}
+
+	it('parses irType groups and allows the same alias in another irType', () => {
+		const config = parseApplicationConfig(
+			withIntentTags(`
+    - irType: ui-definition
+      files:
+        - path: ./config/intent-tags-default.yaml
+          alias: default
+        - path: ./config/intent-tags-common.yaml
+          alias: common
+    - irType: layout
+      files:
+        - path: ./config/intent-tags-common.yaml
+          alias: default
+`)
+		);
+		expect(config.ir?.intentTags).toEqual([
+			{
+				irType: 'ui-definition',
+				files: [
+					{ path: './config/intent-tags-default.yaml', alias: 'default' },
+					{ path: './config/intent-tags-common.yaml', alias: 'common' }
+				]
+			},
+			{
+				irType: 'layout',
+				files: [{ path: './config/intent-tags-common.yaml', alias: 'default' }]
+			}
+		]);
+		expect(config.ir?.autoSave).toBeUndefined();
+	});
+
+	it('rejects a duplicated irType', () => {
+		expect(() =>
+			parseApplicationConfig(
+				withIntentTags(`
+    - irType: ui-definition
+      files:
+        - path: ./a.yaml
+          alias: default
+    - irType: ui-definition
+      files:
+        - path: ./b.yaml
+          alias: default
+`)
+			)
+		).toThrow('ir.intentTags[1].irType" is duplicated');
+	});
+
+	it('rejects empty files', () => {
+		expect(() =>
+			parseApplicationConfig(
+				withIntentTags(`
+    - irType: ui-definition
+      files: []
+`)
+			)
+		).toThrow('ir.intentTags[0].files" must be a non-empty array');
+	});
+
+	it('rejects a duplicated alias within one irType', () => {
+		expect(() =>
+			parseApplicationConfig(
+				withIntentTags(`
+    - irType: ui-definition
+      files:
+        - path: ./a.yaml
+          alias: common
+        - path: ./b.yaml
+          alias: common
+`)
+			)
+		).toThrow('ir.intentTags[0].files[1].alias" is duplicated');
+	});
+
+	it('rejects an empty path and a missing irType', () => {
+		expect(() =>
+			parseApplicationConfig(
+				withIntentTags(`
+    - irType: ui-definition
+      files:
+        - path: "  "
+          alias: default
+`)
+			)
+		).toThrow('ir.intentTags[0].files[0].path" must be a non-empty string');
+		expect(() =>
+			parseApplicationConfig(
+				withIntentTags(`
+    - files:
+        - path: ./a.yaml
+          alias: default
+`)
+			)
+		).toThrow('ir.intentTags[0].irType" must be a kebab-case string');
 	});
 });
 

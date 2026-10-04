@@ -17,6 +17,7 @@ import {
 	type EditorComponent
 } from '$lib/ir/elements/component-schema';
 import { SYSTEM_ID_LENGTH } from './elements/factories';
+import { addIntentTags, normalizeIntentTags, removeIntentTags } from '$lib/ir/intent-tags';
 
 /**
  * 集約が保持するライブ document
@@ -112,6 +113,54 @@ export class UIDefinition {
 	removeByIds(ids: Iterable<string>): void {
 		const idSet = new Set(ids);
 		this.replaceComponents(this.components.filter((component) => !idSet.has(component.id)));
+	}
+
+	/**
+	 * 指定 id のコンポーネントへ Intent Tags を追加する
+	 *
+	 * @returns タグが変化したコンポーネント数
+	 */
+	addIntentTags(componentIds: Iterable<string>, tags: readonly string[]): number {
+		return this.updateIntentTags(componentIds, (current) => addIntentTags(current, tags));
+	}
+
+	/**
+	 * 指定 id のコンポーネントから Intent Tags を取り除く
+	 *
+	 * @returns タグが変化したコンポーネント数
+	 */
+	removeIntentTags(componentIds: Iterable<string>, tags: readonly string[]): number {
+		return this.updateIntentTags(componentIds, (current) => removeIntentTags(current, tags));
+	}
+
+	/**
+	 * Intent Tags を更新する共通処理
+	 *
+	 * WARN: 空になったらキーごと消す。snapshot YAML と比較ハッシュに `intentTags: []` を残さない。
+	 */
+	private updateIntentTags(
+		componentIds: Iterable<string>,
+		next: (current: string[] | undefined) => string[] | undefined
+	): number {
+		const idSet = new Set(componentIds);
+		let changed = 0;
+		for (const component of this.components) {
+			if (!idSet.has(component.id)) {
+				continue;
+			}
+			const before = normalizeIntentTags(component.intentTags);
+			const after = next(component.intentTags);
+			if (JSON.stringify(before) === JSON.stringify(after ?? [])) {
+				continue;
+			}
+			if (after) {
+				component.intentTags = after;
+			} else {
+				delete component.intentTags;
+			}
+			changed += 1;
+		}
+		return changed;
 	}
 
 	/**

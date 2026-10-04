@@ -24,6 +24,24 @@ export type IrAutoSaveConfig = {
 };
 
 /**
+ * Intent Tags マスタファイル 1 件（application.yml の ir.intentTags[].files[]）
+ */
+export type IntentTagFileConfig = {
+	path: string;
+	alias: string;
+};
+
+/**
+ * IR 種類ごとの Intent Tags マスタ一覧（application.yml の ir.intentTags[]）
+ *
+ * WARN: `irType` は IR 種類。Export の adapter-target（`target`）とは別概念。
+ */
+export type IntentTagIrTypeConfig = {
+	irType: string;
+	files: IntentTagFileConfig[];
+};
+
+/**
  * 出力 target ごとのテンプレート配置（Handlebars 等）
  */
 export type AppIoExportTemplateTargetConfig = {
@@ -56,6 +74,7 @@ export type ApplicationConfig = {
 	};
 	ir?: {
 		autoSave?: IrAutoSaveConfig;
+		intentTags?: IntentTagIrTypeConfig[];
 	};
 	layoutEditor: LayoutEditorConfig;
 	preview: PreviewConfig;

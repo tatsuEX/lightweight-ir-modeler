@@ -89,4 +89,31 @@ describe('UIDefinition', () => {
 		ui.removeByIds(['a']);
 		expect(ui.components.map((component) => component.id)).toEqual(['c', 'b']);
 	});
+
+	it('adds and removes intent tags on the given components only', () => {
+		const ui = new UIDefinition(
+			createUiDefinitionData({
+				logicalId: 's',
+				name: 'S',
+				description: '',
+				version: '1.0'
+			})
+		);
+		ui.replaceComponents([
+			{ id: 'a', type: 'textbox' },
+			{ id: 'b', type: 'textbox', intentTags: ['auto-layout'] },
+			{ id: 'c', type: 'label' }
+		]);
+
+		expect(ui.addIntentTags(['a', 'b'], ['auto-layout', 'validator:email'])).toBe(2);
+		expect(ui.components[0].intentTags).toEqual(['auto-layout', 'validator:email']);
+		expect(ui.components[1].intentTags).toEqual(['auto-layout', 'validator:email']);
+		expect(ui.components[2]).not.toHaveProperty('intentTags');
+
+		expect(ui.addIntentTags(['a'], ['auto-layout'])).toBe(0);
+
+		expect(ui.removeIntentTags(['a', 'b', 'c'], ['auto-layout', 'validator:email'])).toBe(2);
+		expect(ui.components[0]).not.toHaveProperty('intentTags');
+		expect(ui.components[1]).not.toHaveProperty('intentTags');
+	});
 });

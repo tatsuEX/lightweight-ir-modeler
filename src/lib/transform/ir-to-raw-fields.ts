@@ -1,4 +1,5 @@
 import { normalizeExternalResidual } from '$lib/ir/external-residual';
+import { normalizeIntentTags } from '$lib/ir/intent-tags';
 
 /**
  * IR component から Raw 用フィールドオブジェクトを組み立てる
@@ -53,6 +54,12 @@ export function mapComponentToRawField(component: unknown): Record<string, unkno
 		field.multiple = source.multiple;
 	}
 	copyOwnValueKeys(field, source);
+
+	// WARN: MVP は素通しのみ。target ごとの解釈は writer-filter / テンプレート側の責務。
+	const intentTags = normalizeIntentTags(source.intentTags);
+	if (intentTags.length > 0) {
+		field.intentTags = intentTags;
+	}
 
 	// WARN: このマッピングは allowlist。external を通さないと import 由来のベンダー固有キーが export で消える。
 	const external = normalizeExternalResidual(source.external);

@@ -5,8 +5,11 @@ import {
 	type AppIoExportConfig,
 	type AppIoExportTemplateTargetConfig,
 	type ApplicationConfig,
+	type IntentTagFileConfig,
+	type IntentTagIrTypeConfig,
 	type IrAutoSaveConfig
 } from '$lib/config/application-types';
+import { INTENT_TAG_ALIAS_PATTERN, INTENT_TAG_IR_TYPE_PATTERN } from '$lib/ir/intent-tags';
 import {
 	DEFAULT_CLIENT_SESSION_MAX_LIFETIME_MS,
 	DEFAULT_CONFIRM_SNAPSHOT_DIR_CREATION,
@@ -89,6 +92,71 @@ function parseIrAutoSave(raw: unknown): IrAutoSaveConfig | undefined {
 		dir: typeof dir === 'string' ? dir.trim() : '',
 		maxGenerations
 	};
+}
+
+/**
+ * ir.intentTags[n].files をパースする
+ */
+function parseIntentTagFiles(raw: unknown, pathPrefix: string): IntentTagFileConfig[] {
+	if (!Array.isArray(raw) || raw.length === 0) {
+		throw new Error(`application config "${pathPrefix}.files" must be a non-empty array`);
+	}
+
+	const aliases = new Set<string>();
+	return raw.map((item, index) => {
+		const itemPath = `${pathPrefix}.files[${index}]`;
+		if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+			throw new Error(`application config "${itemPath}" must be an object`);
+		}
+		const record = item as Record<string, unknown>;
+		const path = typeof record.path === 'string' ? record.path.trim() : '';
+		const alias = typeof record.alias === 'string' ? record.alias.trim() : '';
+		if (path === '') {
+			throw new Error(`application config "${itemPath}.path" must be a non-empty string`);
+		}
+		if (!INTENT_TAG_ALIAS_PATTERN.test(alias)) {
+			throw new Error(`application config "${itemPath}.alias" must match ${INTENT_TAG_ALIAS_PATTERN}`);
+		}
+		if (aliases.has(alias)) {
+			throw new Error(`application config "${itemPath}.alias" is duplicated: ${alias}`);
+		}
+		aliases.add(alias);
+		return { path, alias };
+	});
+}
+
+/**
+ * ir.intentTags ブロックをパースする
+ *
+ * WARN: alias の一意性は irType ごと。同じファイルを別 irType から別 alias で参照してよい。
+ */
+function parseIntentTags(raw: unknown): IntentTagIrTypeConfig[] | undefined {
+	if (raw === undefined) {
+		return undefined;
+	}
+	if (!Array.isArray(raw)) {
+		throw new Error('application config "ir.intentTags" must be an array');
+	}
+
+	const irTypes = new Set<string>();
+	return raw.map((item, index) => {
+		const itemPath = `ir.intentTags[${index}]`;
+		if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+			throw new Error(`application config "${itemPath}" must be an object`);
+		}
+		const record = item as Record<string, unknown>;
+		const irType = typeof record.irType === 'string' ? record.irType.trim() : '';
+		if (!INTENT_TAG_IR_TYPE_PATTERN.test(irType)) {
+			throw new Error(
+				`application config "${itemPath}.irType" must be a kebab-case string (e.g. ui-definition)`
+			);
+		}
+		if (irTypes.has(irType)) {
+			throw new Error(`application config "${itemPath}.irType" is duplicated: ${irType}`);
+		}
+		irTypes.add(irType);
+		return { irType, files: parseIntentTagFiles(record.files, itemPath) };
+	});
 }
 
 /**
@@ -518,9 +586,14 @@ export function parseApplicationConfigRoot(root: Record<string, unknown>): Appli
 		if (ir === null || typeof ir !== 'object' || Array.isArray(ir)) {
 			throw new Error('application config "ir" must be an object');
 		}
-		const autoSave = parseIrAutoSave((ir as Record<string, unknown>).autoSave);
-		if (autoSave !== undefined) {
-			config.ir = { autoSave };
+		const irRecord = ir as Record<string, unknown>;
+		const autoSave = parseIrAutoSave(irRecord.autoSave);
+		const intentTags = parseIntentTags(irRecord.intentTags);
+		if (autoSave !== undefined || intentTags !== undefined) {
+			config.ir = {
+				...(autoSave !== undefined ? { autoSave } : {}),
+				...(intentTags !== undefined ? { intentTags } : {})
+			};
 		}
 	}
 

@@ -66,4 +66,14 @@ describe('IR to Raw transforms', () => {
 			})
 		]);
 	});
+
+	it('passes non-empty intentTags through to Raw fields', () => {
+		const raw = transformToImFormaRaw(meta, [
+			{ ...components[0], intentTags: ['auto-layout', ' validator:email ', 'auto-layout', ''] },
+			{ ...components[1], intentTags: [] }
+		]);
+		const items = raw.items as Record<string, unknown>[];
+		expect(items[0].intentTags).toEqual(['auto-layout', 'validator:email']);
+		expect(items[1]).not.toHaveProperty('intentTags');
+	});
 });

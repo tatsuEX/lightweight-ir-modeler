@@ -31,6 +31,8 @@ const baseShape = {
 	disabled: z.boolean().default(false),
 	readonly: z.boolean().default(false),
 	hidden: z.boolean().default(false),
+	/** Intent Tags。空のときはキーを持たない（`UIDefinition.addIntentTags` / `removeIntentTags` が維持する） */
+	intentTags: z.array(z.string()).optional(),
 	external: ExternalResidualSchema.optional()
 };
 

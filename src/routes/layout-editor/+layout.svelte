@@ -3,11 +3,18 @@
 	import LayoutEditorNav from '$lib/components/LayoutEditorNav.svelte';
 	import LayoutEditorSessionScope from '$lib/components/LayoutEditorSessionScope.svelte';
 	import {
+		createIntentTagCatalog,
+		setIntentTagCatalogContext
+	} from '$lib/store/layout-editor/intent-tag-catalog.svelte';
+	import {
 		activeLayoutEditorSession,
 		ensureActiveLayoutEditorSession
 	} from '$lib/store/layout-editor/layout-editor-session.svelte';
 
 	let { data, children } = $props();
+
+	// WARN: マスタは session をまたいで共有する。{#key session} の内側で作ると登録済みタグが消える。
+	setIntentTagCatalogContext(untrack(() => createIntentTagCatalog(data.intentTagCatalog)));
 
 	/**
 	 * 初回だけ種から作り、HMR ではアクティブな session を返す。

@@ -3,12 +3,20 @@ import {
 	DEFAULT_IR_AUTO_SAVE_DELAY,
 	type IrAutoSaveConfig
 } from '$lib/config/application-types';
+import {
+	createEmptyIntentTagCatalogView,
+	type IntentTagCatalogView
+} from '$lib/ir/intent-tags';
 import type { SnapshotSchemaBlock } from '$lib/ir/snapshot-schema-block';
 import { createEmptyUiDefinitionMeta, isValidLogicalId, toEditorMeta } from '$lib/ir/ui-definition-meta';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
+import { readIntentTagCatalog } from '$lib/server/io/intent-tag-catalog-io';
 import { readLatestSnapshotIfEnabled } from '$lib/server/io/ir-snapshot-io';
 import { toSnapshotSchemaBlock } from '$lib/server/io/snapshot-http-error';
+import { getLogger } from '$lib/server/logging/logger';
 import type { LayoutServerLoad } from './$types';
+
+const logger = getLogger(import.meta.url);
 
 /**
  * layout-editor クライアントへ渡す autoSave オプションを作る
@@ -25,6 +33,21 @@ function toClientAutoSave(
 }
 
 /**
+ * Intent Tags マスタを読む
+ *
+ * WARN: マスタの不備で layout-editor 全体を開けなくしない。理由は loadError で GUI に出す。
+ */
+async function loadIntentTagCatalog(): Promise<IntentTagCatalogView> {
+	try {
+		return await readIntentTagCatalog();
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		logger.error('intent tag catalog load failed', { errorMessage: message });
+		return createEmptyIntentTagCatalogView(message);
+	}
+}
+
+/**
  * layout-editor 向け autoSave 設定と編集中 snapshot を返す
  */
 export const load: LayoutServerLoad = async ({ url }) => {
@@ -33,6 +56,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	const preview = config.preview;
 	const layoutEditor = config.layoutEditor;
 	const uiDefinitionValidation = config.uiDefinition.validation;
+	const intentTagCatalog = await loadIntentTagCatalog();
 	const defaultUiDefinition = createEmptyUiDefinitionMeta();
 	const logicalIdParam = url.searchParams.get('logicalId')?.trim() ?? '';
 
@@ -46,6 +70,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		initialComments: {} as Record<string, string>,
 		layoutEditor,
 		uiDefinitionValidation,
+		intentTagCatalog,
 		preview,
 		uiDefinition: defaultUiDefinition,
 		schemaBlock: null as SnapshotSchemaBlock | null
@@ -76,6 +101,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 					initialComments: latest.comments,
 					layoutEditor,
 					uiDefinitionValidation,
+					intentTagCatalog,
 					preview,
 					uiDefinition: editorMeta,
 					schemaBlock: null
@@ -94,6 +120,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 				initialComments: {},
 				layoutEditor,
 				uiDefinitionValidation,
+				intentTagCatalog,
 				preview,
 				uiDefinition: {
 					...defaultUiDefinition,
@@ -110,6 +137,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 			initialComments: {},
 			layoutEditor,
 			uiDefinitionValidation,
+			intentTagCatalog,
 			preview,
 			uiDefinition: {
 				...defaultUiDefinition,
@@ -126,6 +154,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		initialComments: {},
 		layoutEditor,
 		uiDefinitionValidation,
+		intentTagCatalog,
 		preview,
 		uiDefinition: defaultUiDefinition,
 		schemaBlock: null

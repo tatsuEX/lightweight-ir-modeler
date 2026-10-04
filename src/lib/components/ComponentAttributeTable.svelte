@@ -25,6 +25,8 @@
 	import ComponentValidationCell, {
 		type ValidationSlot
 	} from '$lib/components/ComponentValidationCell.svelte';
+	import IntentTagsIndicator from '$lib/components/IntentTagsIndicator.svelte';
+	import IntentTagsViewModal from '$lib/components/IntentTagsViewModal.svelte';
 	import UiDefinitionMetaAccordion from '$lib/components/UiDefinitionMetaAccordion.svelte';
 	import ValidationFieldShell from '$lib/components/ValidationFieldShell.svelte';
 	import YamlCommentButton from '$lib/components/YamlCommentButton.svelte';
@@ -39,10 +41,13 @@
 
 	let {
 		selectedCount = $bindable(0),
+		/** 行選択は Property 画面内の presentation state（domain / snapshot には載せない） */
+		selectedIds = $bindable<Set<string>>(new Set()),
 		/** items タグの区切り（`${value}${itemDelimiter}${label}`）。未指定時は DEFAULT_ITEM_DELIMITER */
 		itemDelimiter = DEFAULT_ITEM_DELIMITER
 	}: {
 		selectedCount?: number;
+		selectedIds?: Set<string>;
 		itemDelimiter?: string;
 	} = $props();
 
@@ -56,8 +61,8 @@
 	/** 画面定義の状態は Context API 経由でのみ参照する */
 	const uiDefinition = getUIDefinitionContext();
 
-	/** 行選択は Property 画面内の presentation state（domain / snapshot には載せない） */
-	let selectedIds = $state<Set<string>>(new Set());
+	/** Intent Tags 閲覧ダイアログの対象（presentation state） */
+	let intentTagsView = $state<{ title: string; tags: string[] } | null>(null);
 
 	/** 編集可能な項目のみ表示（既定 ON。presentation state） */
 	let showEditableOnly = $state(true);
@@ -413,8 +418,8 @@
 					onclick={toggleSelectAll}
 				/>
 			</TableHeadCell>
-			<!-- 運用コメント 列 -->
-			<TableHeadCell class="{headCellClass} w-14">
+			<!-- 運用コメント / Intent Tags 列 -->
+			<TableHeadCell class="{headCellClass} w-20">
 				<span class="text-xs font-medium text-gray-500 dark:text-gray-400">#</span>
 			</TableHeadCell>
 			<!-- ID (論理:logicalId) 列 -->
@@ -665,13 +670,27 @@
 								/>
 							</span>
 						</TableBodyCell>
-						<!-- 運用コメント 列 -->
+						<!-- 運用コメント / Intent Tags 列 -->
 						<TableBodyCell class={cellClass}>
-							<YamlCommentButton
-								ownerKey={componentCommentKey(component.id)}
-								title={component.logicalId ? `components[${component.logicalId}]` : 'component'}
-								ariaLabel="{component.type} の運用コメント"
-							/>
+							<div class="flex items-center gap-1">
+								<YamlCommentButton
+									ownerKey={componentCommentKey(component.id)}
+									title={component.logicalId ? `components[${component.logicalId}]` : 'component'}
+									ariaLabel="{component.type} の運用コメント"
+								/>
+								<IntentTagsIndicator
+									tags={component.intentTags}
+									ariaLabel="{component.type} の Intent Tags"
+									onopen={() => {
+										intentTagsView = {
+											title: component.logicalId
+												? `components[${component.logicalId}]`
+												: 'component',
+											tags: [...(component.intentTags ?? [])]
+										};
+									}}
+								/>
+							</div>
 						</TableBodyCell>
 						<!-- ID (論理:logicalId) 列 -->
 						<TableBodyCell class={cellClass}>
@@ -777,3 +796,13 @@
 		</Table>
 	</div>
 </div>
+
+<IntentTagsViewModal
+	bind:open={() => intentTagsView !== null, (next) => {
+		if (!next) {
+			intentTagsView = null;
+		}
+	}}
+	title={intentTagsView?.title ?? ''}
+	tags={intentTagsView?.tags ?? []}
+/>

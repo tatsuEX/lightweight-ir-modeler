@@ -4,6 +4,12 @@
 app:
   name: lightweight-ir-modeler
   io:
+    # auto-save 設定
+    autoSave:
+      enabled: true
+      delay: 500
+      confirmSnapshotDirCreation: true
+      autoSaveIntentTags: true
     # importDir: ./data/import
     exportDir: ./data/export
     export:
@@ -11,6 +17,15 @@ app:
         # Handlebars 等のテンプレート根（target ごと）。plugin 的に差し替え可能
         primefaces:
           dir: ./templates/export/primefaces
+
+# Intent Tags マスタ
+# =================================================================================================
+ir:
+  intentTags:
+    - irType: ui-definition
+      files:
+        - path: ./config/intent-tags-default.yaml
+          alias: default
 
 # Property 属性エディタ（layout-editor/property）
 # =================================================================================================
