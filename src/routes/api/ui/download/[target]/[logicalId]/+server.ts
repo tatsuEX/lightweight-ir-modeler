@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { isValidLogicalId } from '$lib/ir/ui-definition-meta';
 import { RawValidationError } from '$lib/schema/raw-validation-error';
+import { WriterPipelineError } from '$lib/server/writer-pipeline/writer-pipeline-error';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import {
 	hasExportedDefinition,
@@ -68,6 +69,9 @@ export const GET: RequestHandler = async ({ params }) => {
 				{ error: error.message, target: error.targetId, issues: error.issues },
 				{ status: 400 }
 			);
+		}
+		if (error instanceof WriterPipelineError) {
+			return json({ error: error.message, issues: error.toIssues() }, { status: 400 });
 		}
 
 		const message = error instanceof Error ? error.message : '';

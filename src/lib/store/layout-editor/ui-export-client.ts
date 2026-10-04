@@ -11,6 +11,7 @@ export type UiExportResult = {
 	relativePath: string;
 	filename: string;
 	writtenAt: string;
+	warnings: readonly { path: string; message: string }[];
 };
 
 /**
@@ -71,6 +72,7 @@ export class HttpUiExportClient implements UiExportClient {
 			filename?: string;
 			writtenAt?: string;
 			issues?: { path: string; message: string }[];
+			warnings?: { path: string; message: string }[];
 		};
 
 		if (!response.ok) {
@@ -86,7 +88,8 @@ export class HttpUiExportClient implements UiExportClient {
 			logicalId: payload.logicalId ?? ui.meta.logicalId,
 			relativePath: payload.relativePath ?? '',
 			filename: payload.filename ?? '',
-			writtenAt: payload.writtenAt ?? ''
+			writtenAt: payload.writtenAt ?? '',
+			warnings: payload.warnings ?? []
 		};
 	}
 

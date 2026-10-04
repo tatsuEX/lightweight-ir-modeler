@@ -5,6 +5,7 @@ import {
 	parseEditorMetaFromRecord
 } from '$lib/ir/ui-definition-meta';
 import { RawValidationError } from '$lib/schema/raw-validation-error';
+import { WriterPipelineError } from '$lib/server/writer-pipeline/writer-pipeline-error';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { exportFromEditorState } from '$lib/server/ui/export-pipeline';
 import { resolveExportTargetBundle } from '$lib/server/ui/export-target-registry';
@@ -69,7 +70,8 @@ export const POST: RequestHandler = async ({ request }) => {
 				logicalId: result.logicalId,
 				relativePath: result.relativePath,
 				filename: result.filename,
-				writtenAt: result.writtenAt
+				writtenAt: result.writtenAt,
+				warnings: result.warnings
 			},
 			{ status: 201 }
 		);
@@ -77,6 +79,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (error instanceof RawValidationError) {
 			return json(
 				{ error: error.message, target: error.targetId, issues: error.issues },
+				{ status: 400 }
+			);
+		}
+		if (error instanceof WriterPipelineError) {
+			return json(
+				{ error: error.message, issues: error.toIssues() },
 				{ status: 400 }
 			);
 		}

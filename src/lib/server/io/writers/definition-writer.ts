@@ -7,6 +7,8 @@ export type DefinitionArtifact = {
 	filename: string;
 	content: string;
 	contentType: string;
+	/** warn diagnostic。無い target は省略する */
+	warnings?: readonly { path: string; message: string }[];
 };
 
 /**

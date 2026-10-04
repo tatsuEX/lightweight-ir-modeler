@@ -1,5 +1,6 @@
 import { DEFAULT_LOGGING_CONFIG, type LoggingConfig } from '$lib/config/logging-config';
 import { RawValidationError } from '$lib/schema/raw-validation-error';
+import { WriterPipelineError } from '$lib/server/writer-pipeline/writer-pipeline-error';
 import { loadApplicationConfig } from '$lib/server/config/application-config';
 import { DefinitionReadError } from '$lib/server/io/readers/definition-reader';
 import { createWinstonLogger } from '$lib/server/logging/winston-factory';
@@ -91,7 +92,11 @@ export function resetRootLogger(): void {
  * 想定内の業務エラーか（warn で throw ログする）
  */
 function isExpectedOperationalError(error: unknown): boolean {
-	return error instanceof RawValidationError || error instanceof DefinitionReadError;
+	return (
+		error instanceof RawValidationError ||
+		error instanceof DefinitionReadError ||
+		error instanceof WriterPipelineError
+	);
 }
 
 /**

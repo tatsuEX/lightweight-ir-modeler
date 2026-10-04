@@ -58,6 +58,12 @@
 		try {
 			const result = await exportClient.export(uiDefinition);
 			toast.info('出力しました', result.relativePath);
+			if (result.warnings.length > 0) {
+				toast.warn(
+					`出力の警告が ${result.warnings.length} 件あります`,
+					formatIssuesDetail(result.warnings)
+				);
+			}
 		} catch (error) {
 			if (error instanceof IssuesError) {
 				toast.error(

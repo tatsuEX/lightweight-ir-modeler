@@ -14,6 +14,13 @@ import { getLogger, runLogged } from '$lib/server/logging/logger';
 const logger = getLogger(import.meta.url);
 
 /**
+ * 編集中 IR からの出力結果。warnings は writer pipeline の warn
+ */
+export type EditorExportResult = DefinitionExportWriteResult & {
+	warnings: readonly { path: string; message: string }[];
+};
+
+/**
  * 編集中 IR から外部 UI 定義を出力する
  * Writer 前に JSON Schema → Zod で Raw を検証する
  */
@@ -21,7 +28,7 @@ export async function exportFromEditorState(
 	targetId: string,
 	editorMeta: UiDefinitionEditorMeta,
 	components: unknown[]
-): Promise<DefinitionExportWriteResult> {
+): Promise<EditorExportResult> {
 	return runLogged(
 		logger,
 		'exportFromEditorState',
@@ -38,7 +45,8 @@ export async function exportFromEditorState(
 			});
 			const artifact = bundle.writer.toArtifact(raw);
 
-			return writeExportedDefinition(targetId, editorMeta.logicalId, artifact);
+			const written = await writeExportedDefinition(targetId, editorMeta.logicalId, artifact);
+			return { ...written, warnings: artifact.warnings ?? [] };
 		}
 	);
 }
@@ -49,7 +57,7 @@ export async function exportFromEditorState(
 export async function exportFromLatestSnapshot(
 	targetId: string,
 	logicalId: string
-): Promise<DefinitionExportWriteResult> {
+): Promise<EditorExportResult> {
 	return runLogged(logger, 'exportFromLatestSnapshot', { targetId, logicalId }, async () => {
 		const snapshot = await readLatestSnapshotIfEnabled(logicalId);
 		if (!snapshot?.uiDefinition) {
